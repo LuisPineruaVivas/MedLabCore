@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import { ArrowLeft, Save, FileText, ClipboardCheck, FlaskConical, DollarSign, Calendar, User, Link as LinkIcon, Receipt, IdCard } from "lucide-react";
+import { ArrowLeft, Save, FileText, ClipboardCheck, FlaskConical, DollarSign, Calendar, User, Link as LinkIcon, Receipt, IdCard, Phone, Mail } from "lucide-react";
 import { PDFViewer } from "@react-pdf/renderer";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
@@ -287,13 +287,31 @@ export default function OrderDetailPage() {
                     <p className="text-sm font-medium">{patientInfo.age} {typeof patientInfo.age === 'number' ? 'años' : ''} / {patientInfo.gender}</p>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Telefono</p>
+                    <p className="text-sm font-medium">{order.patients.phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Correo</p>
+                    <p className="text-sm font-medium">{order.patients.email}</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Facturación</CardTitle>
+              <CardTitle className="text-base">Datos de la Orden</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

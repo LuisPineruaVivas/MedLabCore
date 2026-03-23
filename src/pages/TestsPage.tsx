@@ -418,7 +418,7 @@ export default function TestsPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center gap-1">
                             <DollarSign className="w-3.5 h-3.5 text-success" />
                             <span className="text-sm font-semibold mono">{Number(tpl.base_price).toFixed(2)}</span>
                           </div>
@@ -438,7 +438,7 @@ export default function TestsPage() {
                           </Button>
                           {canEdit && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => handleEdit(tpl)}>
-                              {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3" /> Customize</>) : (<><Pencil className="w-3 h-3" /> Edit</>)}
+                              {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3" /> Editar</>) : (<><Pencil className="w-3 h-3" /> Edit</>)}
                             </Button>
                           )}
                         </TableCell>

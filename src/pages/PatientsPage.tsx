@@ -291,7 +291,7 @@ export default function PatientsPage() {
                 onClick={() => navigate(`/patients/${patient.id}`)}
               >
                 <TableCell className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[14px] font-bold bg-muted text-muted-foreground font-mono">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[14px] font-bold bg-muted font-mono">
                     {patient.id_number || patient.id.slice(0, 4)}
                   </span>
                 </TableCell>

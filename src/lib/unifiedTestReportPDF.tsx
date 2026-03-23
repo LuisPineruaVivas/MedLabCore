@@ -56,12 +56,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
       letterSpacing: 1,
     },
     sectionHeader: {
-      marginTop: 10,
       paddingVertical: 4,
       paddingHorizontal: 6,
       backgroundColor: '#e2e8f0',
       borderRadius: 4,
-      marginBottom: 2,
     },
     sectionHeaderText: {
       fontSize: 10,
@@ -96,7 +94,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
   for (const item of orderItems) {
     const cat = item.category || item.results_data?.category || 'Otros';
-    if (!grouped[cat]) grouped[cat] = [];
+    if (!grouped[cat] && item.category !== 'Otros') grouped[cat] = [];
 
     const sections = item.results_data?.sections || [];
     // Check if this test has multiple fields across all sections
@@ -153,13 +151,6 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
   const categoryOrder = Object.keys(grouped).sort();
 
-  console.log(categoryOrder);
-  console.log(grouped);
-  console.log(orden);
-  console.log(orderItems);
-  console.log(patientData);
-  console.log(labData);
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -186,7 +177,6 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
         {/* ── Render grouped by category ─────────────────── */}
         {categoryOrder.map((category) => (
-          console.log(category),
           <View key={category} wrap={false}>
             {/* Single category header */}
             <View style={styles.categoryHeader}>
@@ -203,6 +193,13 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
             {/* All rows for this category */}
             {grouped[category].map((row, idx) => (
+              row.isSectionHeader ?
+                <View key={`${category}-${idx}`} style={styles.tableRow}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
+                  </View>
+                </View>
+                  :
               <View key={`${category}-${idx}`} style={styles.tableRow}>
                 <Text style={[
                   styles.colExam,
@@ -220,6 +217,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
                 <Text style={styles.colUnit}>{row.unit || '-'}</Text>
                 <Text style={styles.colRange}>{row.rangeDisplay || '-'}</Text>
               </View>
+
             ))}
           </View>
         ))}

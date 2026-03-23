@@ -1,5 +1,12 @@
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { TestTemplateRow, findMatchingRange, ReferenceRange, TemplateSection, TemplateField } from '@/features/tests/schemas';
+
+Font.register({
+  family: 'Inter',
+  fonts: [
+    { src: '/fonts/Inter/Inter-VariableFont_opsz,wght.ttf' }
+  ],
+});
 
 interface PdfLabData {
   name?: string;
@@ -49,7 +56,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const patientGender: string | undefined = patient.gender;
 
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#333' },
+    page: { padding: 40, fontSize: 10, fontFamily: 'Inter', color: '#333' },
     header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
     labInfo: { flexDirection: 'column' },
     labName: { fontSize: 16, fontWeight: 'bold', color: primaryColor },
