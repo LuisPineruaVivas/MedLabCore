@@ -162,7 +162,7 @@ export function TemplateBuilderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 ">
+        <ScrollArea className="flex-1 px-6">
           <form
             id="template-builder-form"
             onSubmit={handleSubmit(onSave, (validationErrors) => {
@@ -288,7 +288,7 @@ export function TemplateBuilderDialog({
 
                     {/* Fields */}
                     <CollapsibleContent>
-                      <div className="p-3 space-y-2">
+                      <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
                         {section.fields.map((field, fIdx) => (
                           <FieldRow
                             key={field.id}
@@ -308,7 +308,7 @@ export function TemplateBuilderDialog({
                           className="text-xs"
                           onClick={() => addField(sIdx)}
                         >
-                          <ListPlus className="w-3.5 h-3.5 mr-1" /> Add Field
+                          <ListPlus className="w-3.5 h-3.5 mr-1" /> Agregar Campo
                         </Button>
                       </div>
                     </CollapsibleContent>
