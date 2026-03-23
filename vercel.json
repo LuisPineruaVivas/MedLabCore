@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/sw-push.js",
+      "headers": [
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ],
+  "rewrites": [ { "source": "/(.*)", "destination": "/" } ]
+}
