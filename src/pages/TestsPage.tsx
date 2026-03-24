@@ -169,7 +169,7 @@ export default function TestsPage() {
   const { data: profiles = [], isLoading: profilesLoading } = useQuery({
     queryKey: ["exam-profiles", orgId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase)
         .from("exam_profiles")
         .select("*, profile_templates_junction(template_id)")
         .eq("org_id", orgId!)
@@ -190,7 +190,7 @@ export default function TestsPage() {
     }) => {
       if (payload.id) {
         // Update profile
-        const { error: updateErr } = await (supabase as any)
+        const { error: updateErr } = await (supabase)
           .from("exam_profiles")
           .update({
             name: payload.name,
@@ -201,14 +201,14 @@ export default function TestsPage() {
         if (updateErr) throw updateErr;
 
         // Delete old junctions and re-insert
-        const { error: delErr } = await (supabase as any)
+        const { error: delErr } = await (supabase)
           .from("profile_templates_junction")
           .delete()
           .eq("profile_id", payload.id);
         if (delErr) throw delErr;
 
         if (payload.template_ids.length > 0) {
-          const { error: insErr } = await (supabase as any)
+          const { error: insErr } = await (supabase)
             .from("profile_templates_junction")
             .insert(payload.template_ids.map((tid) => ({
               profile_id: payload.id!,
@@ -218,7 +218,7 @@ export default function TestsPage() {
         }
       } else {
         // Create new profile
-        const { data: newProfile, error: createErr } = await (supabase as any)
+        const { data: newProfile, error: createErr } = await (supabase)
           .from("exam_profiles")
           .insert({
             org_id: orgId!,
@@ -231,7 +231,7 @@ export default function TestsPage() {
         if (createErr) throw createErr;
 
         if (payload.template_ids.length > 0) {
-          const { error: juncErr } = await (supabase as any)
+          const { error: juncErr } = await (supabase)
             .from("profile_templates_junction")
             .insert(payload.template_ids.map((tid) => ({
               profile_id: newProfile.id,
@@ -252,7 +252,7 @@ export default function TestsPage() {
 
   const profileDeleteMutation = useMutation({
     mutationFn: async (profileId: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await (supabase)
         .from("exam_profiles")
         .delete()
         .eq("id", profileId);
@@ -267,7 +267,7 @@ export default function TestsPage() {
 
   const profileToggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await (supabase as any)
+      const { error } = await (supabase)
         .from("exam_profiles")
         .update({ is_active })
         .eq("id", id);
@@ -306,16 +306,28 @@ export default function TestsPage() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["test-templates-stats", orgId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_test_templates_filtered")
-        .select("is_active, org_id")
-        .or(`org_id.is.null,org_id.eq.${orgId}`);
 
-      if (error) throw error;
+      const [tests, activeTests, profiles ] = await Promise.all([
+          supabase
+          .from("v_test_templates_filtered")
+          .select("is_active, org_id")
+          .or(`org_id.is.null,org_id.eq.${orgId}`),
 
-      const total = data?.length ?? 0;
-      const active = data?.filter(t => t.is_active).length ?? 0;
-      const global = data?.filter(t => t.org_id === null).length ?? 0;
+          supabase
+          .from("v_test_templates_filtered")
+          .select("is_active, org_id")
+          .eq("is_active", true)
+          .or(`org_id.is.null,org_id.eq.${orgId}`),
+
+          supabase
+          .from("exam_profiles")
+          .select("is_active, org_id")
+          .or(`org_id.is.null,org_id.eq.${orgId}`),
+        ]);
+
+      const total = tests.data.length ?? 0;
+      const active = activeTests.data.length ?? 0;
+      const global = profiles.data.length ?? 0;
 
       return { total, active, global };
     },
@@ -334,19 +346,41 @@ export default function TestsPage() {
                 <Button onClick={() => { setEditingProfile(null); setProfileDialogOpen(true); }} size="sm">
                   <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Nuevo Perfil</span>
-                  <span className="sm:hidden">Nuevo</span>
+                  <span className="sm:hidden">Nuevo Perfil</span>
                 </Button>
               ) : (
                 <Button onClick={handleNew} size="sm">
                   <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Nuevo Examen</span>
-                  <span className="sm:hidden">Nuevo</span>
+                  <span className="sm:hidden">Nuevo Examen</span>
                 </Button>
               )}
             </div>
           )
         }
       />
+
+      {/* Statistics Section */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
+        <StatCard
+          title="Total Examenes"
+          value={statsLoading ? "..." : (stats?.total ?? 0).toLocaleString()}
+          icon={FlaskConical}
+          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
+        />
+        <StatCard
+          title="Examenes Activos"
+          value={statsLoading ? "..." : (stats?.active ?? 0).toString()}
+          icon={ToggleRight}
+          className=" hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
+        />
+        <StatCard
+          title="Perfiles"
+          value={statsLoading ? "..." : (stats?.global ?? 0).toString()}
+          icon={Package}
+          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
+        />
+      </div>
 
       {/* Tab Switcher */}
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
@@ -434,7 +468,7 @@ export default function TestsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" className="text-xs h-7 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
-                            <Eye className="w-3 h-3" /> Preview
+                            <Eye className="w-3 h-3" /> Visualizar
                           </Button>
                           {canEdit && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => handleEdit(tpl)}>
@@ -482,11 +516,6 @@ export default function TestsPage() {
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>
                           {tpl.category}
                         </span>
-                        {isGlobal ? (
-                          <Badge variant="outline" className="gap-0.5 text-[10px] h-5"><Globe className="w-2.5 h-2.5" /> Global</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="gap-0.5 text-[10px] h-5"><Building2 className="w-2.5 h-2.5" /> Custom</Badge>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -496,11 +525,11 @@ export default function TestsPage() {
                   </div>
                   <div className="flex items-center gap-2 mt-3">
                     <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
-                      <Eye className="w-3 h-3 mr-1" /> Preview
+                      <Eye className="w-3 h-3 mr-1" /> Visualizar
                     </Button>
                     {canEdit && (
                       <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => handleEdit(tpl)}>
-                        {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3 mr-1" /> Customize</>) : (<><Pencil className="w-3 h-3 mr-1" /> Edit</>)}
+                        {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3 mr-1" /> Editar</>) : (<><Pencil className="w-3 h-3 mr-1" /> Edit</>)}
                       </Button>
                     )}
                     <button
@@ -576,7 +605,7 @@ export default function TestsPage() {
         onSave={handleSave}
         initialData={editingFormData}
         isSaving={saveMutation.isPending}
-        title={forking ? "Customize Template" : editing ? "Edit Template" : "New Test Template"}
+        title={forking ? "Editar Examen" : editing ? "Editar Examen" : "Nuevo Examen"}
       />
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -609,28 +638,6 @@ export default function TestsPage() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Statistics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-        <StatCard
-          title="Total Examenes"
-          value={statsLoading ? "..." : (stats?.total ?? 0).toLocaleString()}
-          icon={FlaskConical}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Examenes Activos"
-          value={statsLoading ? "..." : (stats?.active ?? 0).toString()}
-          icon={ToggleRight}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Examenes Globales"
-          value={statsLoading ? "..." : (stats?.global ?? 0).toString()}
-          icon={Globe}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-      </div>
       </>
       ) : (
       /* ── PROFILES TAB ── */
@@ -666,78 +673,152 @@ export default function TestsPage() {
               </Button>
             </div>
           ) : (
-            <Table className="w-full text-left border-collapse">
-              <TableHeader>
-                <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
-                  <TableHead className="px-6 py-4 font-semibold">Perfil</TableHead>
-                  <TableHead className="px-6 py-4 font-semibold">Exámenes</TableHead>
-                  <TableHead className="px-6 py-4 font-semibold">Precio</TableHead>
-                  <TableHead className="px-6 py-4 font-semibold">Estado</TableHead>
-                  <TableHead className="px-6 py-4 font-semibold text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="block lg:hidden space-y-3 p-3">
                 {profiles.map((profile) => (
-                  <TableRow key={profile.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-primary" />
-                        <div>
-                          <span className="font-medium text-sm">{profile.name}</span>
+                  <article
+                    key={profile.id}
+                    className="cursor-pointer border border-border rounded-lg p-4 bg-background shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-medium text-sm block truncate">{profile.name}</span>
                           {profile.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{profile.description}</p>
                           )}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="px-6 py-4">
-                      <Badge variant="secondary" className="text-xs">
-                        {profile.profile_templates_junction.length} exámenes
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-3.5 h-3.5 text-success" />
-                        <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-6 py-4">
                       <button
-                        className="inline-flex items-center"
-                        onClick={() => profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active })}
+                        className="inline-flex items-center flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active });
+                        }}
                       >
                         {profile.is_active
                           ? <ToggleRight className="w-5 h-5 text-success" />
                           : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
                         }
                       </button>
-                    </TableCell>
-                    <TableCell className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost" size="sm"
-                          className="text-xs h-7 gap-1"
-                          onClick={() => handleEditProfile(profile)}
-                        >
-                          <Pencil className="w-3 h-3" /> Editar
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm"
-                          className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            if (confirm("¿Eliminar este perfil?")) {
-                              profileDeleteMutation.mutate(profile.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" /> Eliminar
-                        </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3 gap-4">
+                      <Badge variant="secondary" className="text-xs flex-shrink-0">
+                        {profile.profile_templates_junction.length} exámenes
+                      </Badge>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <DollarSign className="w-3.5 h-3.5 text-success" />
+                        <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                      <Button
+                        variant="ghost" size="sm"
+                        className="text-xs h-7 gap-1 flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditProfile(profile);
+                        }}
+                      >
+                        <Pencil className="w-3 h-3" /> Editar
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm"
+                        className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("¿Eliminar este perfil?")) {
+                            profileDeleteMutation.mutate(profile.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" /> Eliminar
+                      </Button>
+                    </div>
+                  </article>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <div className="hidden lg:block overflow-x-auto">
+                <div className="min-w-[640px]">
+                  <Table className="w-full text-left border-collapse">
+                    <TableHeader>
+                      <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+                        <TableHead className="px-6 py-4 font-semibold">Perfil</TableHead>
+                        <TableHead className="px-6 py-4 font-semibold">Exámenes</TableHead>
+                        <TableHead className="px-6 py-4 font-semibold">Precio</TableHead>
+                        <TableHead className="px-6 py-4 font-semibold">Estado</TableHead>
+                        <TableHead className="px-6 py-4 font-semibold text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {profiles.map((profile) => (
+                        <TableRow key={profile.id} className="hover:bg-muted/20 transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4 text-primary" />
+                              <div>
+                                <span className="font-medium text-sm">{profile.name}</span>
+                                {profile.description && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge variant="secondary" className="text-xs">
+                              {profile.profile_templates_junction.length} exámenes
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-3.5 h-3.5 text-success" />
+                              <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <button
+                              className="inline-flex items-center"
+                              onClick={() => profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active })}
+                            >
+                              {profile.is_active
+                                ? <ToggleRight className="w-5 h-5 text-success" />
+                                : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                              }
+                            </button>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost" size="sm"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => handleEditProfile(profile)}
+                              >
+                                <Pencil className="w-3 h-3" /> Editar
+                              </Button>
+                              <Button
+                                variant="ghost" size="sm"
+                                className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  if (confirm("¿Eliminar este perfil?")) {
+                                    profileDeleteMutation.mutate(profile.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" /> Eliminar
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </>
           )}
         </Card>
 

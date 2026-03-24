@@ -184,13 +184,13 @@ export default function PatientsPage() {
           <Button onClick={() => setDialogOpen(true)} size="sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Nuevo Paciente</span>
-            <span className="sm:hidden">Nueva</span>
+            <span className="sm:hidden">Nuevo Paciente</span>
           </Button>
         }
       />
 
       {/* Statistics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <StatCard
           title="Total Pacientes Registrados"
           value={statsLoading ? "..." : stats?.total.toLocaleString()}
@@ -204,10 +204,10 @@ export default function PatientsPage() {
           className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
         <StatCard
-          title="Pacientes Registrados Hoy"
+          title="Registrados Hoy"
           value={statsLoading ? "..." : stats?.today.toLocaleString()}
           icon={Plus} // O CheckCircle2
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
+          className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
       </div>
 

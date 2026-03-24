@@ -24,6 +24,7 @@ import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import TestsTemplatesPage from "./pages/admin/TestsTemplates";
+import TemplateBuilderPage from "./pages/admin/TemplateBuilderPage";
 import PatientPortalPage from "./pages/PatientPortalPage";
 
 const queryClient = new QueryClient({
@@ -91,6 +92,8 @@ const App = () => (
                 <Route path="/admin/organizations" element={<OrganizationsPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
                 <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
+                <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
+                <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
               </Route>
             </Route>
 

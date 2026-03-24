@@ -162,7 +162,7 @@ export default function OrdersPage() {
       />
 
       {/* Statistics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <StatCard
           title="Total Ordenes Creadas"
           value={statsLoading ? "..." : stats?.total.toLocaleString()}
@@ -179,14 +179,14 @@ export default function OrdersPage() {
           title="Creadas Hoy"
           value={statsLoading ? "..." : stats?.today.toLocaleString()}
           icon={Plus} // O CheckCircle2
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
+          className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
       </div>
 
       <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
           <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
-            <div className="flex flex-1 sm:flex-row gap-3">
-              <div className="relative flex-1">
+            <div className="md:flex md:flex-1 md:space-y-0 space-y-3  gap-3">
+              <div className="relative md:flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input className="pl-9" placeholder="Buscar por nombre o cedula" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>

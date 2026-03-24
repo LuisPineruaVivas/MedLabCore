@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -28,22 +29,15 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { TemplateBuilderDialog } from "@/features/tests/TemplateBuilderDialog";
-import {
-  TestTemplateFormData,
-  TestTemplateRow,
-  TemplateJsonSchema,
-} from "@/features/tests/schemas";
+import { TestTemplateRow } from "@/features/tests/schemas";
 
 export default function TestsTemplatesPage() {
   const { user } = useAuth();
   const { role, isSuperAdmin } = useUserRole();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<TestTemplateRow | null>(null);
-  const [forking, setForking] = useState(false);
 
   // ── Fetch user profile for org_id ──────────────────────────
   const { data: profile } = useQuery({
@@ -77,48 +71,6 @@ export default function TestsTemplatesPage() {
   });
 
   // ── Mutations ──────────────────────────────────────────────
-  const saveMutation = useMutation({
-    mutationFn: async ({
-      formData,
-      id,
-      targetOrgId,
-    }: {
-      formData: TestTemplateFormData;
-      id?: string;
-      targetOrgId: string | null;
-    }) => {
-      const row = {
-        name: formData.name,
-        category: formData.category,
-        base_price: formData.base_price,
-        schema: formData.schema as unknown as import("@/integrations/supabase/types").Json,
-        org_id: targetOrgId,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (id) {
-        const { error } = await supabase
-          .from("test_templates")
-          .update(row)
-          .eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("test_templates")
-          .insert([row]);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
-      toast.success(editing ? "Template updated" : "Template created");
-      closeDialog();
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
-
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
@@ -133,55 +85,18 @@ export default function TestsTemplatesPage() {
   });
 
   // ── Handlers ───────────────────────────────────────────────
-  function closeDialog() {
-    setDialogOpen(false);
-    setEditing(null);
-    setForking(false);
-  }
-
   function handleNew() {
-    setEditing(null);
-    setForking(false);
-    setDialogOpen(true);
+    navigate("/admin/tests-templates/new");
   }
 
   function handleEdit(tpl: TestTemplateRow) {
     const isGlobal = tpl.org_id === null;
-    const isOwn = tpl.org_id === orgId;
 
-    if (isSuperAdmin) {
-      // Super admin edits directly
-      setEditing(tpl);
-      setForking(false);
-    } else if (isGlobal) {
-      // Lab admin forks global template
-      setEditing(tpl);
-      setForking(true);
-    } else if (isOwn) {
-      // Lab admin edits own
-      setEditing(tpl);
-      setForking(false);
-    }
-    setDialogOpen(true);
-  }
-
-  function handleSave(data: TestTemplateFormData) {
-    if (forking) {
-      // Clone: insert new row with this org's id
-      saveMutation.mutate({ formData: data, targetOrgId: orgId! });
-    } else if (editing) {
-      // Update existing
-      saveMutation.mutate({
-        formData: data,
-        id: editing.id,
-        targetOrgId: isSuperAdmin && editing.org_id === null ? null : orgId ?? null,
-      });
+    if (!isSuperAdmin && isGlobal) {
+      // Lab admin forks: navigate with ?fork=1
+      navigate(`/admin/tests-templates/${tpl.id}/edit?fork=1`);
     } else {
-      // New
-      saveMutation.mutate({
-        formData: data,
-        targetOrgId: isSuperAdmin ? null : orgId ?? null,
-      });
+      navigate(`/admin/tests-templates/${tpl.id}/edit`);
     }
   }
 
@@ -200,15 +115,6 @@ export default function TestsTemplatesPage() {
     Microbiologia: "bg-primary/10 text-primary",
     Immunologia: "bg-accent text-accent-foreground",
   };
-
-  const editingFormData: TestTemplateFormData | undefined = editing
-    ? {
-        name: editing.name,
-        category: editing.category,
-        base_price: Number(editing.base_price),
-        schema: editing.schema,
-      }
-    : undefined;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -357,24 +263,6 @@ export default function TestsTemplatesPage() {
         </Table>
       </div>
 
-      {/* Builder Dialog */}
-      <TemplateBuilderDialog
-        open={dialogOpen}
-        onOpenChange={(v) => {
-          if (!v) closeDialog();
-          else setDialogOpen(v);
-        }}
-        onSave={handleSave}
-        initialData={editingFormData}
-        isSaving={saveMutation.isPending}
-        title={
-          forking
-            ? "Personalizar Plantilla"
-            : editing
-            ? "Editar Plantilla"
-            : "Nueva Plantilla de Examen"
-        }
-      />
     </div>
   );
 }

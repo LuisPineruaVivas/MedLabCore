@@ -356,8 +356,8 @@ export function TemplateBuilderDialog({
 
 
       <Dialog open={showLivePreview} onOpenChange={setShowLivePreview}>
-        <DialogTitle className="text-black">Vista Previa Examen</DialogTitle>
-        <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden border-none">
+        <DialogTitle className="text-black"></DialogTitle>
+        <DialogContent className="max-w-4xl h-[75vh] p-0 overflow-hidden border-none">
           <div className="flex flex-col h-full">
             <div className="p-4 flex justify-between items-center text-white">
               <h3 className="font-medium text-black text-sm">Vista Previa Examen: {currentFormData.name || 'Nuevo Examen'}</h3>

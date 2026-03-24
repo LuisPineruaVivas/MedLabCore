@@ -133,13 +133,13 @@ export default function PatientDetailPage() {
         description={`Cédula: ${patient.id_number}`}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
             <Button variant="outline" onClick={() => navigate("/patients")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Edit className="w-4 h-4 mr-2" />
+              Editar Información
             </Button>
           </div>
         }
@@ -187,54 +187,84 @@ export default function PatientDetailPage() {
               Este paciente no tiene órdenes registradas.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Monto</TableHead>
-                  <TableHead>Notas</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="block lg:hidden space-y-3 p-3">
                 {orders.map((order) => (
-                    <React.Fragment key={order.id}>
-                      <TableRow
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/orders/${order.id}`)}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-sm">
-                              {format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={order.status} />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="w-3.5 h-3.5 text-success" />
-                              <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
-                            </div>
-                            {order.total_bs != null && (
-                              <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
-                            {order.notes || "—"}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    </React.Fragment>
+                  <article
+                    key={order.id}
+                    className="cursor-pointer border border-border rounded-lg p-3 bg-background shadow-sm"
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
+                      </span>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <p className="text-sm font-semibold mt-1">
+                      <DollarSign className="inline w-3.5 h-3.5 text-success mr-1" />
+                      {Number(order.total_amount).toFixed(2)}
+                      {order.total_bs != null ? ` (Bs. ${Number(order.total_bs).toFixed(2)})` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
+                      {order.notes || "—"}
+                    </p>
+                  </article>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <div className="hidden lg:block overflow-x-auto">
+                <div className="min-w-[640px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Monto</TableHead>
+                        <TableHead>Notas</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow
+                          key={order.id}
+                          className="cursor-pointer"
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-sm">
+                                {format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={order.status} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="w-3.5 h-3.5 text-success" />
+                                <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                              </div>
+                              {order.total_bs != null && (
+                                <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+                              {order.notes || "—"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

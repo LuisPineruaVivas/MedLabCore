@@ -19,12 +19,12 @@ export default function SettingsPage() {
       title: "Laboratorio", 
       desc: "Nombre del laboratorio, logo, información de contacto, etc." 
     },
-    { 
+    /*{ 
       id: "dept", 
       icon: Palette, 
       title: "Departamentos", 
       desc: "Configura los departamentos de tu laboratorio (Hematología, Bioquímica, etc.)" 
-    },
+    },*/
     { 
       id: "users", 
       icon: Shield, 
