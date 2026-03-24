@@ -235,6 +235,7 @@ export default function TemplateBuilderPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["test-template", id] });
       toast.success(isFork || !id ? "Plantilla creada" : "Plantilla actualizada");
       navigate("/admin/tests-templates");
     },
