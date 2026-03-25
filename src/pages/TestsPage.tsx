@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,13 +12,12 @@ import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from "@/components/ui/table";
 import {
-  Plus, Search, FlaskConical, Globe, Building2, DollarSign,
+  Plus, Search, FlaskConical, DollarSign,
   Pencil, Copy, ToggleLeft, ToggleRight, Eye,
   ChevronRight,
   Package, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { TemplateBuilderDialog } from "@/features/tests/TemplateBuilderDialog";
 import { TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
 import { PDFViewer } from "@react-pdf/renderer";
 import { TestReportPDF } from "@/lib/testReportGenerator";
@@ -34,6 +34,7 @@ export default function TestsPage() {
   const { user } = useAuth();
   const { role, isSuperAdmin } = useUserRole();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"exams" | "profiles">("exams");
@@ -41,9 +42,7 @@ export default function TestsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<TestTemplateRow | null>(null);
-  const [forking, setForking] = useState(false);
+
   const [previewTpl, setPreviewTpl] = useState<TestTemplateRow | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -116,26 +115,6 @@ export default function TestsPage() {
     setPage(1);
   }, [debouncedSearch]);
 
-  const saveMutation = useMutation({
-    mutationFn: async ({ formData, id, targetOrgId }: { formData: TestTemplateFormData; id?: string; targetOrgId: string | null }) => {
-      const { error } = await supabase.rpc("upsert_test_template", {
-        p_id: id || null,
-        p_org_id: targetOrgId,
-        p_name: formData.name,
-        p_category: formData.category,
-        p_base_price: formData.base_price,
-        p_schema: formData.schema,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
-      toast.success("Cambios guardados correctamente");
-      closeDialog();
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase.from("test_templates").update({ is_active }).eq("id", id);
@@ -144,24 +123,20 @@ export default function TestsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["test-templates"] }),
   });
 
-  function closeDialog() { setDialogOpen(false); setEditing(null); setForking(false); }
-  function handleNew() { setEditing(null); setForking(false); setDialogOpen(true); }
+  function handleNew() {
+    navigate("/tests/templates/new");
+  }
 
   function handleEdit(tpl: TestTemplateRow) {
     const isGlobal = tpl.org_id === null;
-    if (isSuperAdmin) { setEditing(tpl); setForking(false); }
-    else if (isGlobal) { setEditing(tpl); setForking(true); }
-    else { setEditing(tpl); setForking(false); }
-    setDialogOpen(true);
-  }
 
-  function handleSave(data: TestTemplateFormData) {
-    if (forking && editing) {
-      saveMutation.mutate({ formData: data, id: editing.id, targetOrgId: orgId! });
-    } else if (editing) {
-      saveMutation.mutate({ formData: data, id: editing.id, targetOrgId: isSuperAdmin && editing.org_id === null ? null : orgId ?? null });
+    // Only navigate
+    if (!isSuperAdmin && isGlobal) {
+      // Fork
+      navigate(`/tests/templates/${tpl.id}/edit?fork=1`);
     } else {
-      saveMutation.mutate({ formData: data, targetOrgId: isSuperAdmin ? null : orgId ?? null });
+      // Edit
+      navigate(`/tests/templates/${tpl.id}/edit`);
     }
   }
 
@@ -298,32 +273,27 @@ export default function TestsPage() {
     Immunologia: "bg-accent text-accent-foreground",
   };
 
-  const editingFormData: TestTemplateFormData | undefined = editing
-    ? { id: editing.id, name: editing.name, category: editing.category, base_price: Number(editing.base_price), schema: editing.schema }
-    : undefined;
-
-
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["test-templates-stats", orgId],
     queryFn: async () => {
 
-      const [tests, activeTests, profiles ] = await Promise.all([
-          supabase
+      const [tests, activeTests, profiles] = await Promise.all([
+        supabase
           .from("v_test_templates_filtered")
           .select("is_active, org_id")
           .or(`org_id.is.null,org_id.eq.${orgId}`),
 
-          supabase
+        supabase
           .from("v_test_templates_filtered")
           .select("is_active, org_id")
           .eq("is_active", true)
           .or(`org_id.is.null,org_id.eq.${orgId}`),
 
-          supabase
+        supabase
           .from("exam_profiles")
           .select("is_active, org_id")
           .or(`org_id.is.null,org_id.eq.${orgId}`),
-        ]);
+      ]);
 
       const total = tests.data.length ?? 0;
       const active = activeTests.data.length ?? 0;
@@ -411,33 +381,33 @@ export default function TestsPage() {
       </div>
 
       {activeTab === "exams" ? (
-      <>
+        <>
 
-      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
-          <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
-            <div className="flex flex-1 sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input className="pl-9" placeholder="Buscar por nombre o categoria" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
+            <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
+              <div className="flex flex-1 sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Buscar por nombre o categoria" value={search} onChange={(e) => setSearch(e.target.value)} />
+                </div>
               </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
 
-          <Table className="w-full text-left border-collapse hidden md:table">
-            <TableHeader>
-              <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border" >
-                <TableHead>Examen</TableHead>
-                <TableHead>Departamento</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+            <Table className="w-full text-left border-collapse hidden md:table">
+              <TableHeader>
+                <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border" >
+                  <TableHead>Examen</TableHead>
+                  <TableHead>Departamento</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((tpl) => {
-                const isGlobal = tpl.org_id === null;
-                const canEdit = isSuperAdmin || (role === "lab_admin" && (isGlobal || tpl.org_id === orgId));
-                return(
+              </TableHeader>
+              <TableBody>
+                {filtered.map((tpl) => {
+                  const isGlobal = tpl.org_id === null;
+                  const canEdit = isSuperAdmin || (role === "lab_admin" && (isGlobal || tpl.org_id === orgId));
+                  return (
                     <Fragment key={tpl.id}>
                       <TableRow className="cursor-pointer">
                         <TableCell>
@@ -479,73 +449,74 @@ export default function TestsPage() {
                       </TableRow>
 
                     </Fragment>
-                )})}
-            </TableBody>
-          </Table>
+                  )
+                })}
+              </TableBody>
+            </Table>
 
-          {isLoading && (
-            <div className="py-20 text-center space-y-3">
-              <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-              <p className="text-sm text-muted-foreground italic">Cargando Examenes...</p>
-            </div>
-          )}
+            {isLoading && (
+              <div className="py-20 text-center space-y-3">
+                <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                <p className="text-sm text-muted-foreground italic">Cargando Examenes...</p>
+              </div>
+            )}
 
-          {!isLoading && filtered.length === 0 && (
-            <div className="py-20 text-center">
-              <FlaskConical className="w-12 h-12 text-muted mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No se encontraron examenes con estos datos</p>
-            </div>
-          )}
+            {!isLoading && filtered.length === 0 && (
+              <div className="py-20 text-center">
+                <FlaskConical className="w-12 h-12 text-muted mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No se encontraron examenes con estos datos</p>
+              </div>
+            )}
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-2 mb-4">
-            {isLoading && <div className="py-12 text-center text-sm text-muted-foreground">Cargando examenes...</div>}
-            {!isLoading && filtered.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No se encontraron examenes.</div>}
-            {filtered.map((tpl) => {
-              const isGlobal = tpl.org_id === null;
-              const canEdit = isSuperAdmin || (role === "lab_admin" && (isGlobal || tpl.org_id === orgId));
-              return (
-                <div key={tpl.id} className="bg-card rounded-xl border border-border p-4 m-2" style={{ boxShadow: "var(--shadow-card)" }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <FlaskConical className="w-4 h-4 text-primary flex-shrink-0" />
-                        <p className="text-sm font-semibold truncate">{tpl.name}</p>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-2 mb-4">
+              {isLoading && <div className="py-12 text-center text-sm text-muted-foreground">Cargando examenes...</div>}
+              {!isLoading && filtered.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No se encontraron examenes.</div>}
+              {filtered.map((tpl) => {
+                const isGlobal = tpl.org_id === null;
+                const canEdit = isSuperAdmin || (role === "lab_admin" && (isGlobal || tpl.org_id === orgId));
+                return (
+                  <div key={tpl.id} className="bg-card rounded-xl border border-border p-4 m-2" style={{ boxShadow: "var(--shadow-card)" }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <FlaskConical className="w-4 h-4 text-primary flex-shrink-0" />
+                          <p className="text-sm font-semibold truncate">{tpl.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>
+                            {tpl.category}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>
-                          {tpl.category}
-                        </span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <DollarSign className="w-3 h-3 text-success" />
+                        <span className="text-sm font-bold mono">{Number(tpl.base_price).toFixed(2)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <DollarSign className="w-3 h-3 text-success" />
-                      <span className="text-sm font-bold mono">{Number(tpl.base_price).toFixed(2)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
-                      <Eye className="w-3 h-3 mr-1" /> Visualizar
-                    </Button>
-                    {canEdit && (
-                      <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => handleEdit(tpl)}>
-                        {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3 mr-1" /> Editar</>) : (<><Pencil className="w-3 h-3 mr-1" /> Edit</>)}
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
+                        <Eye className="w-3 h-3 mr-1" /> Visualizar
                       </Button>
-                    )}
-                    <button
-                      className="inline-flex items-center h-7 px-2"
-                      onClick={() => (isSuperAdmin || tpl.org_id === orgId) && toggleMutation.mutate({ id: tpl.id, is_active: !tpl.is_active })}
-                      disabled={!isSuperAdmin && tpl.org_id !== orgId}
-                    >
-                      {tpl.is_active ? <ToggleRight className="w-5 h-5 text-success" /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
-                    </button>
+                      {canEdit && (
+                        <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => handleEdit(tpl)}>
+                          {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3 mr-1" /> Editar</>) : (<><Pencil className="w-3 h-3 mr-1" /> Edit</>)}
+                        </Button>
+                      )}
+                      <button
+                        className="inline-flex items-center h-7 px-2"
+                        onClick={() => (isSuperAdmin || tpl.org_id === orgId) && toggleMutation.mutate({ id: tpl.id, is_active: !tpl.is_active })}
+                        disabled={!isSuperAdmin && tpl.org_id !== orgId}
+                      >
+                        {tpl.is_active ? <ToggleRight className="w-5 h-5 text-success" /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">
+            <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">
               <span className="text-sm text-muted-foreground">
                 Mostrando <span className="text-foreground">{Math.min(totalTemplates, (page - 1) * pageSize + 1)} a {Math.min(totalTemplates, page * pageSize)}</span> de <span className="text-foreground">{totalTemplates.toLocaleString()}</span> examenes
               </span>
@@ -596,241 +567,231 @@ export default function TestsPage() {
                 </Button>
               </div>
             </CardFooter>
-        </Card>
+          </Card>
 
-      {/* Builder Dialog */}
-      <TemplateBuilderDialog
-        open={dialogOpen}
-        onOpenChange={(v) => { if (!v) closeDialog(); else setDialogOpen(v); }}
-        onSave={handleSave}
-        initialData={editingFormData}
-        isSaving={saveMutation.isPending}
-        title={forking ? "Editar Examen" : editing ? "Editar Examen" : "Nuevo Examen"}
-      />
-
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col w-[95vw]">
-          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <FlaskConical className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              Vista Previa: {previewTpl?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {previewTpl && (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 w-full h-full">
-                <PDFViewer width="100%" height="100%" showToolbar={true} className="border-none">
-                  <TestReportPDF
-                    template={previewTpl}
-                    labData={{
-                      name: lab?.name || "Nombre del Laboratorio",
-                      address: lab?.address || "Dirección desde Perfil",
-                      phone: lab?.phone || "Teléfono desde Perfil",
-                      email: lab?.email || "Correo desde Perfil",
-                      logo: lab?.logo_url || null,
-                      primary_color: lab?.primary_color || "#0ea5e9",
-                      secondary_color: lab?.secondary_color || "#4f46e5",
-                    }}
-                  />
-                </PDFViewer>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-      </>
+          <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+            <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col w-[95vw]">
+              <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+                <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <FlaskConical className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  Vista Previa: {previewTpl?.name}
+                </DialogTitle>
+              </DialogHeader>
+              {previewTpl && (
+                <div className="flex flex-col h-full">
+                  <div className="flex-1 w-full h-full">
+                    <PDFViewer width="100%" height="100%" showToolbar={true} className="border-none">
+                      <TestReportPDF
+                        template={previewTpl}
+                        labData={{
+                          name: lab?.name || "Nombre del Laboratorio",
+                          address: lab?.address || "Dirección desde Perfil",
+                          phone: lab?.phone || "Teléfono desde Perfil",
+                          email: lab?.email || "Correo desde Perfil",
+                          logo: lab?.logo_url || null,
+                          primary_color: lab?.primary_color || "#0ea5e9",
+                          secondary_color: lab?.secondary_color || "#4f46e5",
+                        }}
+                      />
+                    </PDFViewer>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </>
       ) : (
-      /* ── PROFILES TAB ── */
-      <>
-        <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
-          <CardHeader className="px-6 py-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <Package className="w-5 h-5 text-primary" />
-              <div>
-                <h3 className="text-sm font-semibold">Perfiles de Exámenes</h3>
-                <p className="text-xs text-muted-foreground">Paquetes de exámenes con precio promocional</p>
-              </div>
-            </div>
-          </CardHeader>
-
-          {profilesLoading ? (
-            <div className="py-20 text-center space-y-3">
-              <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-              <p className="text-sm text-muted-foreground italic">Cargando perfiles...</p>
-            </div>
-          ) : profiles.length === 0 ? (
-            <div className="py-20 text-center">
-              <Package className="w-12 h-12 text-muted/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No has creado perfiles todavía</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => { setEditingProfile(null); setProfileDialogOpen(true); }}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Crear primer perfil
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="block lg:hidden space-y-3 p-3">
-                {profiles.map((profile) => (
-                  <article
-                    key={profile.id}
-                    className="cursor-pointer border border-border rounded-lg p-4 bg-background shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Package className="w-4 h-4 text-primary flex-shrink-0" />
-                        <div className="min-w-0">
-                          <span className="font-medium text-sm block truncate">{profile.name}</span>
-                          {profile.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{profile.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        className="inline-flex items-center flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active });
-                        }}
-                      >
-                        {profile.is_active
-                          ? <ToggleRight className="w-5 h-5 text-success" />
-                          : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
-                        }
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 gap-4">
-                      <Badge variant="secondary" className="text-xs flex-shrink-0">
-                        {profile.profile_templates_junction.length} exámenes
-                      </Badge>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <DollarSign className="w-3.5 h-3.5 text-success" />
-                        <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-                      <Button
-                        variant="ghost" size="sm"
-                        className="text-xs h-7 gap-1 flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditProfile(profile);
-                        }}
-                      >
-                        <Pencil className="w-3 h-3" /> Editar
-                      </Button>
-                      <Button
-                        variant="ghost" size="sm"
-                        className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("¿Eliminar este perfil?")) {
-                            profileDeleteMutation.mutate(profile.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" /> Eliminar
-                      </Button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="hidden lg:block overflow-x-auto">
-                <div className="min-w-[640px]">
-                  <Table className="w-full text-left border-collapse">
-                    <TableHeader>
-                      <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
-                        <TableHead className="px-6 py-4 font-semibold">Perfil</TableHead>
-                        <TableHead className="px-6 py-4 font-semibold">Exámenes</TableHead>
-                        <TableHead className="px-6 py-4 font-semibold">Precio</TableHead>
-                        <TableHead className="px-6 py-4 font-semibold">Estado</TableHead>
-                        <TableHead className="px-6 py-4 font-semibold text-right">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {profiles.map((profile) => (
-                        <TableRow key={profile.id} className="hover:bg-muted/20 transition-colors">
-                          <TableCell className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4 text-primary" />
-                              <div>
-                                <span className="font-medium text-sm">{profile.name}</span>
-                                {profile.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <Badge variant="secondary" className="text-xs">
-                              {profile.profile_templates_junction.length} exámenes
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="w-3.5 h-3.5 text-success" />
-                              <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <button
-                              className="inline-flex items-center"
-                              onClick={() => profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active })}
-                            >
-                              {profile.is_active
-                                ? <ToggleRight className="w-5 h-5 text-success" />
-                                : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
-                              }
-                            </button>
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost" size="sm"
-                                className="text-xs h-7 gap-1"
-                                onClick={() => handleEditProfile(profile)}
-                              >
-                                <Pencil className="w-3 h-3" /> Editar
-                              </Button>
-                              <Button
-                                variant="ghost" size="sm"
-                                className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                  if (confirm("¿Eliminar este perfil?")) {
-                                    profileDeleteMutation.mutate(profile.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="w-3 h-3" /> Eliminar
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+        /* ── PROFILES TAB ── */
+        <>
+          <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
+            <CardHeader className="px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <Package className="w-5 h-5 text-primary" />
+                <div>
+                  <h3 className="text-sm font-semibold">Perfiles de Exámenes</h3>
+                  <p className="text-xs text-muted-foreground">Paquetes de exámenes con precio promocional</p>
                 </div>
               </div>
-            </>
-          )}
-        </Card>
+            </CardHeader>
 
-        <ProfileBuilderDialog
-          open={profileDialogOpen}
-          onOpenChange={(v) => { if (!v) { setProfileDialogOpen(false); setEditingProfile(null); } else setProfileDialogOpen(v); }}
-          onSave={(data) => profileSaveMutation.mutate(data)}
-          initialData={editingProfile ?? undefined}
-          isSaving={profileSaveMutation.isPending}
-          orgId={orgId!}
-        />
-      </>
+            {profilesLoading ? (
+              <div className="py-20 text-center space-y-3">
+                <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                <p className="text-sm text-muted-foreground italic">Cargando perfiles...</p>
+              </div>
+            ) : profiles.length === 0 ? (
+              <div className="py-20 text-center">
+                <Package className="w-12 h-12 text-muted/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No has creado perfiles todavía</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => { setEditingProfile(null); setProfileDialogOpen(true); }}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Crear primer perfil
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="block lg:hidden space-y-3 p-3">
+                  {profiles.map((profile) => (
+                    <article
+                      key={profile.id}
+                      className="cursor-pointer border border-border rounded-lg p-4 bg-background shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-medium text-sm block truncate">{profile.name}</span>
+                            {profile.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{profile.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          className="inline-flex items-center flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active });
+                          }}
+                        >
+                          {profile.is_active
+                            ? <ToggleRight className="w-5 h-5 text-success" />
+                            : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                          }
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3 gap-4">
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
+                          {profile.profile_templates_junction.length} exámenes
+                        </Badge>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <DollarSign className="w-3.5 h-3.5 text-success" />
+                          <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs h-7 gap-1 flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditProfile(profile);
+                          }}
+                        >
+                          <Pencil className="w-3 h-3" /> Editar
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("¿Eliminar este perfil?")) {
+                              profileDeleteMutation.mutate(profile.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="hidden lg:block overflow-x-auto">
+                  <div className="min-w-[640px]">
+                    <Table className="w-full text-left border-collapse">
+                      <TableHeader>
+                        <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+                          <TableHead className="px-6 py-4 font-semibold">Perfil</TableHead>
+                          <TableHead className="px-6 py-4 font-semibold">Exámenes</TableHead>
+                          <TableHead className="px-6 py-4 font-semibold">Precio</TableHead>
+                          <TableHead className="px-6 py-4 font-semibold">Estado</TableHead>
+                          <TableHead className="px-6 py-4 font-semibold text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {profiles.map((profile) => (
+                          <TableRow key={profile.id} className="hover:bg-muted/20 transition-colors">
+                            <TableCell className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-primary" />
+                                <div>
+                                  <span className="font-medium text-sm">{profile.name}</span>
+                                  {profile.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6 py-4">
+                              <Badge variant="secondary" className="text-xs">
+                                {profile.profile_templates_junction.length} exámenes
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-6 py-4">
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="w-3.5 h-3.5 text-success" />
+                                <span className="text-sm font-semibold mono">{Number(profile.total_price).toFixed(2)}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6 py-4">
+                              <button
+                                className="inline-flex items-center"
+                                onClick={() => profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active })}
+                              >
+                                {profile.is_active
+                                  ? <ToggleRight className="w-5 h-5 text-success" />
+                                  : <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                                }
+                              </button>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost" size="sm"
+                                  className="text-xs h-7 gap-1"
+                                  onClick={() => handleEditProfile(profile)}
+                                >
+                                  <Pencil className="w-3 h-3" /> Editar
+                                </Button>
+                                <Button
+                                  variant="ghost" size="sm"
+                                  className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    if (confirm("¿Eliminar este perfil?")) {
+                                      profileDeleteMutation.mutate(profile.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-3 h-3" /> Eliminar
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
+
+          <ProfileBuilderDialog
+            open={profileDialogOpen}
+            onOpenChange={(v) => { if (!v) { setProfileDialogOpen(false); setEditingProfile(null); } else setProfileDialogOpen(v); }}
+            onSave={(data) => profileSaveMutation.mutate(data)}
+            initialData={editingProfile ?? undefined}
+            isSaving={profileSaveMutation.isPending}
+            orgId={orgId!}
+          />
+        </>
       )}
     </div>
   );

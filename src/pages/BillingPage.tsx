@@ -15,6 +15,7 @@ export default function BillingPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>("");
   const pageSize = 10;
   const debouncedSearch = useDebounce(search, 500);
 
@@ -32,7 +33,7 @@ export default function BillingPage() {
   const orgId = profile?.org_id;
 
   const { data: billingData, isLoading } = useQuery({
-    queryKey: ["billing-orders", orgId, debouncedSearch, statusFilter, page],
+    queryKey: ["billing-orders", orgId, debouncedSearch, statusFilter, monthFilter, page],
     queryFn: async () => {
       if (!orgId) return { orders: [], total: 0, totalRevenue: 0, monthRevenue: 0, pendingCount: 0 };
 
@@ -40,6 +41,15 @@ export default function BillingPage() {
       const today = new Date();
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+
+      // Calculate month filter dates
+      let monthFilterStart: string | null = null;
+      let monthFilterEnd: string | null = null;
+      if (monthFilter) {
+        const [year, month] = monthFilter.split('-').map(Number);
+        monthFilterStart = new Date(year, month - 1, 1).toISOString();
+        monthFilterEnd = new Date(year, month, 1).toISOString();
+      }
 
       let query = supabase
         .from("orders")
@@ -52,6 +62,10 @@ export default function BillingPage() {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter as "pendiente" | "procesando" | "completada" | "cancelada");
+      }
+
+      if (monthFilterStart && monthFilterEnd) {
+        query = query.gte("created_at", monthFilterStart).lt("created_at", monthFilterEnd);
       }
 
       if (debouncedSearch.trim()) {
@@ -68,11 +82,20 @@ export default function BillingPage() {
       if (allError) throw allError;
 
       const allOrderList = allOrders ?? [];
-      const totalRevenue = allOrderList.reduce((acc, order) => acc + Number(order.total_amount ?? 0), 0);
+
+      // Filter orders for statistics based on month filter
+      let filteredOrders = allOrderList;
+      if (monthFilterStart && monthFilterEnd) {
+        filteredOrders = allOrderList.filter(order =>
+          order.created_at >= monthFilterStart! && order.created_at < monthFilterEnd!
+        );
+      }
+
+      const totalRevenue = filteredOrders.reduce((acc, order) => acc + Number(order.total_amount ?? 0), 0);
       const thisMonthRevenue = allOrderList
         .filter((order) => order.created_at >= monthStart)
         .reduce((acc, order) => acc + Number(order.total_amount ?? 0), 0);
-      const pendingCount = allOrderList.filter((order) => order.status === "pendiente").length;
+      const pendingCount = filteredOrders.filter((order) => order.status === "pendiente").length;
 
       return {
         orders: (ordersPage ?? []).map((order) => ({
@@ -100,7 +123,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, monthFilter]);
 
 
   return (
@@ -135,6 +158,13 @@ export default function BillingPage() {
               <option value="completada">Completada</option>
               <option value="cancelada">Cancelada</option>
             </select>
+            <input
+              type="month"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="border border-border rounded-md px-3 py-2 bg-background"
+              placeholder="Filtrar por mes"
+            />
           </div>
         </CardHeader>
 

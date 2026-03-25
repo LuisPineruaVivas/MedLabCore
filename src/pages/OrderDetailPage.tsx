@@ -346,7 +346,7 @@ export default function OrderDetailPage() {
                       const phoneRaw = order.patients?.phone || "";
                       const phoneDigits = phoneRaw.replace(/\D/g, "");
                       const text = encodeURIComponent(`Tus resultados están listos, los puedes ver en ${portalUrl}`);
-                      const waUrl = `https://api.whatsapp.com/send?phone=${phoneDigits}&text=${text}`;
+                      const waUrl = `https://wa.me/58${phoneDigits}?text=${text}`;
                       window.open(waUrl, "_blank");
                     }}>
                       <LinkIcon className="w-4 h-4" />

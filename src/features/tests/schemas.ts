@@ -8,7 +8,7 @@ export const referenceRangeSchema = z.object({
   age_max: z.coerce.number().nullable().optional(),
   min_value: z.coerce.number(),
   max_value: z.coerce.number(),
-  description: z.string().trim().min(1, "Description is required"),
+  description: z.string().optional().or(z.literal("")),
 });
 
 export type ReferenceRange = z.infer<typeof referenceRangeSchema>;
@@ -87,8 +87,8 @@ export function findMatchingRange(
   const gender = patientGender?.toLowerCase() === "femenino" || patientGender?.toLowerCase() === "femenino"
     ? "femenino"
     : patientGender?.toLowerCase() === "masculino" || patientGender?.toLowerCase() === "masculino"
-    ? "masculino"
-    : undefined;
+      ? "masculino"
+      : undefined;
 
   // Try exact match (gender + age)
   const exact = ranges.find((r) => {

@@ -27,9 +27,18 @@ import {
   Copy,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TestTemplateRow } from "@/features/tests/schemas";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function TestsTemplatesPage() {
   const { user } = useAuth();
@@ -38,6 +47,7 @@ export default function TestsTemplatesPage() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
+  const [templateToDelete, setTemplateToDelete] = useState<TestTemplateRow | null>(null);
 
   // ── Fetch user profile for org_id ──────────────────────────
   const { data: profile } = useQuery({
@@ -81,6 +91,24 @@ export default function TestsTemplatesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("test_templates")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      toast.success("Plantilla eliminada correctamente");
+      setTemplateToDelete(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 
@@ -237,22 +265,34 @@ export default function TestsTemplatesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs h-7 gap-1"
-                          onClick={() => handleEdit(tpl)}
-                        >
-                          {isGlobal && !isSuperAdmin ? (
-                            <>
-                              <Copy className="w-3 h-3" /> Personalizar
-                            </>
-                          ) : (
-                            <>
-                              <Pencil className="w-3 h-3" /> Editar
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-7 gap-1"
+                            onClick={() => handleEdit(tpl)}
+                          >
+                            {isGlobal && !isSuperAdmin ? (
+                              <>
+                                <Copy className="w-3 h-3" /> Personalizar
+                              </>
+                            ) : (
+                              <>
+                                <Pencil className="w-3 h-3" /> Editar
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-7 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              setTemplateToDelete(tpl);
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" /> Eliminar
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -263,6 +303,32 @@ export default function TestsTemplatesPage() {
         </Table>
       </div>
 
+      <Dialog open={!!templateToDelete} onOpenChange={(v) => !v && setTemplateToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar plantilla?</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar la plantilla <strong>{templateToDelete?.name}</strong>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setTemplateToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (templateToDelete) {
+                  deleteMutation.mutate(templateToDelete.id);
+                }
+              }}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

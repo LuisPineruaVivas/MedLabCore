@@ -72,6 +72,8 @@ const App = () => (
               {/* Tests: admin + bioanalyst only */}
               <Route element={<RoleGuard permission="canViewTests" />}>
                 <Route path="/tests" element={<TestsPage />} />
+                <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
+                <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
               </Route>
 
               {/* Visits: all roles */}
