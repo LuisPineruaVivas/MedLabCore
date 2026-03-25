@@ -605,7 +605,7 @@ export default function OrderDetailPage() {
             {orderItems.length > 0 ? (
               <PDFViewer width="100%" height="100%" className="border-none">
                 <OrderThermalReceiptPDF
-                  orderId={order.id}
+                  orderId={order.order_seq}
                   orderDate={format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
                   patientName={patientInfo.name}
                   patientId={patientInfo.id}
