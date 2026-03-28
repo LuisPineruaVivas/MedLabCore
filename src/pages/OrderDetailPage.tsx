@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { ArrowLeft, Save, FileText, ClipboardCheck, FlaskConical, DollarSign, Calendar, User, Link as LinkIcon, Receipt, IdCard, Phone, Mail } from "lucide-react";
 import { PDFViewer } from "@react-pdf/renderer";
@@ -24,6 +25,9 @@ import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
 import { toast } from "sonner";
 import { Atom } from "react-loading-indicators";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
+import { printThermalReceipt } from "@/lib/thermalPrinter";
+import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +46,7 @@ export default function OrderDetailPage() {
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
+  const [thermalPrinting, setThermalPrinting] = useState(false);
 
   // Load results_data into state
   useEffect(() => {
@@ -145,6 +150,14 @@ export default function OrderDetailPage() {
     updateStatus.mutate({ orderId: order.id, status: "completada", completed_at: new Date().toISOString() });
   }
 
+  function appendTextOption(itemId: string, sectionIdx: number, fieldIdx: number, option: string) {
+    const existing = resultsState[itemId]?.sections?.[sectionIdx]?.fields?.[fieldIdx]?.value || "";
+    const trimmed = String(existing).trim();
+    const separator = trimmed === "" ? "" : " ";
+    const newValue = `${trimmed}${separator}${option}`.trim();
+    updateFieldValue(itemId, sectionIdx, fieldIdx, newValue);
+  }
+
   const handleFileUploadForOCR = async (e: React.ChangeEvent<HTMLInputElement>, categoryItems: typeof orderItems, categoryName: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -215,6 +228,42 @@ export default function OrderDetailPage() {
       e.target.value = '';
     }
   };
+
+  const thermalReceiptData: ThermalReceiptData = {
+    orderId: order.order_seq,
+    orderDate: format(new Date(order.created_at), "dd/MM/yyyy HH:mm"),
+    patientName: patientInfo.name,
+    patientId: patientInfo.id,
+    items: orderItems
+      .filter((item) => Number(item.price_at_order) > 0)
+      .map((item) => ({ test_name: item.test_name, price: Number(item.price_at_order) })),
+    total: Number(order.total_amount),
+    accessPin: order.access_pin,
+    portalUrl: `${window.location.origin}/portal-paciente`,
+    exchangeRate: order.exchange_rate ? Number(order.exchange_rate) : null,
+    totalBs: order.total_bs ? Number(order.total_bs) : null,
+    labData: {
+      name: lab?.name || "Laboratorio",
+      address: lab?.address || "",
+      phone: lab?.phone || "",
+      email: lab?.email || "",
+      logo: lab?.logo_url || null,
+      primary_color: lab?.primary_color || "#4f46e5",
+    },
+  };
+
+  async function handlePrintThermal() {
+    setThermalPrinting(true);
+    try {
+      await printThermalReceipt(thermalReceiptData);
+      toast.success("Recibo enviado a la impresora termica");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo imprimir el recibo";
+      toast.error(message);
+    } finally {
+      setThermalPrinting(false);
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in relative pb-20">
@@ -486,22 +535,73 @@ export default function OrderDetailPage() {
                                                     ))}
                                                   </SelectContent>
                                                 </Select>
-                                              ) : (
+                                              ) : 
+                                              field.type === "number" ?
+                                              (
                                                 <Input
                                                   className="h-8 text-sm"
-                                                  type={field.type === "number" ? "number" : "text"}
+                                                  type={"number"}
                                                   value={field.value || ""}
                                                   onChange={(e) =>
                                                     updateFieldValue(item.id, sIdx, fIdx, e.target.value)
                                                   }
                                                   disabled={readOnly}
-                                                  placeholder={
-                                                    field.type === "number"
-                                                      ? "Ingresar valor"
-                                                      : "Ingresar resultado"
-                                                  }
+                                                  placeholder={"Ingresar resultado"}
                                                 />
-                                              )}
+                                              ) : 
+                                              field.type === "text" ?
+                                              (
+                                                <div className="flex flex-col gap-1">
+                                                  <Textarea
+                                                    className="h-20 text-sm"
+                                                    value={field.value || ""}
+                                                    onChange={(e) =>
+                                                      updateFieldValue(item.id, sIdx, fIdx, e.target.value)
+                                                    }
+                                                    disabled={readOnly}
+                                                    placeholder={"Ingresar resultado"}
+                                                  />
+
+                                                  {field.options?.length > 0 && (
+                                                    <Popover>
+                                                      <PopoverTrigger asChild>
+                                                        <Button
+                                                          type="button"
+                                                          variant="outline"
+                                                          size="sm"
+                                                          className="h-7"
+                                                          disabled={readOnly}
+                                                        >
+                                                          Opciones
+                                                        </Button>
+                                                      </PopoverTrigger>
+                                                      <PopoverContent className="w-52 p-2">
+                                                        <p className="text-xs text-muted-foreground mb-2">
+                                                          Selecciona una o varias opciones para añadir al texto
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                          {field.options.map((opt: string) => (
+                                                            <Button
+                                                              key={opt}
+                                                              type="button"
+                                                              variant="secondary"
+                                                              size="sm"
+                                                              className="h-7"
+                                                              onClick={() =>
+                                                                appendTextOption(item.id, sIdx, fIdx, opt)
+                                                              }
+                                                              disabled={readOnly}
+                                                            >
+                                                              {opt}
+                                                            </Button>
+                                                          ))}
+                                                        </div>
+                                                      </PopoverContent>
+                                                    </Popover>
+                                                  )}
+                                                </div>
+                                              ) : null
+                                               }
                                             </div>
                                             <div className="col-span-12 sm:col-span-3 text-[10px] sm:text-xs text-muted-foreground">
                                               {(() => {
@@ -558,9 +658,10 @@ export default function OrderDetailPage() {
 
       {/* Unified Report Dialog */}
       <Dialog open={unifiedOpen} onOpenChange={setUnifiedOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col w-[95vw]">
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col w-[95vw]" >
           <DialogHeader>
             <DialogTitle>Informe de Resultados</DialogTitle>
+            <DialogDescription> Revisa el informe de resultados antes de imprimir </DialogDescription>
           </DialogHeader>
           <div className="flex-1 w-full overflow-hidden rounded-md border bg-muted">
             {orderItems.length > 0 ? (
@@ -605,24 +706,7 @@ export default function OrderDetailPage() {
             {orderItems.length > 0 ? (
               <PDFViewer width="100%" height="100%" className="border-none">
                 <OrderThermalReceiptPDF
-                  orderId={order.order_seq}
-                  orderDate={format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
-                  patientName={patientInfo.name}
-                  patientId={patientInfo.id}
-                  items={orderItems.filter((i) => Number(i.price_at_order) > 0).map(i => ({ test_name: i.test_name, price: Number(i.price_at_order) }))}
-                  total={Number(order.total_amount)}
-                  accessPin={order.access_pin}
-                  portalUrl={`${window.location.origin}/portal-paciente`}
-                  exchangeRate={order.exchange_rate ? Number(order.exchange_rate) : null}
-                  totalBs={order.total_bs ? Number(order.total_bs) : null}
-                  labData={{
-                    name: lab?.name || "Laboratorio",
-                    address: lab?.address || "",
-                    phone: lab?.phone || "",
-                    email: lab?.email || "",
-                    logo: lab?.logo_url || null,
-                    primary_color: lab?.primary_color || "#4f46e5",
-                  }}
+                  {...thermalReceiptData}
                 />
               </PDFViewer>
             ) : (
@@ -631,7 +715,10 @@ export default function OrderDetailPage() {
               </div>
             )}
           </div>
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={handlePrintThermal} disabled={thermalPrinting || orderItems.length === 0}>
+              {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
+            </Button>
             <Button onClick={() => setReceiptOpen(false)}>Cerrar</Button>
           </div>
         </DialogContent>

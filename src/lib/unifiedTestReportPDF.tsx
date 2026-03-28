@@ -26,6 +26,7 @@ interface FlatRow {
   rangeDisplay: string;
   isOutOfRange: boolean;
   isSectionHeader?: boolean;
+  fieldType?: string;
 }
 
 export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }: UnifiedProps) => {
@@ -90,16 +91,27 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
     },
     colExam: { width: '35%', paddingLeft: 4 },
     colResult: { width: '20%', textAlign: 'center' },
+    colResutlText: { width: '65%', paddingLeft: 4 },
     colUnit: { width: '15%', textAlign: 'center' },
     colRange: { width: '30%', textAlign: 'right', paddingRight: 4 },
     footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTop: 1, borderTopColor: '#EEE', paddingTop: 10, textAlign: 'center', fontSize: 8, color: '#94a3b8' },
     alertResult: { color: '#dc2626', fontWeight: 'bold' },
   });
 
+  const sortedItems = [...orderItems].sort((a, b) => {
+    // Primero por categoría (para que se agrupen bien)
+    const catA = a.category || "Otros";
+    const catB = b.category || "Otros";
+    if (catA !== catB) return catA.localeCompare(catB);
+
+    // Segundo por el orden resuelto que inyectamos en el hook
+    return (a.resolved_sort_order || 0) - (b.resolved_sort_order || 0);
+  });
+
   // ── Flatten all items into rows grouped by category ──────
   const grouped: Record<string, FlatRow[]> = {};
 
-  for (const item of orderItems) {
+  for (const item of sortedItems) {
     const cat = item.category || item.results_data?.category || 'Otros';
     if (!grouped[cat] && item.category !== 'Otros') grouped[cat] = [];
 
@@ -150,7 +162,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
           unit: field.unit || '',
           rangeDisplay,
           isOutOfRange,
-          isSectionHeader: false
+          isSectionHeader: false,
+          fieldType: field.type
         });
       }
     }
@@ -199,7 +212,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
             </View>
 
             {/* All rows for this category */}
-            {grouped[category].map((row, idx) => (
+            {grouped[category].map((row, idx) => {
+              return(
               row.isSectionHeader ?
                 <View key={`${category}-${idx}`} style={styles.tableRow}>
                   <View style={styles.sectionHeader}>
@@ -207,25 +221,39 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
                   </View>
                 </View>
                   :
-              <View key={`${category}-${idx}`} style={styles.tableRow}>
-                <Text style={[
-                  styles.colExam,
-                  { fontWeight: row.isSectionHeader ? 'bold' : 'normal' }
-                ]}>
-                  {row.fieldLabel}
-                </Text>
-                <Text style={[
-                  styles.colResult,
-                  { fontWeight: 'bold' },
-                  row.isOutOfRange ? styles.alertResult : {},
-                ]}>
-                  {row.value}
-                </Text>
-                <Text style={styles.colUnit}>{row.unit || '-'}</Text>
-                <Text style={styles.colRange}>{row.rangeDisplay || '-'}</Text>
-              </View>
+                  row.value === "........" ? null : row.fieldType === "text" ?
+                   <View key={`${category}-${idx}`} style={styles.tableRow}>
+                    <Text style={[
+                      styles.colExam,
+                      { fontWeight: row.isSectionHeader ? 'bold' : 'normal' }
+                      ]}>
+                      {row.fieldLabel}
+                    </Text>
+                    <Text style={styles.colResutlText}>
+                      {row.value}
+                    </Text>
 
-            ))}
+                  </View>
+                  : 
+                  <View key={`${category}-${idx}`} style={styles.tableRow}>
+                    <Text style={[
+                      styles.colExam,
+                      { fontWeight: row.isSectionHeader ? 'bold' : 'normal' }
+                    ]}>
+                      {row.fieldLabel}
+                    </Text>
+                    <Text style={[
+                      styles.colResult,
+                      { fontWeight: 'bold' },
+                      row.isOutOfRange ? styles.alertResult : {},
+                    ]}>
+                      {row.value}
+                    </Text>
+                    <Text style={styles.colUnit}>{row.unit || '-'}</Text>
+                    <Text style={styles.colRange}>{row.rangeDisplay || '-'}</Text>
+                  </View>
+)
+            })}
           </View>
         ))}
 

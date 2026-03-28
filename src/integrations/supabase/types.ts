@@ -208,6 +208,55 @@ export type Database = {
           },
         ]
       }
+      organization_exam_settings: {
+        Row: {
+          created_at: string | null
+          custom_sort_order: number
+          id: string
+          org_id: string | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_sort_order: number
+          id?: string
+          org_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_sort_order?: number
+          id?: string
+          org_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_exam_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_exam_settings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "test_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_exam_settings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "v_test_templates_filtered"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -401,6 +450,7 @@ export type Database = {
           name: string
           org_id: string | null
           schema: Json
+          sort_order: number | null
           updated_at: string
         }
         Insert: {
@@ -413,6 +463,7 @@ export type Database = {
           name: string
           org_id?: string | null
           schema?: Json
+          sort_order?: number | null
           updated_at?: string
         }
         Update: {
@@ -425,6 +476,7 @@ export type Database = {
           name?: string
           org_id?: string | null
           schema?: Json
+          sort_order?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -536,8 +588,9 @@ export type Database = {
         Returns: {
           access_pin: string
           created_at: string
+          id: string
           items: Json
-          order_id: string
+          order_seq: number
           org_logo_url: string
           org_name: string
           status: string

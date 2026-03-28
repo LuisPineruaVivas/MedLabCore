@@ -53,7 +53,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       id_number: "",
       first_name: "",
       last_name: "",
-      date_of_birth: "",
+      date_of_birth: new Date(),
       gender: "masculino",
       phone: "",
       email: "",
@@ -150,20 +150,22 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value ? format(new Date(field.value), "PPP") : "Seleccionar"}
+                            {field.value ? format(field.value, "dd/MM/yyyy")  : "Seleccionar"}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
+
                           mode="single"
                           captionLayout="dropdown-buttons"
                           fromYear={1900}
                           toYear={new Date().getFullYear()}
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                          selected={field.value ? field.value : undefined}
+                          onSelect={(date) =>{
+                            field.onChange(date ? date : "")
+                          }
                           }
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")

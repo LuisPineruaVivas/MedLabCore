@@ -1,6 +1,6 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -245,6 +245,7 @@ export default function TemplateBuilderPage() {
           {
             ...row,
             org_id: isSuperAdmin ? null : orgId ?? null,
+            id_global_ref: id
           },
         ]);
         if (error) throw error;
@@ -267,7 +268,7 @@ export default function TemplateBuilderPage() {
       queryClient.invalidateQueries({ queryKey: ["test-templates"] });
       queryClient.invalidateQueries({ queryKey: ["test-template", id] });
       toast.success(isFork || !id ? "Plantilla creada" : "Plantilla actualizada");
-      navigate("/admin/tests-templates");
+      navigate(-1);
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -601,7 +602,6 @@ function FieldRow({
   onMoveDown?: () => void;
   onInsertAfter: () => void;
 }) {
-  const [showOptions, setShowOptions] = useState(field.type === "select");
 
   return (
     <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
@@ -624,7 +624,6 @@ function FieldRow({
             value={field.type}
             onValueChange={(v) => {
               onUpdate({ type: v as TemplateField["type"] });
-              setShowOptions(v === "select");
             }}
           >
             <SelectTrigger className="h-8 text-xs mt-1">
@@ -665,8 +664,7 @@ function FieldRow({
         </div>
       )}
 
-      {/* Options editor (select only) */}
-      {showOptions && (
+      {(field.type === "select" || field.type === "text") && (
         <div>
           <OptionsEditor
             options={field.options ?? []}
@@ -746,7 +744,7 @@ function OptionsEditor({
           className="flex items-center gap-1 bg-secondary rounded px-2 py-0.5"
         >
           <Input
-            className="h-5 w-20 text-[11px] border-none bg-transparent p-0"
+            className="h-5 w-32 text-[11px] border-none bg-transparent p-0"
             value={opt}
             onChange={(e) => {
               const next = [...options];
@@ -763,15 +761,17 @@ function OptionsEditor({
           </button>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-5 text-[10px] px-1.5"
-        onClick={() => onChange([...options, ""])}
-      >
-        + Agregar
-      </Button>
+      { options.length < 10 && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-5 text-[10px] px-1.5"
+          onClick={() => onChange([...options, ""])}
+        >
+          + Agregar
+        </Button>
+      )}
     </div>
   );
 }

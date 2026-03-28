@@ -22,6 +22,7 @@ export function AppHeader() {
         className="flex items-center justify-center px-4 sm:px-6 h-28 text-white"
         style={{
           background: `linear-gradient(90deg, ${brand.primaryColor}, ${brand.secondaryColor})`,
+          borderRadius: "0 0 50px 50px",
         }}
       >
         <div className="flex items-center gap-3 min-w-0">

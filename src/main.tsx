@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+import { Buffer } from 'buffer';
+(window as any).Buffer = Buffer;
 
 // Initialize Sentry for production error tracking
 Sentry.init({

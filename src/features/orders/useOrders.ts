@@ -65,20 +65,45 @@ export function useOrder(orderId: string | null) {
 }
 
 export function useOrderItems(orderId: string | null) {
+  const { data: profile } = useProfile();
+  const orgId = profile?.org_id;
+
   return useQuery({
-    queryKey: ["order-items", orderId],
+    queryKey: ["order-items", orderId, orgId],
     queryFn: async () => {
+      if (!orderId || !orgId) return [];
+
       const { data, error } = await supabase
         .from("order_items")
-        .select("*, test_templates(category)")
-        .eq("order_id", orderId!);
+        .select(`
+          *,
+          test_templates(
+            category,
+            sort_order,
+            organization_exam_settings!template_id(custom_sort_order)
+          )
+        `)
+        .eq("order_id", orderId);
+
       if (error) throw error;
-      return (data || []).map((item: any) => ({
-        ...item,
-        category: item.test_templates?.category || 'Otros',
-      })) as (OrderItemRow & { category: string })[];
+
+      return (data || []).map((item: any) => {
+        // Extraemos el orden personalizado si existe para esta organización
+        const settings = item.test_templates?.organization_exam_settings;
+        // Buscamos el setting que corresponde a la org del perfil (por si la RLS fallara o devolviera array)
+        const customOrder = Array.isArray(settings) 
+          ? settings[0]?.custom_sort_order 
+          : settings?.custom_sort_order;
+
+        return {
+          ...item,
+          category: item.test_templates?.category || 'Otros',
+          // Prioridad: 1. Orden personalizado, 2. Orden de plantilla, 3. Al final
+          resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
+        };
+      });
     },
-    enabled: !!orderId,
+    enabled: !!orderId && !!orgId,
   });
 }
 

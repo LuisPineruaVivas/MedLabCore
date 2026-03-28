@@ -34,7 +34,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, className 
             )}
           >
             {trend.value >= 0 ? "+" : ""}
-            {trend.value}
+            {trend.value.toFixed(0)}
           </span>
           <span className="text-xs text-muted-foreground ml-1.5">{trend.label}</span>
         </div>

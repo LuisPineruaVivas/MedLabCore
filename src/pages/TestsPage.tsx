@@ -15,7 +15,7 @@ import {
   Plus, Search, FlaskConical, DollarSign,
   Pencil, Copy, ToggleLeft, ToggleRight, Eye,
   ChevronRight,
-  Package, Trash2,
+  Package, Trash2, ListOrdered
 } from "lucide-react";
 import { toast } from "sonner";
 import { TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
@@ -23,12 +23,12 @@ import { PDFViewer } from "@react-pdf/renderer";
 import { TestReportPDF } from "@/lib/testReportGenerator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useDebounce } from "@/hooks/useDebounce";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProfileBuilderDialog } from "@/features/tests/ProfileBuilderDialog";
 import { cn } from "@/lib/utils";
 import type { ExamProfileRow } from "@/features/tests/profileSchemas";
+import { ExamOrderView } from "@/features/tests/ExamOrderView";
 
 export default function TestsPage() {
   const { user } = useAuth();
@@ -37,7 +37,7 @@ export default function TestsPage() {
   const navigate = useNavigate();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"exams" | "profiles">("exams");
+  const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "order">("exams");
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -378,6 +378,18 @@ export default function TestsPage() {
           <Package className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
           Perfiles
         </button>
+        <button
+          className={cn(
+            "px-4 py-2 rounded-md text-sm font-medium transition-all",
+            activeTab === "order"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+          onClick={() => setActiveTab("order")}
+        >
+          <ListOrdered className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+          Orden de Impresión
+        </button>
       </div>
 
       {activeTab === "exams" ? (
@@ -442,7 +454,7 @@ export default function TestsPage() {
                           </Button>
                           {canEdit && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => handleEdit(tpl)}>
-                              {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3" /> Editar</>) : (<><Pencil className="w-3 h-3" /> Edit</>)}
+                              {isGlobal && !isSuperAdmin ? (<><Copy className="w-3 h-3" /> Editar</>) : (<><Pencil className="w-3 h-3" /> Editar</>)}
                             </Button>
                           )}
                         </TableCell>
@@ -600,7 +612,7 @@ export default function TestsPage() {
             </DialogContent>
           </Dialog>
         </>
-      ) : (
+      ) : activeTab === "profiles" ? (
         /* ── PROFILES TAB ── */
         <>
           <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
@@ -792,6 +804,8 @@ export default function TestsPage() {
             orgId={orgId!}
           />
         </>
+      ) : (
+        <ExamOrderView />
       )}
     </div>
   );

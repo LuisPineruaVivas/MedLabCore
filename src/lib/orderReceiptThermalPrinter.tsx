@@ -1,30 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-
-interface ReceiptItem {
-    test_name: string;
-    price: number;
-}
-
-interface ReceiptProps {
-    orderId: number;
-    orderDate: string;
-    patientName: string;
-    patientId: string;
-    items: ReceiptItem[];
-    total: number;
-    accessPin?: string | null;
-    portalUrl?: string;
-    exchangeRate?: number | null;
-    totalBs?: number | null;
-    labData?: {
-        name?: string;
-        address?: string;
-        phone?: string;
-        email?: string;
-        logo?: string | null;
-        primary_color?: string;
-    };
-}
+import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 
 // 1. SACAMOS LOS ESTILOS FUERA para evitar re-renders infinitos
 const thermalStyles = StyleSheet.create({
@@ -101,17 +76,16 @@ const thermalStyles = StyleSheet.create({
     },
 });
 
-export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patientId, items, total, accessPin, portalUrl, labData, exchangeRate, totalBs }: ReceiptProps) => {
+export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patientId, items, total, accessPin, portalUrl, labData, exchangeRate, totalBs }: ThermalReceiptData) => {
     const lab = labData || { name: "LABORATORIO", address: "", phone: "" };
 
     return (
         <Document>
             {/* 2. LE DAMOS UN SIZE CON ALTO FIJO PARA PRUEBAS */}
             {/* Esto evita que el motor de PDF colapse buscando el final de la página */}
-            <Page size={[226, 400]} style={thermalStyles.page}>
+            <Page size={[226, 300]} style={thermalStyles.page}>
 
                 <View style={thermalStyles.header}>
-                    {lab.logo && <Image src={lab.logo} style={thermalStyles.logo} />}
                     <Text style={thermalStyles.labName}>{lab.name}</Text>
                     <Text style={thermalStyles.labDetails}>{lab.address}</Text>
                     <Text style={thermalStyles.labDetails}>{lab.phone}</Text>

@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PDFViewer } from "@react-pdf/renderer";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
+import { printThermalReceipt } from "@/lib/thermalPrinter";
+import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { useCreateOrder, useProfile } from "./useOrders";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { Package, FlaskConical } from "lucide-react";
@@ -25,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { NewPatientDialog } from "../patients/NewPatientDialog";
 import { PatientFormData } from "../patients/schemas";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface CartItem {
   template_id: string | null;
@@ -55,6 +58,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
 
   // Patient search
   const [patientSearch, setPatientSearch] = useState("");
+  const debouncedSearch = useDebounce(patientSearch, 500);
+
+
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showQuickRegister, setShowQuickRegister] = useState(false);
 
@@ -77,10 +83,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     exchangeRate?: number | null;
     totalBs?: number | null;
   } | null>(null);
+  const [thermalPrinting, setThermalPrinting] = useState(false);
 
   // Search patients
   const { data: patients = [], isFetching: searchingPatients } = useQuery({
-    queryKey: ["patient-search", patientSearch, orgId],
+    queryKey: ["patient-search", debouncedSearch, orgId],
     queryFn: async () => {
       if (!patientSearch.trim() || !orgId) return [];
       const { data, error } = await supabase
@@ -115,7 +122,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const { data: examProfiles = [] } = useQuery({
     queryKey: ["order-profiles", orgId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase)
         .from("exam_profiles")
         .select("*, profile_templates_junction(template_id, test_templates(id, name, category, base_price, schema))")
         .eq("org_id", orgId!)
@@ -142,14 +149,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       schema: t.schema,
     }));
 
-    const profiles: SearchItem[] = examProfiles.map((p: any) => ({
+    const profiles: SearchItem[] = examProfiles.map((p) => ({
       type: "profile" as const,
       id: p.id,
       name: p.name,
       description: p.description,
       price: Number(p.total_price),
       templateCount: p.profile_templates_junction?.length ?? 0,
-      templates: (p.profile_templates_junction ?? []).map((j: any) => j.test_templates).filter(Boolean),
+      templates: (p.profile_templates_junction ?? []).map((j) => j.test_templates).filter(Boolean),
     }));
 
     return [...profiles, ...exams];
@@ -191,7 +198,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         isProfileHeader: true,
         profileId,
       };
-      const childItems: CartItem[] = item.templates.map((tpl: any) => ({
+      const childItems: CartItem[] = item.templates.map((tpl) => ({
         template_id: tpl.id,
         test_name: tpl.name,
         category: tpl.category,
@@ -296,6 +303,27 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     },
   });
 
+  async function handleThermalPrint() {
+    if (!receiptData) return;
+
+    setThermalPrinting(true);
+    try {
+      const thermalData: ThermalReceiptData = {
+        ...receiptData,
+        portalUrl: `${window.location.origin}/portal-paciente`,
+        labData,
+      };
+
+      await printThermalReceipt(thermalData);
+      toast.success("Recibo enviado a la impresora termica");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo imprimir el recibo";
+      toast.error(message);
+    } finally {
+      setThermalPrinting(false);
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -337,6 +365,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               </PDFViewer>
             </div>
             <DialogFooter>
+              <Button variant="outline" onClick={handleThermalPrint} disabled={thermalPrinting}>
+                {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
+              </Button>
               <Button
                 onClick={() => {
                   resetDialog();
@@ -372,7 +403,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                     <p className="text-xs text-muted-foreground">
                       ID: {selectedPatient.id_number}
                       {selectedPatient.date_of_birth &&
-                        ` · ${differenceInYears(new Date(), new Date(selectedPatient.date_of_birth))} yrs`}
+                        ` · ${differenceInYears(new Date(), new Date(selectedPatient.date_of_birth))} años`}
                       {selectedPatient.gender && ` · ${selectedPatient.gender}`}
                     </p>
                   </div>
@@ -478,6 +509,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                       const inCart = item.type === "exam"
                         ? cart.some((c) => c.template_id === item.id && !c.parentProfileId)
                         : cart.some((c) => c.isProfileHeader && c.profileId === item.id);
+                        
                       return (
                         <button
                           key={`${item.type}-${item.id}`}
