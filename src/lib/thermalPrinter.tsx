@@ -59,7 +59,11 @@ async function ensurePortOpen(port: SerialPort, baudRate: number) {
 }
 
 export async function buildThermalReceiptCommands(data: ThermalReceiptData) {
-  return render(<OrderReceiptEscPos {...data} />);
+  // render() must receive a <Printer> element directly — calling OrderReceiptEscPos as a
+  // plain function (instead of JSX) returns the inner <Printer type="epson" ...> element
+  // so the library can correctly read `type` and `characterSet` from props to build the
+  // printer driver. Wrapping it in <OrderReceiptEscPos /> caused type=undefined → printer=undefined → crash.
+  return render(OrderReceiptEscPos(data));
 }
 
 export async function printThermalReceipt(
