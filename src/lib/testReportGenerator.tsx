@@ -58,9 +58,9 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const styles = StyleSheet.create({
     page: { padding: 40, fontSize: 10, fontFamily: 'Inter', color: '#333' },
     header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
-    labInfo: { flexDirection: 'column' },
-    labName: { fontSize: 16, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b' },
+    labInfo: { flexDirection: 'column', maxWidth: '60%', flexShrink: 1 },
+    labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor },
+    labDetails: { fontSize: 9, color: '#64748b', flexShrink: 1 },
     patientBox: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 4, flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 },
     patientItem: { width: '50%', marginBottom: 4 },
     label: { fontWeight: 'bold', color: '#475569' },
@@ -114,6 +114,26 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   });
 
   // Mostramos secciones y campos (con encabezado de sección si existe nombre)
+  const wrapText = (value?: string, maxChars = 50): string => {
+    if (!value) return '';
+    const words = value.split(' ');
+    const lines: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      const attempt = current ? `${current} ${word}` : word;
+      if (attempt.length <= maxChars) {
+        current = attempt;
+      } else {
+        if (current) lines.push(current);
+        current = word;
+      }
+    }
+
+    if (current) lines.push(current);
+    return lines.join('\n');
+  };
+
   const sections = template.schema?.sections || [];
 
   return (
@@ -123,11 +143,11 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>
-            <Text style={styles.labDetails}>{lab.address}</Text>
+            <Text style={styles.labDetails}>{wrapText(lab.address, 50)}</Text>
             <Text style={styles.labDetails}>Tel: {lab.phone}</Text>
             <Text style={styles.labDetails}>Email: {lab.email}</Text>
           </View>
-          {labData?.logo && <Image src={labData.logo} style={{ width: 220, height: 75 }} />}
+          {labData?.logo && <Image src={labData.logo} style={{ width: 320, height: 75 }} />}
         </View>
 
         {/* Patient Info */}

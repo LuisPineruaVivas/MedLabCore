@@ -14,7 +14,7 @@ const orgSchema = z.object({
   address: z.string().min(5, "Dirección del laboratorio es requerida"),
   phone: z.string().min(5, "Número de contacto es requerido").nullable().or(z.literal("")),
   logo_url: z.string().nullable().optional(),
-  email: z.string().email("Correo Invalido").nullable().or(z.literal("")).optional(),
+  email: z.string(),
   primary_color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Color inválido"),
   secondary_color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Color inválido"),
 });

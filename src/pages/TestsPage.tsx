@@ -642,9 +642,9 @@ export default function TestsPage() {
                         template={previewTpl}
                         labData={{
                           name: lab?.name || "Nombre del Laboratorio",
-                          address: lab?.address || "Dirección desde Perfil",
-                          phone: lab?.phone || "Teléfono desde Perfil",
-                          email: lab?.email || "Correo desde Perfil",
+                          address: lab?.address || "Sin dirección registrada",
+                          phone: lab?.phone || "Sin teléfono registrado",
+                          email: lab?.email || "Sin correo registrado",
                           logo: lab?.logo_url || null,
                           primary_color: lab?.primary_color || "#0ea5e9",
                           secondary_color: lab?.secondary_color || "#4f46e5",
