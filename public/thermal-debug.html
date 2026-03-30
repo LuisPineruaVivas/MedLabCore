@@ -61,8 +61,8 @@
 <p class="subtitle">POS-58 / USB Thermal Printer — Chrome o Edge requerido</p>
 
 <div class="alert alert-blue">
-  ℹ️ <strong>Por qué no ves tu impresora en Web Serial:</strong> La POS-58 conectada por USB usa el driver "USB Printer Class".
-  Web Serial solo ve puertos COM. Usa la pestaña <strong>Web USB</strong> para comunicarte directamente con ella.
+  ℹ️ <strong>Por qué no ves tu impresora en Web Serial:</strong> La POS-58 conectada por USB usa el driver "USB Printer Class" de Windows — Web Serial solo ve puertos COM y Web USB requiere un driver WinUSB especial.<br><br>
+  ✅ <strong>Solución recomendada:</strong> Usa la sección <strong>"CSS Print"</strong> al final de esta página — imprime directamente via el driver de Windows sin tocar nada extra.
 </div>
 
 <!-- STATUS -->
@@ -529,6 +529,237 @@
       ...escCut(),
     ]));
   };
+
+  // ─── CSS PRINT TEST ───────────────────────────────────────────────────────
+  function buildReceiptHTML(opts = {}) {
+    const paperMm = opts.paperMm || 58;
+    const labName = opts.labName || 'LABORATORIO MEDICO';
+    const labAddr = opts.labAddr || 'Calle Ejemplo 123, Ciudad';
+    const labPhone = opts.labPhone || 'Tel: 0412-1234567';
+    const orderNum = opts.orderNum || '0001';
+    const orderDate = opts.orderDate || '30/03/2026 10:45';
+    const patient = opts.patient || 'JUAN PEREZ';
+    const patientId = opts.patientId || 'CI: 12345678';
+    const items = opts.items || [
+      { name: 'Hematologia Completa', price: 15.00 },
+      { name: 'Glucosa', price: 8.00 },
+      { name: 'Creatinina', price: 10.00 },
+      { name: 'Colesterol Total', price: 12.00 },
+    ];
+    const total = items.reduce((s, i) => s + i.price, 0);
+    const exchangeRate = opts.exchangeRate || 38.50;
+    const totalBs = (total * exchangeRate).toFixed(2);
+    const pin = opts.pin || '123456';
+    const portalUrl = opts.portalUrl || 'https://medlab.test/portal-paciente';
+    const qrUrl = `${portalUrl}?order=${orderNum}&pin=${pin}`;
+
+    // Google Charts QR (no install needed, works offline-ish via CDN)
+    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}`;
+
+    const itemRows = items.map(i => `
+      <tr>
+        <td class="item-name">${i.name}</td>
+        <td class="item-price">$${i.price.toFixed(2)}</td>
+      </tr>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nota de Entrega ${orderNum}</title>
+  <style>
+    /* ── Reset ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Page size: 58mm wide, auto height ── */
+    @page {
+      size: ${paperMm}mm auto;
+      margin: 2mm 1mm;   /* tiny margin all sides */
+    }
+
+    /* ── Body: same width as paper, auto height ── */
+    html, body {
+      width: ${paperMm - 4}mm;   /* subtract margins */
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 8pt;
+      color: #000;
+      background: #fff;
+    }
+
+    /* ── Utilities ── */
+    .center { text-align: center; }
+    .right  { text-align: right; }
+    .bold   { font-weight: bold; }
+    .large  { font-size: 10pt; }
+    .small  { font-size: 7pt; }
+    .hr     { border: none; border-top: 1px dashed #000; margin: 2mm 0; }
+    .mt1    { margin-top: 1mm; }
+    .mt2    { margin-top: 2mm; }
+    .mt3    { margin-top: 3mm; }
+
+    /* ── Items table ── */
+    table { width: 100%; border-collapse: collapse; }
+    .item-name  { padding: 0.5mm 0; }
+    .item-price { padding: 0.5mm 0; text-align: right; white-space: nowrap; }
+    .total-row td { font-weight: bold; border-top: 1px dashed #000; padding-top: 1mm; }
+    .bs-row td { font-size: 7pt; }
+
+    /* ── QR ── */
+    .qr-block { text-align: center; margin: 2mm 0; }
+    .qr-block img { width: 25mm; height: 25mm; }
+
+    /* ── Hide everything when printing except receipt ── */
+    @media screen {
+      body { background: #f0f0f0; padding: 10px; }
+      .receipt {
+        background: white;
+        max-width: ${paperMm}mm;
+        margin: 0 auto;
+        padding: 4mm;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      }
+    }
+    @media print {
+      html, body { background: white; }
+      .receipt { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="receipt">
+
+  <!-- Encabezado -->
+  <div class="center bold large">${labName}</div>
+  <div class="center small mt1">${labAddr}</div>
+  <div class="center small">${labPhone}</div>
+
+  <hr class="hr mt2">
+  <div class="center bold large mt1">NOTA DE ENTREGA</div>
+  <hr class="hr mt1">
+
+  <!-- Orden -->
+  <table class="mt1">
+    <tr><td>ORDEN</td><td class="right">${orderNum.toString().padStart(4,'0')}</td></tr>
+    <tr><td>FECHA</td><td class="right">${orderDate}</td></tr>
+  </table>
+
+  <div class="mt2">PACIENTE:</div>
+  <div class="bold mt1">${patient}</div>
+  <div class="small">${patientId}</div>
+
+  <!-- Items -->
+  <hr class="hr mt2">
+  <table>
+    <thead>
+      <tr><th style="text-align:left">EXAMEN</th><th style="text-align:right">USD</th></tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td>TOTAL USD</td>
+        <td class="right">$${total.toFixed(2)}</td>
+      </tr>
+      <tr class="bs-row">
+        <td>TASA BS</td>
+        <td class="right">${exchangeRate.toFixed(2)}</td>
+      </tr>
+      <tr class="bs-row">
+        <td>TOTAL BS</td>
+        <td class="right">Bs. ${totalBs}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- PIN -->
+  <hr class="hr mt2">
+  <div class="center mt1">PIN DE ACCESO</div>
+  <div class="center bold large mt1">${pin.split('').join(' ')}</div>
+
+  <!-- QR -->
+  <hr class="hr mt2">
+  <div class="center small">CONSULTA TUS RESULTADOS</div>
+  <div class="qr-block mt1">
+    <img src="${qrImgUrl}" alt="QR" />
+  </div>
+  <div class="center small mt1">${portalUrl}</div>
+
+  <!-- Footer -->
+  <hr class="hr mt2">
+  <div class="center small mt1">Gracias por su preferencia</div>
+  <div class="mt3"></div>
+
+</div>
+</body>
+</html>`;
+  }
+
+  $('btn-css-preview').onclick = () => {
+    const html = buildReceiptHTML({ paperMm: parseInt($('css-paper-mm').value) });
+    const win = window.open('', '_blank', 'width=400,height=700');
+    win.document.write(html);
+    win.document.close();
+    log('Ventana de preview abierta. Revisa como se ve.', 'info');
+  };
+
+  $('btn-css-print').onclick = () => {
+    const paperMm = parseInt($('css-paper-mm').value);
+    log(`── CSS PRINT TEST: papel ${paperMm}mm ──`, 'info');
+    const html = buildReceiptHTML({ paperMm });
+    const win = window.open('', '_blank', 'width=400,height=700');
+    win.document.write(html);
+    win.document.close();
+    // Wait for QR image to load before printing
+    win.onload = () => {
+      setTimeout(() => {
+        win.print();
+        log('Dialogo de impresion abierto. Selecciona tu impresora POS-58.', 'ok');
+        log('Tip: si el papel sale muy grande, verifica que el driver de la POS-58 este configurado con el tamano de papel correcto.', 'warn');
+      }, 800);
+    };
+    // Fallback if onload already fired
+    setTimeout(() => {
+      try { if (!win.printed) win.print(); } catch(e) {}
+    }, 1200);
+  };
 </script>
+
+<!-- CSS PRINT SECTION (fuera del card principal) -->
+<div class="card" style="border: 1px solid #16a34a;">
+  <h2 style="color:#4ade80;">🖨️ CSS Print (Recomendado para POS-58 USB)</h2>
+  <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
+    No requiere Web USB ni Web Serial. Usa el driver de Windows que ya está instalado.
+    La impresora POS-58 debe estar configurada en Windows (Impresoras y Escáneres) — ya la tienes. 
+  </p>
+
+  <div class="alert" style="background:#052e16; border:1px solid #166534; color:#86efac; margin-bottom:12px;">
+    ✅ <strong>Pasos:</strong>
+    1. Clic en <em>"Previsualizar"</em> para ver cómo quedaría el recibo en pantalla.<br>
+    2. Clic en <em>"Imprimir Prueba"</em> — aparece el diálogo de impresión.<br>
+    3. En el diálogo, selecciona <strong>POS-58</strong> como impresora.<br>
+    4. Si el resultado es correcto, la integraremos en la app.
+  </div>
+
+  <div class="grid2" style="margin-bottom:12px;">
+    <div>
+      <label>Ancho del papel</label>
+      <select id="css-paper-mm">
+        <option value="58" selected>58mm (tu impresora)</option>
+        <option value="80">80mm</option>
+      </select>
+    </div>
+    <div style="display:flex; align-items:flex-end; gap:8px;">
+      <button id="btn-css-preview" style="background:#0f766e; flex:1;">👁 Previsualizar</button>
+      <button id="btn-css-print" class="success" style="flex:1;">🖨️ Imprimir Prueba</button>
+    </div>
+  </div>
+
+  <div class="alert" style="background:#1c1917; border:1px solid #44403c; color:#a8a29e; font-size:0.73rem; margin-top:8px;">
+    <strong>Si el papel sale demasiado alto o con espacio en blanco:</strong><br>
+    • Abre <em>Impresoras y Escáneres → POS-58 → Propiedades → Preferencias</em><br>
+    • Cambia el tamaño de papel a <strong>58mm × (altura personalizada mínima)</strong> o busca "Roll Paper" / "Continuous"<br>
+    • También asegúrate que no haya márgenes extra configurados en el driver.
+  </div>
+</div>
+
 </body>
 </html>
