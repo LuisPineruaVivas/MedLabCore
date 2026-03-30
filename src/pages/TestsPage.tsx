@@ -59,10 +59,10 @@ export default function TestsPage() {
           <TestReportPDF
             template={template}
             labData={{
-              name: lab?.name || "Nombre del Laboratorio",
-              address: lab?.address || "Dirección desde Perfil",
-              phone: lab?.phone || "Teléfono desde Perfil",
-              email: lab?.email || "Correo desde Perfil",
+              name: lab?.name || "Configura tu nombre en el perfil",
+              address: lab?.address || "Configura tu direccion en el perfil",
+              phone: lab?.phone || "Configura tu telefono en el perfil",
+              email: lab?.email || "Configura tu correo en el perfil",
               logo: lab?.logo_url || null,
               primary_color: lab?.primary_color || "#0ea5e9",
               secondary_color: lab?.secondary_color || "#4f46e5",

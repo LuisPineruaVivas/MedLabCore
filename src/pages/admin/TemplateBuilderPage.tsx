@@ -50,7 +50,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { TestReportPDF } from "@/lib/testReportGenerator";
 import {
   Dialog,
@@ -115,6 +115,17 @@ export default function TemplateBuilderPage() {
   });
 
   const orgId = profile?.org_id;
+  
+  // ── Fetch lab data for preview ────────────────────────────────
+  const { data: lab } = useQuery({
+    queryKey: ["lab", orgId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!orgId,
+  });
 
   // ── Derive initial form data ────────────────────────────────
   const initialData: TestTemplateFormData | undefined = existingTemplate
@@ -227,6 +238,57 @@ export default function TemplateBuilderPage() {
   // ── Collapsed state ──────────────────────────────────────────
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const isMobileDevice = () =>
+    typeof window !== "undefined" &&
+    (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+  async function handlePreview() {
+    if (isMobileDevice()) {
+      setPreviewLoading(true);
+      try {
+        const blob = await pdf(
+          <TestReportPDF
+            template={{
+              id: existingTemplate?.id || "preview",
+              name: currentFormData.name,
+              category: currentFormData.category,
+              base_price: currentFormData.base_price,
+              schema: currentFormData.schema,
+              is_active: true,
+              org_id: null,
+              created_at: "",
+              updated_at: "",
+            }}
+            labData={{
+              name: lab?.name || "Nombre del Laboratorio",
+              address: lab?.address || "Sin dirección registrada",
+              phone: lab?.phone || "Sin teléfono registrado",
+              email: lab?.email || "Sin correo registrado",
+              logo: lab?.logo_url || null,
+              primary_color: lab?.primary_color || "#0ea5e9",
+              secondary_color: lab?.secondary_color || "#4f46e5",
+            }}
+          />
+        ).toBlob();
+
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } else {
+          toast.error("No se pudo generar el PDF");
+        }
+      } catch (error) {
+        toast.error("Error al generar el PDF");
+      } finally {
+        setPreviewLoading(false);
+      }
+    } else {
+      setShowPreview(true);
+    }
+  }
 
   // ── Save mutation ────────────────────────────────────────────
   const saveMutation = useMutation({
@@ -320,19 +382,25 @@ export default function TemplateBuilderPage() {
               variant="ghost"
               size="sm"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hidden sm:inline-flex"
-              onClick={() => setShowPreview(true)}
+              onClick={handlePreview}
+              disabled={previewLoading}
             >
               <Eye className="w-4 h-4 mr-2" />
-              Vista Previa
+              {previewLoading ? "Generando..." : "Vista Previa"}
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="icon"
               className="text-blue-600 sm:hidden"
-              onClick={() => setShowPreview(true)}
+              onClick={handlePreview}
+              disabled={previewLoading}
             >
-              <Eye className="w-4 h-4" />
+              {previewLoading ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </Button>
             <Button
               form="template-builder-form"
@@ -575,6 +643,15 @@ export default function TemplateBuilderPage() {
                     org_id: null,
                     created_at: "",
                     updated_at: "",
+                  }}
+                  labData={{
+                    name: lab?.name || "Nombre del Laboratorio",
+                    address: lab?.address || "Sin dirección registrada",
+                    phone: lab?.phone || "Sin teléfono registrado",
+                    email: lab?.email || "Sin correo registrado",
+                    logo: lab?.logo_url || null,
+                    primary_color: lab?.primary_color || "#0ea5e9",
+                    secondary_color: lab?.secondary_color || "#4f46e5",
                   }}
                 />
               </PDFViewer>
