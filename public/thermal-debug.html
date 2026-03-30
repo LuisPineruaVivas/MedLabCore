@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>🖨️ Thermal Printer Debug</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; padding: 20px; }
+    h1 { color: #7dd3fc; margin-bottom: 4px; font-size: 1.2rem; }
+    .subtitle { color: #6b7280; font-size: 0.8rem; margin-bottom: 20px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .card h2 { color: #a5f3fc; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    button {
+      background: #1d4ed8; color: white; border: none; border-radius: 6px;
+      padding: 8px 14px; font-size: 0.8rem; cursor: pointer; font-family: monospace;
+    }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    button.danger { background: #991b1b; }
+    button.danger:hover { background: #b91c1c; }
+    button.success { background: #166534; }
+    button.success:hover { background: #15803d; }
+    .log {
+      background: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 6px;
+      padding: 12px; font-size: 0.75rem; line-height: 1.6;
+      max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    .ok    { color: #4ade80; }
+    .err   { color: #f87171; }
+    .info  { color: #7dd3fc; }
+    .warn  { color: #fbbf24; }
+    .dim   { color: #6b7280; }
+    .badge {
+      display: inline-block; border-radius: 4px; padding: 2px 8px;
+      font-size: 0.7rem; font-weight: bold; margin-left: 8px;
+    }
+    .badge-green  { background: #166534; color: #4ade80; }
+    .badge-red    { background: #7f1d1d; color: #f87171; }
+    .badge-yellow { background: #78350f; color: #fbbf24; }
+    .stat { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.8rem; }
+    .hex-grid {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      background: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 6px;
+      padding: 12px; max-height: 200px; overflow-y: auto;
+    }
+    .hex-byte {
+      font-size: 0.65rem; padding: 2px 4px;
+      border-radius: 3px; background: #1f2937; color: #93c5fd;
+      cursor: help;
+    }
+    .hex-byte.printable { background: #1e3a2f; color: #4ade80; }
+    .hex-byte.control   { background: #3b1f1f; color: #f87171; }
+    label { font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px; }
+    input, select {
+      background: #111; border: 1px solid #333; color: #e0e0e0;
+      border-radius: 4px; padding: 6px 10px; font-family: monospace;
+      font-size: 0.8rem; width: 100%;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    hr { border: none; border-top: 1px solid #2a2a2a; margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+<h1>🖨️ Thermal Printer Debug Panel</h1>
+<p class="subtitle">Abre esta página en Chrome o Edge (requiere Web Serial API)</p>
+
+<!-- STATUS -->
+<div class="card">
+  <h2>Estado</h2>
+  <div class="stat">
+    Web Serial API:
+    <span id="serial-support"></span>
+  </div>
+  <div class="stat">
+    Puerto activo:
+    <span id="port-status"><span class="badge badge-red">Desconectado</span></span>
+  </div>
+  <div class="row">
+    <button id="btn-connect">🔌 Seleccionar Puerto</button>
+    <button id="btn-disconnect" disabled class="danger">✖ Desconectar</button>
+    <button id="btn-list-ports">📋 Puertos Recordados</button>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="card">
+  <h2>Configuración</h2>
+  <div class="grid2">
+    <div>
+      <label>Baud Rate</label>
+      <select id="cfg-baud">
+        <option value="9600" selected>9600 (más común)</option>
+        <option value="19200">19200</option>
+        <option value="38400">38400</option>
+        <option value="57600">57600</option>
+        <option value="115200">115200</option>
+      </select>
+    </div>
+    <div>
+      <label>Ancho de papel (chars)</label>
+      <select id="cfg-width">
+        <option value="32">32mm (pequeño)</option>
+        <option value="48" selected>48mm (80mm estándar)</option>
+        <option value="42">42mm (57mm)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- TESTS -->
+<div class="card">
+  <h2>Pruebas de Impresión</h2>
+
+  <div style="margin-bottom: 12px;">
+    <p style="font-size:0.75rem; color:#9ca3af; margin-bottom:8px;">
+      Ejecuta las pruebas en orden. Cada una agrega más complejidad para aislar el problema.
+    </p>
+  </div>
+
+  <div class="row">
+    <button id="btn-test-raw" title="Envía solo ESC/POS initialize + corte">
+      1️⃣ Solo Initialize + Cut
+    </button>
+    <button id="btn-test-text" title="Texto simple, sin alineación ni QR">
+      2️⃣ Texto Simple
+    </button>
+    <button id="btn-test-align" title="Prueba setAlign center/left">
+      3️⃣ Test Alineación
+    </button>
+    <button id="btn-test-qr" title="Solo QR code aislado">
+      4️⃣ Solo QR Code
+    </button>
+    <button id="btn-test-full" title="Recibo completo con todos los elementos">
+      5️⃣ Recibo Completo
+    </button>
+  </div>
+
+  <hr>
+
+  <div style="margin-bottom: 8px;">
+    <label>Contenido QR de prueba</label>
+    <input id="cfg-qr-url" type="text" value="https://medlab.test/portal-paciente?order=0001&pin=123456" />
+  </div>
+
+  <hr>
+
+  <div style="margin-bottom: 8px;">
+    <h2 style="margin-bottom:8px;">Vista Previa de Bytes</h2>
+    <p style="font-size:0.72rem; color:#6b7280; margin-bottom:8px;">
+      <span style="color:#4ade80">■</span> Printable ASCII &nbsp;&nbsp;
+      <span style="color:#f87171">■</span> ESC/POS Control &nbsp;&nbsp;
+      <span style="color:#93c5fd">■</span> Datos binarios
+    </p>
+    <div class="hex-grid" id="hex-preview"><span class="dim">Genera un comando para ver los bytes aquí...</span></div>
+    <div style="margin-top:6px; font-size:0.72rem; color:#6b7280;">
+      Total: <span id="byte-count">0</span> bytes &nbsp;|&nbsp;
+      <button style="padding:2px 8px; font-size:0.7rem;" id="btn-copy-hex">📋 Copiar hex</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="card">
+  <h2>Log <button style="padding:2px 8px; font-size:0.7rem; float:right;" id="btn-clear-log">Limpiar</button></h2>
+  <div class="log" id="log">Listo. Selecciona un puerto y ejecuta una prueba...\n</div>
+</div>
+
+<!-- Import the library from the running dev server -->
+<script type="module">
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  const log = (msg, cls = '') => {
+    const el = document.getElementById('log');
+    const ts = new Date().toLocaleTimeString('es', { hour12: false });
+    el.innerHTML += `<span class="${cls}">[${ts}] ${msg}</span>\n`;
+    el.scrollTop = el.scrollHeight;
+  };
+
+  const $ = id => document.getElementById(id);
+
+  function updateHexPreview(bytes) {
+    const grid = $('hex-preview');
+    $('byte-count').textContent = bytes.length;
+    if (!bytes.length) { grid.innerHTML = '<span class="dim">Sin bytes</span>'; return; }
+
+    grid.innerHTML = bytes.map((b, i) => {
+      let cls = 'hex-byte';
+      let title = `0x${b.toString(16).padStart(2,'0')} (${b}) @ offset ${i}`;
+      if (b >= 0x20 && b <= 0x7e) {
+        cls += ' printable';
+        title += ` = '${String.fromCharCode(b)}'`;
+      } else if (b === 0x1b || b === 0x1d || b === 0x0a || b === 0x0d) {
+        cls += ' control';
+        const names = {0x1b:'ESC', 0x1d:'GS', 0x0a:'LF', 0x0d:'CR'};
+        title += ` = ${names[b] || 'CTL'}`;
+      }
+      return `<span class="${cls}" title="${title}">${b.toString(16).padStart(2,'0')}</span>`;
+    }).join('');
+  }
+
+  $('btn-copy-hex').onclick = () => {
+    const spans = $('hex-preview').querySelectorAll('.hex-byte');
+    const hex = Array.from(spans).map(s => s.textContent).join(' ');
+    navigator.clipboard.writeText(hex);
+    log('Hex copiado al portapapeles', 'info');
+  };
+
+  $('btn-clear-log').onclick = () => { $('log').innerHTML = ''; };
+
+  // ─── Serial State ─────────────────────────────────────────────────────────
+
+  let activePort = null;
+  let lastBytes = null;
+
+  const serialSupport = typeof navigator !== 'undefined' && !!navigator.serial;
+  $('serial-support').innerHTML = serialSupport
+    ? '<span class="badge badge-green">✓ Disponible</span>'
+    : '<span class="badge badge-red">✗ No disponible (usa Chrome/Edge en HTTPS o localhost)</span>';
+
+  $('btn-list-ports').onclick = async () => {
+    if (!serialSupport) { log('Web Serial no disponible', 'err'); return; }
+    const ports = await navigator.serial.getPorts();
+    log(`Puertos recordados: ${ports.length}`, 'info');
+    ports.forEach((p, i) => {
+      const info = p.getInfo ? JSON.stringify(p.getInfo()) : '(sin info)';
+      log(`  Puerto ${i}: ${info}`, 'dim');
+    });
+  };
+
+  $('btn-connect').onclick = async () => {
+    if (!serialSupport) { log('Web Serial no disponible', 'err'); return; }
+    try {
+      log('Solicitando selección de puerto...', 'info');
+      activePort = await navigator.serial.requestPort();
+      const baud = parseInt($('cfg-baud').value);
+      log(`Puerto seleccionado. Abriendo a ${baud} baud...`, 'info');
+      if (!activePort.readable && !activePort.writable) {
+        await activePort.open({ baudRate: baud });
+        log('Puerto abierto ✓', 'ok');
+      } else {
+        log('Puerto ya estaba abierto', 'warn');
+      }
+      $('port-status').innerHTML = `<span class="badge badge-green">✓ Conectado (${baud} baud)</span>`;
+      $('btn-connect').disabled = true;
+      $('btn-disconnect').disabled = false;
+    } catch (e) {
+      log(`Error conectando: ${e.message}`, 'err');
+      activePort = null;
+    }
+  };
+
+  $('btn-disconnect').onclick = async () => {
+    if (!activePort) return;
+    try {
+      await activePort.close();
+      log('Puerto cerrado', 'info');
+    } catch (e) {
+      log(`Error cerrando puerto: ${e.message}`, 'warn');
+    }
+    activePort = null;
+    $('port-status').innerHTML = '<span class="badge badge-red">Desconectado</span>';
+    $('btn-connect').disabled = false;
+    $('btn-disconnect').disabled = true;
+  };
+
+  // ─── Send bytes ───────────────────────────────────────────────────────────
+
+  async function sendBytes(bytes) {
+    lastBytes = bytes;
+    updateHexPreview(bytes);
+    log(`Generados ${bytes.length} bytes`, 'dim');
+
+    if (!activePort) {
+      log('⚠ Sin puerto activo. Conecta primero. Se muestran los bytes pero NO se envían.', 'warn');
+      return false;
+    }
+
+    const writer = activePort.writable?.getWriter();
+    if (!writer) { log('No se pudo obtener writer', 'err'); return false; }
+
+    try {
+      log(`Enviando ${bytes.length} bytes a la impresora...`, 'info');
+      await writer.write(bytes);
+      log('✓ Bytes enviados correctamente', 'ok');
+      return true;
+    } catch (e) {
+      log(`Error enviando bytes: ${e.message}`, 'err');
+      return false;
+    } finally {
+      writer.releaseLock();
+    }
+  }
+
+  // ─── Raw ESC/POS builders (sin librería, para prueba 1-3) ─────────────────
+
+  function escInit()   { return [0x1b, 0x40]; }              // ESC @
+  function escCut()    { return [0x1d, 0x56, 0x41, 0x10]; }  // GS V A (partial cut)
+  function escLF()     { return [0x0a]; }
+  function escAlign(a) { return [0x1b, 0x61, a === 'center' ? 1 : a === 'right' ? 2 : 0]; }
+  function escBold(on) { return [0x1b, 0x45, on ? 1 : 0]; }
+  function escText(str) {
+    return Array.from(new TextEncoder().encode(str
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")  // strip accents
+      .replace(/[^\x20-\x7E\n]/g, "?")));                // strip non-ASCII
+  }
+
+  // Build QR manually (ESC/POS GS ( k commands)
+  function escQR(content, size = 6) {
+    const data = new TextEncoder().encode(content);
+    const storeLen = data.length + 3;
+    const storeLenL = storeLen & 0xff;
+    const storeLenH = (storeLen >> 8) & 0xff;
+    return [
+      // Model: QR Model 2
+      0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00,
+      // Size (module size)
+      0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, size,
+      // Error correction level H
+      0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x33,
+      // Store data
+      0x1d, 0x28, 0x6b, storeLenL, storeLenH, 0x31, 0x50, 0x30,
+      ...data,
+      // Print
+      0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30,
+    ];
+  }
+
+  // ─── Test 1: Solo initialize + cut ────────────────────────────────────────
+  $('btn-test-raw').onclick = async () => {
+    log('── TEST 1: Initialize + Cut ──', 'info');
+    const bytes = new Uint8Array([
+      ...escInit(),
+      ...escLF(), ...escLF(), ...escLF(),
+      ...escCut(),
+    ]);
+    log('Probando que el papel avance y corte...', 'dim');
+    await sendBytes(bytes);
+  };
+
+  // ─── Test 2: Texto simple ─────────────────────────────────────────────────
+  $('btn-test-text').onclick = async () => {
+    log('── TEST 2: Texto simple ──', 'info');
+    const bytes = new Uint8Array([
+      ...escInit(),
+      ...escText('LABORATORIO TEST\n'),
+      ...escText('Esto es una prueba\n'),
+      ...escText('Orden: 0001\n'),
+      ...escLF(), ...escLF(), ...escLF(),
+      ...escCut(),
+    ]);
+    await sendBytes(bytes);
+  };
+
+  // ─── Test 3: Alineación ───────────────────────────────────────────────────
+  $('btn-test-align').onclick = async () => {
+    log('── TEST 3: Test alineación ──', 'info');
+    const bytes = new Uint8Array([
+      ...escInit(),
+      ...escAlign('left'),   ...escText('Izquierda\n'),
+      ...escAlign('center'), ...escText('Centro\n'),
+      ...escAlign('right'),  ...escText('Derecha\n'),
+      ...escAlign('left'),   ...escText('Izquierda de vuelta\n'),
+      ...escLF(), ...escLF(), ...escLF(),
+      ...escCut(),
+    ]);
+    await sendBytes(bytes);
+  };
+
+  // ─── Test 4: Solo QR ──────────────────────────────────────────────────────
+  $('btn-test-qr').onclick = async () => {
+    log('── TEST 4: Solo QR Code ──', 'info');
+    const url = $('cfg-qr-url').value;
+    log(`QR content: ${url}`, 'dim');
+    const bytes = new Uint8Array([
+      ...escInit(),
+      ...escAlign('center'),
+      ...escText('ESCANEA EL CODIGO QR\n'),
+      ...escQR(url),
+      ...escAlign('left'),
+      ...escText('\n'),
+      ...escLF(), ...escLF(), ...escLF(),
+      ...escCut(),
+    ]);
+    await sendBytes(bytes);
+  };
+
+  // ─── Test 5: Recibo completo via react-thermal-printer ────────────────────
+  $('btn-test-full').onclick = async () => {
+    log('── TEST 5: Recibo completo (react-thermal-printer) ──', 'info');
+
+    // Dynamically import from the running Vite dev server
+    const devOrigin = window.location.origin !== 'null' ? window.location.origin : 'http://localhost:5173';
+    log(`Intentando importar librería desde ${devOrigin}...`, 'dim');
+
+    try {
+      // We can't directly import the library in a plain file, so we'll
+      // build the receipt manually with the same raw ESC/POS commands
+      log('Construyendo recibo manualmente con comandos ESC/POS raw...', 'dim');
+      const url = $('cfg-qr-url').value;
+      const width = parseInt($('cfg-width').value);
+
+      function line(char = '-') {
+        return escText(char.repeat(width) + '\n');
+      }
+
+      const bytes = new Uint8Array([
+        ...escInit(),
+        // Header
+        ...escAlign('center'),
+        ...escBold(true),  ...escText('LABORATORIO MEDICO\n'), ...escBold(false),
+        ...escText('Calle Ejemplo 123\n'),
+        ...escText('Tel: 0412-1234567\n'),
+        // Separator
+        ...escLF(),
+        ...line(),
+        ...escBold(true),  ...escText('NOTA DE ENTREGA\n'), ...escBold(false),
+        ...line(),
+        // Order info
+        ...escAlign('left'),
+        ...escText('ORDEN : 0001\n'),
+        ...escText('FECHA : 30/03/2026\n'),
+        ...escText('PACIENTE\n'),
+        ...escBold(true),  ...escText('JUAN PEREZ\n'), ...escBold(false),
+        ...escText('CI: 12345678\n'),
+        // Items
+        ...escLF(),
+        ...line(),
+        ...escText('EXAMEN              USD\n'),
+        ...line(),
+        ...escText('Hematologia         $15.00\n'),
+        ...escText('Glucosa             $8.00\n'),
+        ...escText('Creatinina          $10.00\n'),
+        ...line(),
+        ...escBold(true),
+        ...escText('TOTAL USD           $33.00\n'),
+        ...escText('TASA BS             38.50\n'),
+        ...escText('TOTAL BS            Bs. 1270.50\n'),
+        ...escBold(false),
+        // PIN
+        ...escLF(),
+        ...line(),
+        ...escAlign('center'),
+        ...escText('PIN DE ACCESO\n'),
+        ...escBold(true),  ...escText('1 2 3 4 5 6\n'), ...escBold(false),
+        // QR
+        ...escLF(),
+        ...escText('CONSULTA TUS RESULTADOS\n'),
+        ...escQR(url, 5),
+        ...escText(url.split('?')[0] + '\n'),
+        // Footer
+        ...escLF(),
+        ...escText('Gracias por su preferencia\n'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]);
+
+      await sendBytes(bytes);
+      log('Recibo completo generado y enviado', 'ok');
+    } catch(e) {
+      log(`Error: ${e.message}`, 'err');
+      console.error(e);
+    }
+  };
+</script>
+</body>
+</html>
