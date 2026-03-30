@@ -19,6 +19,10 @@ export default defineConfig(() => ({
       devOptions: {
         enabled: true,
       },
+      workbox: {
+        // Increase the limit to 4MB (4 * 1024 * 1024)
+        maximumFileSizeToCacheInBytes: 4194304, 
+      },
       includeAssets: ["favicon.ico", "favicon.png", "apple-touch-icon.png", "robots.txt"],
       manifest: {
         name: "MedLabCore",
