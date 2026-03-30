@@ -72,7 +72,7 @@ export const TEMPLATE_CATEGORIES = [
   "Immunologia",
   "Serologia",
   "Coagulacion",
-  "Other",
+  "Pruebas Especiales",
 ] as const;
 
 // ── Helper: find matching reference range for a patient ─────────

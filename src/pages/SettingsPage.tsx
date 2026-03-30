@@ -13,11 +13,11 @@ export default function SettingsPage() {
   const orgId = profile?.org_id;
 
   const settingsCards = [
-    { 
-      id: "org", 
-      icon: Building2, 
-      title: "Laboratorio", 
-      desc: "Nombre del laboratorio, logo, información de contacto, etc." 
+    {
+      id: "org",
+      icon: Building2,
+      title: "Laboratorio",
+      desc: "Nombre del laboratorio, logo, información de contacto, etc."
     },
     /*{ 
       id: "dept", 
@@ -25,18 +25,18 @@ export default function SettingsPage() {
       title: "Departamentos", 
       desc: "Configura los departamentos de tu laboratorio (Hematología, Bioquímica, etc.)" 
     },*/
-    { 
-      id: "users", 
-      icon: Shield, 
-      title: "Usuarios y Roles", 
-      desc: "Gestiona el acceso del personal de tu laboratorio" 
+    {
+      id: "users",
+      icon: Shield,
+      title: "Usuarios y Roles",
+      desc: "Gestiona el acceso del personal de tu laboratorio"
     },
-    { 
+    /*{ 
       id: "exchange", 
       icon: DollarSign, 
       title: "Tasa de Cambio", 
       desc: "Configura la tasa USD/BS para facturación en bolívares" 
-    },
+    },*/
   ];
 
   return (
@@ -68,7 +68,7 @@ export default function SettingsPage() {
 
       {/* Organization Dialog */}
       <Dialog open={activeDialog === "org"} onOpenChange={(open) => !open && setActiveDialog(null)}>
-        <DialogContent className="sm:max-w-[600px] w-[95vw]">
+        <DialogContent className="sm:max-w-[600px] w-[90vw] md:w-full md:h-auto h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Datos del Laboratorio</DialogTitle>
           </DialogHeader>

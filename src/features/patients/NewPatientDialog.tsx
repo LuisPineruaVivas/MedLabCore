@@ -133,7 +133,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
             </div>
 
             {/* DOB + Age + Gender */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="date_of_birth"

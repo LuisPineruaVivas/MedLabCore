@@ -5,7 +5,7 @@ import { format, differenceInYears } from "date-fns";
 import { Search, Plus, X, UserPlus, ShoppingCart, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
@@ -225,6 +225,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const total = cart.reduce((sum, c) => sum + c.price, 0);
   const totalBs = currentRate ? total * currentRate : null;
 
+  const isMobileDevice = () => typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
   async function handleCreateOrder() {
     if (!selectedPatient || !orgId || cart.length === 0) return;
 
@@ -249,7 +251,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
 
       // Show receipt — only show items with price > 0 (hides $0 child exams)
       const receiptItems = cart.filter((c) => c.price > 0 || (!c.parentProfileId && !c.isProfileHeader));
-      setReceiptData({
+      const generatedReceiptData = {
         orderId: order.id,
         orderDate: format(new Date(), "dd/MM/yyyy HH:mm"),
         patientName: `${selectedPatient.first_name} ${selectedPatient.last_name}`.toUpperCase(),
@@ -259,7 +261,35 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         accessPin: order.access_pin,
         exchangeRate: currentRate,
         totalBs: totalBs,
-      });
+      };
+
+      if (isMobileDevice()) {
+        // Mobile: abrir PDF en nueva pestaña en lugar de mostrar el PDFViewer dentro del dialog
+        const receiptBlob = await pdf(
+          <OrderReceiptPDF
+            orderId={generatedReceiptData.orderId}
+            orderDate={generatedReceiptData.orderDate}
+            patientName={generatedReceiptData.patientName}
+            patientId={generatedReceiptData.patientId}
+            items={generatedReceiptData.items}
+            total={generatedReceiptData.total}
+            accessPin={generatedReceiptData.accessPin}
+            portalUrl={`${window.location.origin}/portal-paciente`}
+            labData={labData}
+            exchangeRate={generatedReceiptData.exchangeRate}
+            totalBs={generatedReceiptData.totalBs}
+          />
+        ).toBlob();
+
+        const url = URL.createObjectURL(receiptBlob);
+        window.open(url, "_blank");
+
+        // Cierra dialog y limpia estado de creación para evitar UI extra
+        setReceiptData(null);
+        onOpenChange(false);
+      } else {
+        setReceiptData(generatedReceiptData);
+      }
 
       onSuccess?.();
     } catch (err) {
@@ -335,6 +365,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       <DialogContent className={cn(
         "max-h-[90vh] overflow-y-auto w-[95vw]",
         receiptData ? "sm:max-w-4xl" : "sm:max-w-5xl h-[90vh]",
+        "sm:h-auto"
       )}>
         {receiptData ? (
           <>
@@ -385,7 +416,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                 <ShoppingCart className="w-5 h-5 text-primary" />
                 Nueva Orden
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-base">
                 Busca el paciente y selecciona los examenes para crear una nueva orden.
               </DialogDescription>
             </DialogHeader>
@@ -485,7 +516,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
             <Separator />
 
             {/* ── Step 2: Tests ── */}
-            <div className="flex justify-between items-center mb-2 gap-6 max-h-[40vh]">
+            <div className="flex flex-col lg:flex-row gap-4 mb-2 md:h-96">
 
               <div className="w-full space-y-4 h-full flex flex-col">
                 <Label className="text-sm font-semibold">2. Selecciona los examenes a realizar</Label>

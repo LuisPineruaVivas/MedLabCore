@@ -54,7 +54,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
       id_number: "",
       first_name: "",
       last_name: "",
-      date_of_birth: "",
+      date_of_birth: new Date(),
       gender: "masculino",
       phone: "",
       email: "",
@@ -69,7 +69,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
         id_number: patient.id_number,
         first_name: patient.first_name,
         last_name: patient.last_name,
-        date_of_birth: patient.date_of_birth,
+        date_of_birth: new Date(patient.date_of_birth),
         gender: patient.gender,
         phone: patient.phone || "",
         email: patient.email || "",
@@ -145,7 +145,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="date_of_birth"
@@ -162,7 +162,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value ? format(new Date(field.value), "PPP") : "Seleccionar fecha"}
+                            {field.value ? format(new Date(field.value), "dd/MM/yyyy") : "Seleccionar fecha"}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>

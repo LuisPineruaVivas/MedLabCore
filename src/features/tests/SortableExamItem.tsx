@@ -1,63 +1,54 @@
-import { FlaskConical, ArrowUp, ArrowDown } from "lucide-react";
+import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
+import { FlaskConical, GripVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface OrderableExamItemProps {
   name: string;
   category: string;
   isActive: boolean;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
+  isDragging?: boolean;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
 }
 
 export function OrderableExamItem({
   name,
   category,
   isActive,
-  onMoveUp,
-  onMoveDown,
+  isDragging = false,
+  dragHandleProps,
 }: OrderableExamItemProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 bg-card border border-border rounded-lg shadow-sm mb-2 group transition-all",
+        "flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-sm transition-all",
+        isDragging && "border-primary/40 shadow-md ring-1 ring-primary/20",
         !isActive && "opacity-60"
       )}
     >
-      <div className="flex flex-col gap-0.5 mr-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
-          onClick={onMoveUp}
-          disabled={!onMoveUp}
-          title="Mover arriba"
-        >
-          <ArrowUp className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
-          onClick={onMoveDown}
-          disabled={!onMoveDown}
-          title="Mover abajo"
-        >
-          <ArrowDown className="w-3.5 h-3.5" />
-        </Button>
-      </div>
+      <button
+        type="button"
+        className="flex h-9 w-9 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
+        title="Arrastra para reordenar"
+        aria-label={`Arrastrar ${name}`}
+        {...dragHandleProps}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
 
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <FlaskConical className="w-4 h-4 text-primary flex-shrink-0" />
-        <span className={cn("font-medium text-sm truncate", !isActive && "line-through text-muted-foreground")}>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <FlaskConical className="h-4 w-4 flex-shrink-0 text-primary" />
+        <span
+          className={cn(
+            "truncate text-sm font-medium",
+            !isActive && "text-muted-foreground line-through"
+          )}
+        >
           {name}
         </span>
       </div>
-      
-      <Badge variant="outline" className="text-[10px] hidden sm:inline-flex shrink-0">
+
+      <Badge variant="outline" className="hidden shrink-0 text-[10px] sm:inline-flex">
         {category}
       </Badge>
     </div>

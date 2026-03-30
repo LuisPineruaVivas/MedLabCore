@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
+  type DropResult,
+} from "@hello-pangea/dnd";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderableExamItem } from "./SortableExamItem";
@@ -12,8 +18,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Save, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { AlertCircle, Save } from "lucide-react";
+
+type TemplateSetting = {
+  custom_sort_order: number | null;
+  id: string;
+};
+
+type ExamOrderItem = {
+  id: string;
+  name: string;
+  category: string;
+  is_active: boolean;
+  sort_order: number | null;
+  organization_exam_settings?: TemplateSetting[] | null;
+  custom_sort_order?: number | null;
+  settings_id?: string | null;
+  resolvedSortOrder?: number;
+};
 
 export function ExamOrderView() {
   const { user } = useAuth();
@@ -35,19 +58,21 @@ export function ExamOrderView() {
 
   const orgId = profile?.org_id;
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-
-  const [localItems, setLocalItems] = useState<any[]>([]);
+  const [localItems, setLocalItems] = useState<ExamOrderItem[]>([]);
   const [isDirty, setIsDirty] = useState(false);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["test-categories", orgId],
     queryFn: async () => {
       if (!orgId) return [];
+
       const { data, error } = await supabase
         .from("test_templates")
         .select("category")
         .or(`org_id.is.null,org_id.eq.${orgId}`);
+
       if (error) throw error;
+
       const uniqueCats = Array.from(new Set(data.map((d) => d.category)));
       return uniqueCats.filter(Boolean).sort();
     },
@@ -81,10 +106,10 @@ export function ExamOrderView() {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Extract custom_sort_order and determine final sorting
-      const processed = data.map((t: any) => {
-        const settings = t.organization_exam_settings?.find((s: any) => s);
+      const processed = (data as ExamOrderItem[]).map((t) => {
+        const settings = t.organization_exam_settings?.find(Boolean);
         const resolvedSortOrder = settings?.custom_sort_order ?? t.sort_order ?? 999999;
+
         return {
           ...t,
           custom_sort_order: settings?.custom_sort_order ?? null,
@@ -112,18 +137,14 @@ export function ExamOrderView() {
     }
   }, [templates]);
 
-  const moveUp = (index: number) => {
-    if (index === 0) return;
-    const items = [...localItems];
-    [items[index - 1], items[index]] = [items[index], items[index - 1]];
-    setLocalItems(items);
-    setIsDirty(true);
-  };
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination || source.index === destination.index) return;
 
-  const moveDown = (index: number) => {
-    if (index === localItems.length - 1) return;
     const items = [...localItems];
-    [items[index + 1], items[index]] = [items[index], items[index + 1]];
+    const [movedItem] = items.splice(source.index, 1);
+    items.splice(destination.index, 0, movedItem);
+
     setLocalItems(items);
     setIsDirty(true);
   };
@@ -141,7 +162,7 @@ export function ExamOrderView() {
 
       const { error } = await supabase
         .from("organization_exam_settings")
-        .upsert(upserts, { onConflict: 'org_id,template_id' });
+        .upsert(upserts, { onConflict: "org_id,template_id" });
 
       if (error) throw error;
     },
@@ -150,24 +171,26 @@ export function ExamOrderView() {
       setIsDirty(false);
       queryClient.invalidateQueries({ queryKey: ["test-templates-order"] });
     },
-    onError: (err) => {
+    onError: (err: Error) => {
       toast.error("Error al guardar el orden: " + err.message);
-    }
+    },
   });
 
   return (
-    <Card className="bg-card rounded-xl border border-border shadow-sm">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-border">
+    <Card className="rounded-xl border border-border bg-card shadow-sm">
+      <CardHeader className="flex flex-col justify-between gap-4 border-b border-border px-6 py-4 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1">
-          <h3 className="text-sm font-semibold">Configuración de Orden de Impresión</h3>
+          <h3 className="text-sm font-semibold">Configuracion de Orden de Impresion</h3>
           <p className="text-xs text-muted-foreground">
-            Usa las flechas para subir o bajar los exámenes y definir el orden en que aparecerán agrupados en el reporte ({selectedCategory === "all" ? "Todas las categorías" : selectedCategory}).
+            Arrastra y suelta los examenes para definir el orden en que apareceran agrupados en el reporte (
+            {selectedCategory === "all" ? "Todas las categorias" : selectedCategory}).
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+
+        <div className="flex flex-shrink-0 items-center gap-3">
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[180px] h-9 text-sm">
-              <SelectValue placeholder="Categoría" />
+            <SelectTrigger className="h-9 w-[180px] text-sm">
+              <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
               {categories.map((c) => (
@@ -177,42 +200,64 @@ export function ExamOrderView() {
               ))}
             </SelectContent>
           </Select>
+
           <Button
             size="sm"
             onClick={() => saveMutation.mutate()}
             disabled={!isDirty || saveMutation.isPending}
             className="flex-shrink-0"
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="mr-2 h-4 w-4" />
             Guardar Cambios
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-6">
         {isLoading || categoriesLoading ? (
-          <div className="py-20 text-center space-y-3">
-            <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-            <p className="text-sm text-muted-foreground italic">Cargando exámenes...</p>
+          <div className="space-y-3 py-20 text-center">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm italic text-muted-foreground">Cargando examenes...</p>
           </div>
         ) : localItems.length === 0 ? (
           <div className="py-12 text-center">
-            <AlertCircle className="w-12 h-12 text-muted mx-auto mb-3 opacity-30" />
-            <p className="text-sm text-muted-foreground">No se encontraron exámenes para esta categoría.</p>
+            <AlertCircle className="mx-auto mb-3 h-12 w-12 text-muted opacity-30" />
+            <p className="text-sm text-muted-foreground">
+              No se encontraron examenes para esta categoria.
+            </p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto flex flex-col gap-1">
-            {localItems.map((item, index) => (
-              <OrderableExamItem
-                key={item.id}
-                name={item.name}
-                category={item.category}
-                isActive={item.is_active}
-                onMoveUp={index > 0 ? () => moveUp(index) : undefined}
-                onMoveDown={index < localItems.length - 1 ? () => moveDown(index) : undefined}
-              />
-            ))}
-          </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="exam-order-list">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="mx-auto flex max-w-3xl flex-col gap-2"
+                >
+                  {localItems.map((item, index) => (
+                    <Draggable key={item.id} draggableId={item.id} index={index}>
+                      {(draggableProvided, snapshot) => (
+                        <div
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.draggableProps}
+                        >
+                          <OrderableExamItem
+                            name={item.name}
+                            category={item.category}
+                            isActive={item.is_active}
+                            isDragging={snapshot.isDragging}
+                            dragHandleProps={draggableProvided.dragHandleProps}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </CardContent>
     </Card>

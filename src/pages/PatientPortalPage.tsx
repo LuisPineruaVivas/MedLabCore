@@ -6,22 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { format, differenceInYears } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
-import type { OrderItemRow } from "@/features/orders/schemas";
 
 export default function PatientPortalPage() {
   const [searchParams] = useSearchParams();
   const [dni, setDni] = useState(searchParams.get("dni") || "");
   const [pin, setPin] = useState(searchParams.get("pin") || "");
   const [loading, setLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   
   // Rate limiting states
   const MAX_ATTEMPTS = 5;
@@ -100,9 +100,46 @@ export default function PatientPortalPage() {
     setPdfOpen(false);
   }
 
-  function openOrderPDF(order: any) {
+  async function handleViewReport(order) {
+    const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+    if (isMobile) {
+      setReportLoading(true);
+      try {
+        const reportBlob = await pdf(
+          <UnifiedTestReportPDF
+            orden={order}
+            orderItems={order.items}
+            patientData={patientInfo || { name: "", id: "", age: "", gender: "" }}
+            labData={{
+              name: order.org_name || "Laboratorio",
+              address: "",
+              phone: "",
+              email: "",
+              logo: order.org_logo_url || null,
+              primary_color: "#0ea5e9",
+              secondary_color: "#0ea5e9",
+            }}
+          />
+        ).toBlob();
+
+        const url = URL.createObjectURL(reportBlob);
+        window.open(url, "_blank");
+      } catch (err) {
+        console.error("Error abriendo informe en móvil:", err);
+        setError("No se pudo abrir el informe en el móvil. Intenta de nuevo o descarga el PDF.");
+      } finally {
+        setReportLoading(false);
+      }
+      return;
+    }
+
     setSelectedOrder(order);
     setPdfOpen(true);
+  }
+
+  function openOrderPDF(order) {
+    handleViewReport(order);
   }
 
   // Patient info for authenticated session
@@ -311,10 +348,11 @@ export default function PatientPortalPage() {
                         
                         <Button 
                           className="w-full"
-                          onClick={() => openOrderPDF(order)}
+                          onClick={() => handleViewReport(order)}
+                          disabled={reportLoading}
                         >
                           <FileText className="h-4 w-4 mr-2" />
-                          Ver Informe de Resultados
+                          {reportLoading ? "Generando..." : "Ver Informe de Resultados"}
                         </Button>
                       </CardContent>
                     </Card>

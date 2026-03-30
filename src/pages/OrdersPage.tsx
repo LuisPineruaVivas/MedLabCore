@@ -156,7 +156,7 @@ export default function OrdersPage() {
           <Button onClick={() => setCreateOpen(true)} size="sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Nueva Orden</span>
-            <span className="sm:hidden">Nueva</span>
+            <span className="sm:hidden">Nueva Orden</span>
           </Button>
         }
       />

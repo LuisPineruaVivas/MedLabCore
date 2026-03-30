@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { TestReportPDF } from "@/lib/testReportGenerator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
@@ -45,6 +45,48 @@ export default function TestsPage() {
 
   const [previewTpl, setPreviewTpl] = useState<TestTemplateRow | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const isMobileDevice = () =>
+    typeof window !== "undefined" &&
+    (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+  async function handleViewTemplatePreview(template: TestTemplateRow) {
+    if (isMobileDevice()) {
+      setPreviewLoading(true);
+      try {
+        const blob = await pdf(
+          <TestReportPDF
+            template={template}
+            labData={{
+              name: lab?.name || "Nombre del Laboratorio",
+              address: lab?.address || "Dirección desde Perfil",
+              phone: lab?.phone || "Teléfono desde Perfil",
+              email: lab?.email || "Correo desde Perfil",
+              logo: lab?.logo_url || null,
+              primary_color: lab?.primary_color || "#0ea5e9",
+              secondary_color: lab?.secondary_color || "#4f46e5",
+            }}
+          />
+        ).toBlob();
+
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } else {
+          toast.error("No se pudo generar el PDF");
+        }
+      } catch (error) {
+        toast.error("Error al generar el PDF");
+      } finally {
+        setPreviewLoading(false);
+      }
+    } else {
+      setPreviewTpl(template);
+      setIsPreviewOpen(true);
+    }
+  }
 
   // Profile state
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -271,6 +313,9 @@ export default function TestsPage() {
     Endocrinologia: "bg-success/10 text-success",
     Microbiologia: "bg-primary/10 text-primary",
     Immunologia: "bg-accent text-accent-foreground",
+    Serologia: "bg-muted/10 text-muted",
+    Coagulacion: "bg-destructive/10 text-destructive",
+    PruebasEspeciales: "bg-warning/10 text-warning",
   };
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -449,7 +494,7 @@ export default function TestsPage() {
                           </button>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="text-xs h-7 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
+                          <Button variant="ghost" size="sm" className="text-xs h-7 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}>
                             <Eye className="w-3 h-3" /> Visualizar
                           </Button>
                           {canEdit && (
@@ -507,7 +552,7 @@ export default function TestsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => { setPreviewTpl(tpl); setIsPreviewOpen(true); }}>
+                      <Button variant="outline" size="sm" className="text-xs h-7 flex-1" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}>
                         <Eye className="w-3 h-3 mr-1" /> Visualizar
                       </Button>
                       {canEdit && (

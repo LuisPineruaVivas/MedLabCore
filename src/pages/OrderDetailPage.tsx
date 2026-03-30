@@ -16,10 +16,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { ArrowLeft, Save, FileText, ClipboardCheck, FlaskConical, DollarSign, Calendar, User, Link as LinkIcon, Receipt, IdCard, Phone, Mail } from "lucide-react";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
 import { toast } from "sonner";
@@ -43,6 +44,8 @@ export default function OrderDetailPage() {
   const [resultsState, setResultsState] = useState<Record<string, any>>({});
   const [modifiedIds, setModifiedIds] = useState<Set<string>>(new Set());
   const [isSavingAll, setIsSavingAll] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [receiptLoading, setReceiptLoading] = useState(false);
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
@@ -156,6 +159,92 @@ export default function OrderDetailPage() {
     const separator = trimmed === "" ? "" : " ";
     const newValue = `${trimmed}${separator}${option}`.trim();
     updateFieldValue(itemId, sectionIdx, fieldIdx, newValue);
+  }
+
+  async function handleViewReport() {
+    const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+    if (!order) return;
+
+    if (isMobile) {
+      setReportLoading(true);
+      try {
+        const reportBlob = await pdf(
+          <UnifiedTestReportPDF
+            orden={order}
+            orderItems={orderItems}
+            patientData={{
+              ...patientInfo,
+              age: `${patientInfo.age} Años`,
+            }}
+            labData={{
+              name: lab?.name || "Laboratorio",
+              address: lab?.address || "",
+              phone: lab?.phone || "",
+              email: lab?.email || "",
+              logo: lab?.logo_url || null,
+              primary_color: lab?.primary_color || "#0ea5e9",
+              secondary_color: lab?.secondary_color || "#0ea5e9",
+            }}
+          />
+        ).toBlob();
+
+        const url = URL.createObjectURL(reportBlob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error generando reporte móvil:", error);
+        toast.error("No se pudo abrir el informe en el móvil. Intenta descargarlo.");
+      } finally {
+        setReportLoading(false);
+      }
+
+      return;
+    }
+
+    setUnifiedOpen(true);
+  }
+
+  async function handleViewReceipt() {
+    const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+    if (isMobile) {
+      setReceiptLoading(true);
+      try {
+        const blob = await pdf(
+          <OrderThermalReceiptPDF
+            orderId={order.order_seq}
+            orderDate={format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
+            patientName={patientInfo.name}
+            patientId={patientInfo.id}
+            items={orderItems.filter((i) => Number(i.price_at_order) > 0).map(i => ({ test_name: i.test_name, price: Number(i.price_at_order) }))}
+            total={Number(order.total_amount)}
+            accessPin={order.access_pin}
+            portalUrl={`${window.location.origin}/portal-paciente`}
+            exchangeRate={order.exchange_rate ? Number(order.exchange_rate) : null}
+            totalBs={order.total_bs ? Number(order.total_bs) : null}
+            labData={{
+              name: lab?.name || "Laboratorio",
+              address: lab?.address || "",
+              phone: lab?.phone || "",
+              email: lab?.email || "",
+              logo: lab?.logo_url || null,
+              primary_color: lab?.primary_color || "#4f46e5",
+            }}
+          />
+        ).toBlob();
+
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error abriendo recibo móvil:", error);
+        toast.error("No se pudo abrir la nota en el móvil. Intenta descargarla.");
+      } finally {
+        setReceiptLoading(false);
+      }
+      return;
+    }
+
+    setReceiptOpen(true);
   }
 
   const handleFileUploadForOCR = async (e: React.ChangeEvent<HTMLInputElement>, categoryItems: typeof orderItems, categoryName: string) => {
@@ -282,13 +371,13 @@ export default function OrderDetailPage() {
                 Marcar como completada
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setUnifiedOpen(true)}>
+            <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
               <FileText className="w-4 h-4 mr-2" />
-              Ver Informe
+              {reportLoading ? "Generando..." : "Ver Informe"}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setReceiptOpen(true)}>
+            <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
               <Receipt className="w-4 h-4 mr-2" />
-              Ver Nota
+              {receiptLoading ? "Generando..." : "Ver Nota"}
             </Button>
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
@@ -575,25 +664,31 @@ export default function OrderDetailPage() {
                                                           Opciones
                                                         </Button>
                                                       </PopoverTrigger>
-                                                      <PopoverContent className="w-52 p-2">
+                                                      <PopoverContent className="w-80 p-2">
                                                         <p className="text-xs text-muted-foreground mb-2">
                                                           Selecciona una o varias opciones para añadir al texto
                                                         </p>
-                                                        <div className="flex flex-wrap gap-1">
+                                                        <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                                                           {field.options.map((opt: string) => (
-                                                            <Button
-                                                              key={opt}
-                                                              type="button"
-                                                              variant="secondary"
-                                                              size="sm"
-                                                              className="h-7"
-                                                              onClick={() =>
-                                                                appendTextOption(item.id, sIdx, fIdx, opt)
-                                                              }
-                                                              disabled={readOnly}
-                                                            >
-                                                              {opt}
-                                                            </Button>
+                                                            <Tooltip key={opt}>
+                                                              <TooltipTrigger asChild>
+                                                                <Button
+                                                                  type="button"
+                                                                  variant="secondary"
+                                                                  size="sm"
+                                                                  className="h-8 w-full justify-start text-left truncate"
+                                                                  onClick={() =>
+                                                                    appendTextOption(item.id, sIdx, fIdx, opt)
+                                                                  }
+                                                                  disabled={readOnly}
+                                                                >
+                                                                  {opt}
+                                                                </Button>
+                                                              </TooltipTrigger>
+                                                              <TooltipContent>
+                                                                <p>{opt}</p>
+                                                              </TooltipContent>
+                                                            </Tooltip>
                                                           ))}
                                                         </div>
                                                       </PopoverContent>
@@ -671,7 +766,7 @@ export default function OrderDetailPage() {
                   orderItems={orderItems}
                   patientData={{
                     ...patientInfo,
-                    age: `${patientInfo.age} Años`
+                    age: `${patientInfo.age} Años`,
                   }}
                   labData={{
                     name: lab?.name || "Laboratorio",

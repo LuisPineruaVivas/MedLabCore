@@ -24,7 +24,7 @@ type OrgFormValues = z.infer<typeof orgSchema>;
 export function OrganizationSettings({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  
+
   // Estados para manejar el archivo localmente antes de subirlo
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -44,17 +44,17 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     async function loadOrgData() {
-        try {
+      try {
         const { data, error } = await supabase
-            .from("organizations")
-            .select("name, address, phone, logo_url, email, primary_color, secondary_color")
-            .eq("id", orgId)
-            .single();
+          .from("organizations")
+          .select("name, address, phone, logo_url, email, primary_color, secondary_color")
+          .eq("id", orgId)
+          .single();
 
         if (error) throw error;
         if (data) {
-            // Transformamos nulls en strings vacíos para evitar errores de tipo en los inputs
-            form.reset({
+          // Transformamos nulls en strings vacíos para evitar errores de tipo en los inputs
+          form.reset({
             name: data.name || "",
             address: data.address || "",
             phone: data.phone || "",
@@ -62,17 +62,17 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
             logo_url: data.logo_url || "",
             primary_color: data.primary_color || "",
             secondary_color: data.secondary_color || "",
-            });
-            if (data.logo_url) setPreviewUrl(data.logo_url);
+          });
+          if (data.logo_url) setPreviewUrl(data.logo_url);
         }
-        } catch (error) {
+      } catch (error) {
         toast.error("Error cargando la información");
-        } finally {
+      } finally {
         setFetching(false);
-        }
+      }
     }
     loadOrgData();
-    }, [orgId, form]);
+  }, [orgId, form]);
 
   // Esta función solo cambia la vista previa, no sube nada a Supabase
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +119,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       toast.success("Informacion actualizada exitosamente");
       setSelectedFile(null);
       form.setValue("logo_url", finalLogoUrl || "");
-      
+
     } catch (error) {
       toast.error("Error: " + error.message);
     } finally {
@@ -132,7 +132,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.log("Errores de validación:", errors))} className="space-y-6">
-        <div className="flex items-center gap-4 p-2">
+        <div className="md:flex items-center gap-4 p-2">
           <div className="relative w-60 h-20 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
             {previewUrl ? (
               <img src={previewUrl} alt="Logo Preview" className="w-full h-full object-contain" />
@@ -189,7 +189,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
               )}
             />
           </div>
-          
+
           <FormField
             control={form.control}
             name="address"

@@ -1,14 +1,20 @@
-import { Card, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/ui/StatCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { DollarSign, TrendingUp, Receipt, CreditCard, Search } from "lucide-react";
+import { DollarSign, TrendingUp, Receipt, CreditCard, Search, ClipboardList, ChevronRight } from "lucide-react";
+import React from "react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 
 export default function BillingPage() {
@@ -18,6 +24,7 @@ export default function BillingPage() {
   const [monthFilter, setMonthFilter] = useState<string>("");
   const pageSize = 10;
   const debouncedSearch = useDebounce(search, 500);
+  const navigate = useNavigate();
 
   const { user } = useAuth();
   const { data: profile } = useQuery({
@@ -54,7 +61,7 @@ export default function BillingPage() {
       let query = supabase
         .from("orders")
         .select(
-          "id, status, total_amount, created_at, order_seq, patients(first_name,last_name,id_number), order_items(id)",
+          "id, status, total_amount, total_bs, created_at, order_seq, patients!inner(first_name,last_name,id_number), order_items(id)",
           { count: "exact" }
         )
         .eq("org_id", orgId)
@@ -70,7 +77,7 @@ export default function BillingPage() {
 
       if (debouncedSearch.trim()) {
         const term = `%${debouncedSearch.trim()}%`;
-        query = query.or(`id.ilike.${term},patients.first_name.ilike.${term},patients.last_name.ilike.${term},patients.id_number.ilike.${term}`);
+        query = query.or(`first_name.ilike.${term},last_name.ilike.${term},id_number.ilike.${term}`, { foreignTable: "patients" });
       }
 
       const [{ data: ordersPage, error: pageError, count }, { data: allOrders, error: allError }] = await Promise.all([
@@ -133,7 +140,7 @@ export default function BillingPage() {
         description="Monitorea ingresos y controla el estado de las órdenes de examen"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Recaudado" value={`$${totalRevenue.toFixed(2)}`} icon={DollarSign} trend={{ value: Number(((totalRevenue - thisMonthRevenue) / Math.max(thisMonthRevenue, 1) * 100).toFixed(0)), label: "vs mes" }} />
         <StatCard title="Mes Actual" value={`$${thisMonthRevenue.toFixed(2)}`} icon={TrendingUp} trend={{ value: 0, label: "" }} />
         <StatCard title="Ordenes Totales" value={totalOrders.toLocaleString()} icon={Receipt} subtitle="Ordenes registradas" />
@@ -142,83 +149,184 @@ export default function BillingPage() {
 
       <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
         <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
-          <div className="flex flex-1 sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="md:flex md:flex-1 md:space-y-0 space-y-3 gap-3">
+            <div className="relative md:flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Buscar por id, nombre o cedula" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9" placeholder="Buscar por nombre o cedula" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-border rounded-md px-3 py-2 bg-background"
-            >
-              <option value="all">Todos</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="procesando">Procesando</option>
-              <option value="completada">Completada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
-            <input
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="completada">Completada</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
               type="month"
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
-              className="border border-border rounded-md px-3 py-2 bg-background"
-              placeholder="Filtrar por mes"
+              className="w-full sm:w-[160px] px-2"
             />
           </div>
         </CardHeader>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Orden</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Paciente</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Pruebas</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Total</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Fecha</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {isLoading ? (
-                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">Cargando...</td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">No se encontraron órdenes.</td></tr>
-              ) : orders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/orders/${ord.id}`}>
-                  <td className="px-5 py-3.5"><span className="text-sm font-medium mono">#{ord.order_seq.toString().padStart(4, '0')}</span></td>
-                  <td className="px-5 py-3.5"><span className="text-sm">{ord.patientName || "-"}</span></td>
-                  <td className="px-5 py-3.5"><span className="text-sm text-muted-foreground">{ord.tests}</span></td>
-                  <td className="px-5 py-3.5"><span className="text-sm font-semibold mono">${Number(ord.total_amount).toFixed(2)}</span></td>
-                  <td className="px-5 py-3.5"><span className="text-sm text-muted-foreground">{ord.created}</span></td>
-                  <td className="px-5 py-3.5"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                    ord.status === "completada" ? "bg-success/10 text-success border-success/20" : ord.status === "pendiente" ? "bg-warning/10 text-warning border-warning/20" : "bg-muted/10 text-muted-foreground border-border"
-                  }`}>{ord.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Table className="w-full text-left border-collapse hidden md:table">
+          <TableHeader>
+            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border" >
+              <TableHead>Paciente</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Monto</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Orden</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map((order) => (
+              <React.Fragment key={order.id}>
+                <TableRow className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+                  <TableCell>
+                    <div>
+                      <p className="text-sm font-medium">{order.patients?.first_name} {order.patients?.last_name}</p>
+                      <p className="text-xs text-muted-foreground">{order.patients?.id_number}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell><StatusBadge status={order.status} /></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-3.5 h-3.5 text-success" />
+                        <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                      </div>
+                      {order.total_bs != null && (
+                        <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono font-bold text-primary">
+                      #{order.order_seq.toString().padStart(4, '0')}
+                    </span>
+                  </TableCell>
+                </TableRow>
+
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+
+        {isLoading && (
+          <div className="py-20 text-center space-y-3">
+            <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+            <p className="text-sm text-muted-foreground italic">Cargando Ordenes...</p>
+          </div>
+        )}
+
+        {!isLoading && orders.length === 0 && (
+          <div className="py-20 text-center">
+            <ClipboardList className="w-12 h-12 text-muted mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No se encontraron ordenes con estos datos</p>
+          </div>
+        )}
+
+        {/* Mobile Orders Cards */}
+        <div className="md:hidden space-y-2 mb-4">
+          {isLoading && <div className="py-12 text-center text-sm text-muted-foreground">Cargando ordenes...</div>}
+          {!isLoading && orders.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No se encontraron ordenes.</div>}
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-card rounded-xl border border-border overflow-hidden m-2"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              <div
+                className="p-2 cursor-pointer active:bg-muted/30 transition-colors"
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-md font-semibold truncate">{order.patients?.first_name} {order.patients?.last_name}</p>
+                    <p className="text-sm text-muted-foreground font-mono">{order.patients?.id_number}</p>
+                  </div>
+                  <StatusBadge status={order.status} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{format(new Date(order.created_at), "dd/MM/yyyy")}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3 text-success" />
+                      <span className="text-md font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                    </div>
+                    {order.total_bs != null && (
+                      <span className="text-sm text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-          <span className="text-xs text-muted-foreground">
-            Mostrando {Math.min(totalOrders, (page - 1) * pageSize + 1)}-{Math.min(totalOrders, page * pageSize)} de {totalOrders} ordenes
+        <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">
+          <span className="text-sm text-muted-foreground">
+            Mostrando <span className="text-foreground">{Math.min(totalOrders, (page - 1) * pageSize + 1)} a {Math.min(totalOrders, page * pageSize)}</span> de <span className="text-foreground">{totalOrders.toLocaleString()}</span> ordenes
           </span>
-          <div className="flex items-center gap-2">
-            <button
-              className="px-2 py-1 text-xs rounded border border-border bg-background hover:bg-muted/40 disabled:opacity-40"
-              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          <div className="flex items-center gap-1.5 pb-4 sm:pb-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-md"
+              onClick={(e) => { e.stopPropagation(); setPage(prev => Math.max(prev - 1, 1)); }}
               disabled={page <= 1}
-            >Anterior</button>
-            <span className="text-xs text-muted-foreground">{page} / {pageCount}</span>
-            <button
-              className="px-2 py-1 text-xs rounded border border-border bg-background hover:bg-muted/40 disabled:opacity-40"
-              onClick={() => setPage((prev) => Math.min(prev + 1, pageCount))}
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+            </Button>
+
+            {[...Array(Math.min(5, pageCount))].map((_, i) => {
+              const p = i + 1;
+              return (
+                <Button
+                  key={p}
+                  variant={p === page ? "default" : "outline"}
+                  className={`h-8 w-8 rounded-md text-xs font-bold ${p === page ? "bg-primary text-primary-foreground" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); setPage(p); }}
+                >
+                  {p}
+                </Button>
+              );
+            })}
+
+            {pageCount > 5 && <span className="text-muted-foreground px-1">...</span>}
+            {pageCount > 5 && (
+              <Button
+                variant={page === pageCount ? "default" : "outline"}
+                className="h-8 w-12 rounded-md text-xs font-bold"
+                onClick={(e) => { e.stopPropagation(); setPage(pageCount); }}
+              >
+                {pageCount}
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-md"
+              onClick={(e) => { e.stopPropagation(); setPage(prev => Math.min(prev + 1, pageCount)); }}
               disabled={page >= pageCount}
-            >Siguiente</button>
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
-        </div>
+        </CardFooter>
+
       </Card>
     </div>
   );

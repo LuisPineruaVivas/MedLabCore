@@ -1,9 +1,14 @@
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
+import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 import { Buffer } from 'buffer';
 (window as any).Buffer = Buffer;
+
+registerSW({
+  immediate: true,
+});
 
 // Initialize Sentry for production error tracking
 Sentry.init({

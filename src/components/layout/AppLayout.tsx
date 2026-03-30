@@ -5,6 +5,7 @@ import { BottomNav } from "./BottomNav";
 import { useLayoutStore } from "@/stores/layoutStore";
 import { cn } from "@/lib/utils";
 import { Footer } from "./Footer";
+import { PWAInstallBanner } from "../InstallPWA";
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
@@ -31,6 +32,7 @@ export function AppLayout() {
             <Footer />
         </footer>
       </div>
+      <PWAInstallBanner />
       {/* Mobile bottom nav */}
       <div className="md:hidden">
         <BottomNav />

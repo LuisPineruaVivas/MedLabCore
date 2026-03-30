@@ -534,7 +534,7 @@ export type Database = {
           name: string | null
           org_id: string | null
           schema: Json | null
-          updated_at: string | null
+          sort_order: number | null
         }
         Relationships: [
           {
