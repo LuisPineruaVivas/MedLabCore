@@ -1,568 +1,800 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <title>🖨️ Thermal Printer Debug</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; padding: 20px; max-width: 900px; margin: 0 auto; }
-    h1 { color: #7dd3fc; margin-bottom: 4px; font-size: 1.2rem; }
-    .subtitle { color: #6b7280; font-size: 0.8rem; margin-bottom: 20px; }
-    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .card h2 { color: #a5f3fc; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: monospace;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #7dd3fc;
+      margin-bottom: 4px;
+      font-size: 1.2rem;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      color: #a5f3fc;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
     button {
-      background: #1d4ed8; color: white; border: none; border-radius: 6px;
-      padding: 8px 14px; font-size: 0.8rem; cursor: pointer; font-family: monospace;
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: monospace;
     }
-    button:hover { background: #2563eb; }
-    button:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
-    button.danger  { background: #991b1b; } button.danger:hover  { background: #b91c1c; }
-    button.success { background: #166534; } button.success:hover { background: #15803d; }
-    button.purple  { background: #5b21b6; } button.purple:hover  { background: #6d28d9; }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    button:disabled {
+      background: #374151;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    button.danger {
+      background: #991b1b;
+    }
+
+    button.danger:hover {
+      background: #b91c1c;
+    }
+
+    button.success {
+      background: #166534;
+    }
+
+    button.success:hover {
+      background: #15803d;
+    }
+
+    button.purple {
+      background: #5b21b6;
+    }
+
+    button.purple:hover {
+      background: #6d28d9;
+    }
+
     .log {
-      background: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 6px;
-      padding: 12px; font-size: 0.75rem; line-height: 1.6;
-      max-height: 350px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+      background: #0a0a0a;
+      border: 1px solid #1f1f1f;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.75rem;
+      line-height: 1.6;
+      max-height: 350px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
     }
-    .ok   { color: #4ade80; } .err  { color: #f87171; }
-    .info { color: #7dd3fc; } .warn { color: #fbbf24; } .dim  { color: #6b7280; }
-    .badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; font-weight: bold; margin-left: 4px; }
-    .badge-green  { background: #166534; color: #4ade80; }
-    .badge-red    { background: #7f1d1d; color: #f87171; }
-    .badge-yellow { background: #78350f; color: #fbbf24; }
-    .badge-blue   { background: #1e3a8a; color: #93c5fd; }
-    .stat { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
+
+    .ok {
+      color: #4ade80;
+    }
+
+    .err {
+      color: #f87171;
+    }
+
+    .info {
+      color: #7dd3fc;
+    }
+
+    .warn {
+      color: #fbbf24;
+    }
+
+    .dim {
+      color: #6b7280;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-left: 4px;
+    }
+
+    .badge-green {
+      background: #166534;
+      color: #4ade80;
+    }
+
+    .badge-red {
+      background: #7f1d1d;
+      color: #f87171;
+    }
+
+    .badge-yellow {
+      background: #78350f;
+      color: #fbbf24;
+    }
+
+    .badge-blue {
+      background: #1e3a8a;
+      color: #93c5fd;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+    }
+
     .hex-grid {
-      display: flex; flex-wrap: wrap; gap: 4px;
-      background: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 6px;
-      padding: 12px; max-height: 160px; overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      background: #0a0a0a;
+      border: 1px solid #1f1f1f;
+      border-radius: 6px;
+      padding: 12px;
+      max-height: 160px;
+      overflow-y: auto;
     }
-    .hex-byte { font-size: 0.65rem; padding: 2px 4px; border-radius: 3px; background: #1f2937; color: #93c5fd; cursor: help; }
-    .hex-byte.printable { background: #1e3a2f; color: #4ade80; }
-    .hex-byte.control   { background: #3b1f1f; color: #f87171; }
-    label { font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px; }
-    input, select { background: #111; border: 1px solid #333; color: #e0e0e0; border-radius: 4px; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; width: 100%; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    hr { border: none; border-top: 1px solid #2a2a2a; margin: 12px 0; }
-    .alert { border-radius: 6px; padding: 10px 14px; font-size: 0.8rem; margin-bottom: 12px; }
-    .alert-blue { background: #172554; border: 1px solid #1e40af; color: #93c5fd; }
-    .tab-bar { display: flex; gap: 4px; margin-bottom: 12px; }
-    .tab { padding: 6px 14px; border-radius: 6px 6px 0 0; border: 1px solid #333; border-bottom: none; cursor: pointer; font-size: 0.8rem; background: #111; color: #6b7280; }
-    .tab.active { background: #1a1a1a; color: #e0e0e0; border-color: #444; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+
+    .hex-byte {
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      border-radius: 3px;
+      background: #1f2937;
+      color: #93c5fd;
+      cursor: help;
+    }
+
+    .hex-byte.printable {
+      background: #1e3a2f;
+      color: #4ade80;
+    }
+
+    .hex-byte.control {
+      background: #3b1f1f;
+      color: #f87171;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input,
+    select {
+      background: #111;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      width: 100%;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #2a2a2a;
+      margin: 12px 0;
+    }
+
+    .alert {
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+    }
+
+    .alert-blue {
+      background: #172554;
+      border: 1px solid #1e40af;
+      color: #93c5fd;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      padding: 6px 14px;
+      border-radius: 6px 6px 0 0;
+      border: 1px solid #333;
+      border-bottom: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      background: #111;
+      color: #6b7280;
+    }
+
+    .tab.active {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      border-color: #444;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
+
 <body>
 
-<h1>🖨️ Thermal Printer Debug Panel</h1>
-<p class="subtitle">POS-58 / USB Thermal Printer — Chrome o Edge requerido</p>
+  <h1>🖨️ Thermal Printer Debug Panel</h1>
+  <p class="subtitle">POS-58 / USB Thermal Printer — Chrome o Edge requerido</p>
 
-<div class="alert alert-blue">
-  ℹ️ <strong>Por qué no ves tu impresora en Web Serial:</strong> La POS-58 conectada por USB usa el driver "USB Printer Class" de Windows — Web Serial solo ve puertos COM y Web USB requiere un driver WinUSB especial.<br><br>
-  ✅ <strong>Solución recomendada:</strong> Usa la sección <strong>"CSS Print"</strong> al final de esta página — imprime directamente via el driver de Windows sin tocar nada extra.
-</div>
-
-<!-- STATUS -->
-<div class="card">
-  <h2>Soporte del Navegador</h2>
-  <div class="stat">Web Serial API: <span id="serial-support"></span></div>
-  <div class="stat">Web USB API: <span id="usb-support"></span></div>
-  <div class="stat">Conexión activa: <span id="conn-status"><span class="badge badge-red">Ninguna</span></span></div>
-</div>
-
-<!-- TABS -->
-<div class="card" style="padding-bottom:0">
-  <div class="tab-bar">
-    <div class="tab active" data-tab="usb">🔌 Web USB (POS-58 USB)</div>
-    <div class="tab" data-tab="serial">📡 Web Serial (COM port)</div>
+  <div class="alert alert-blue">
+    ℹ️ <strong>Por qué no ves tu impresora en Web Serial:</strong> La POS-58 conectada por USB usa el driver "USB
+    Printer Class" de Windows — Web Serial solo ve puertos COM y Web USB requiere un driver WinUSB especial.<br><br>
+    ✅ <strong>Solución recomendada:</strong> Usa la sección <strong>"CSS Print"</strong> al final de esta página —
+    imprime directamente via el driver de Windows sin tocar nada extra.
   </div>
 
-  <!-- WEB USB TAB -->
-  <div class="tab-content active" id="tab-usb" style="padding-bottom:16px">
-    <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
-      Conecta la impresora POS-58 via USB. Al hacer clic en "Seleccionar", aparecerá una lista de dispositivos USB — elige tu impresora.
-    </p>
-    <div class="row">
-      <button id="btn-usb-connect" class="purple">🔌 Seleccionar Impresora USB</button>
-      <button id="btn-usb-disconnect" class="danger" disabled>✖ Desconectar USB</button>
-      <button id="btn-usb-info">🔍 Ver Info del Dispositivo</button>
+  <!-- STATUS -->
+  <div class="card">
+    <h2>Soporte del Navegador</h2>
+    <div class="stat">Web Serial API: <span id="serial-support"></span></div>
+    <div class="stat">Web USB API: <span id="usb-support"></span></div>
+    <div class="stat">Conexión activa: <span id="conn-status"><span class="badge badge-red">Ninguna</span></span></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="card" style="padding-bottom:0">
+    <div class="tab-bar">
+      <div class="tab active" data-tab="usb">🔌 Web USB (POS-58 USB)</div>
+      <div class="tab" data-tab="serial">📡 Web Serial (COM port)</div>
     </div>
-    <div id="usb-device-info" style="display:none; margin-top:10px; font-size:0.75rem; color:#6b7280;"></div>
-  </div>
 
-  <!-- WEB SERIAL TAB -->
-  <div class="tab-content" id="tab-serial" style="padding-bottom:16px">
-    <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
-      Para impresoras conectadas via puerto COM (RS-232) o adaptador USB-Serial.
-    </p>
-    <div class="grid2" style="margin-bottom:12px">
-      <div>
-        <label>Baud Rate</label>
-        <select id="cfg-baud">
-          <option value="9600" selected>9600 (más común)</option>
-          <option value="19200">19200</option>
-          <option value="38400">38400</option>
-          <option value="115200">115200</option>
-        </select>
+    <!-- WEB USB TAB -->
+    <div class="tab-content active" id="tab-usb" style="padding-bottom:16px">
+      <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
+        Conecta la impresora POS-58 via USB. Al hacer clic en "Seleccionar", aparecerá una lista de dispositivos USB —
+        elige tu impresora.
+      </p>
+      <div class="row">
+        <button id="btn-usb-connect" class="purple">🔌 Seleccionar Impresora USB</button>
+        <button id="btn-usb-disconnect" class="danger" disabled>✖ Desconectar USB</button>
+        <button id="btn-usb-info">🔍 Ver Info del Dispositivo</button>
+      </div>
+      <div id="usb-device-info" style="display:none; margin-top:10px; font-size:0.75rem; color:#6b7280;"></div>
+    </div>
+
+    <!-- WEB SERIAL TAB -->
+    <div class="tab-content" id="tab-serial" style="padding-bottom:16px">
+      <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
+        Para impresoras conectadas via puerto COM (RS-232) o adaptador USB-Serial.
+      </p>
+      <div class="grid2" style="margin-bottom:12px">
+        <div>
+          <label>Baud Rate</label>
+          <select id="cfg-baud">
+            <option value="9600" selected>9600 (más común)</option>
+            <option value="19200">19200</option>
+            <option value="38400">38400</option>
+            <option value="115200">115200</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <button id="btn-serial-connect">🔌 Seleccionar Puerto COM</button>
+        <button id="btn-serial-disconnect" class="danger" disabled>✖ Desconectar</button>
+        <button id="btn-list-ports">📋 Puertos Recordados</button>
       </div>
     </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="card">
+    <h2>Configuración de Prueba</h2>
+    <div class="grid2">
+      <div>
+        <label>Ancho de papel (caracteres)</label>
+        <select id="cfg-width">
+          <option value="32">32 chars (57mm)</option>
+          <option value="48" selected>48 chars (80mm)</option>
+        </select>
+      </div>
+      <div>
+        <label>Contenido del QR</label>
+        <input id="cfg-qr-url" type="text" value="https://medlab.test/portal?order=0001&pin=123456" />
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTS -->
+  <div class="card">
+    <h2>Pruebas (de menor a mayor complejidad)</h2>
+    <p style="font-size:0.75rem; color:#9ca3af; margin-bottom:10px;">
+      Si una prueba no imprime, el problema está en esa capa. Ejecuta en orden.
+    </p>
     <div class="row">
-      <button id="btn-serial-connect">🔌 Seleccionar Puerto COM</button>
-      <button id="btn-serial-disconnect" class="danger" disabled>✖ Desconectar</button>
-      <button id="btn-list-ports">📋 Puertos Recordados</button>
+      <button id="btn-test-raw">1️⃣ Solo Avance + Corte</button>
+      <button id="btn-test-text">2️⃣ Texto simple</button>
+      <button id="btn-test-align">3️⃣ Alineación</button>
+      <button id="btn-test-bold">4️⃣ Bold / Fuente</button>
+      <button id="btn-test-qr">5️⃣ Solo QR</button>
+      <button id="btn-test-full">6️⃣ Recibo Completo</button>
+    </div>
+
+    <hr>
+    <h2 style="margin-bottom:8px;">Bytes Generados</h2>
+    <p style="font-size:0.72rem; color:#6b7280; margin-bottom:6px;">
+      <span style="color:#4ade80">■</span> ASCII imprimible &nbsp;
+      <span style="color:#f87171">■</span> ESC/POS control &nbsp;
+      <span style="color:#93c5fd">■</span> Datos binarios
+    </p>
+    <div class="hex-grid" id="hex-preview"><span class="dim">Ejecuta una prueba para ver los bytes...</span></div>
+    <div style="margin-top:6px; font-size:0.72rem; color:#6b7280;">
+      Total: <span id="byte-count">0</span> bytes &nbsp;|&nbsp;
+      <button style="padding:2px 8px; font-size:0.7rem;" id="btn-copy-hex">📋 Copiar hex</button>
+      <button style="padding:2px 8px; font-size:0.7rem;" id="btn-only-generate">👁 Solo Generar (sin enviar)</button>
     </div>
   </div>
-</div>
 
-<!-- CONFIG -->
-<div class="card">
-  <h2>Configuración de Prueba</h2>
-  <div class="grid2">
-    <div>
-      <label>Ancho de papel (caracteres)</label>
-      <select id="cfg-width">
-        <option value="32">32 chars (57mm)</option>
-        <option value="48" selected>48 chars (80mm)</option>
-      </select>
-    </div>
-    <div>
-      <label>Contenido del QR</label>
-      <input id="cfg-qr-url" type="text" value="https://medlab.test/portal?order=0001&pin=123456" />
-    </div>
-  </div>
-</div>
-
-<!-- TESTS -->
-<div class="card">
-  <h2>Pruebas (de menor a mayor complejidad)</h2>
-  <p style="font-size:0.75rem; color:#9ca3af; margin-bottom:10px;">
-    Si una prueba no imprime, el problema está en esa capa. Ejecuta en orden.
-  </p>
-  <div class="row">
-    <button id="btn-test-raw">1️⃣ Solo Avance + Corte</button>
-    <button id="btn-test-text">2️⃣ Texto simple</button>
-    <button id="btn-test-align">3️⃣ Alineación</button>
-    <button id="btn-test-bold">4️⃣ Bold / Fuente</button>
-    <button id="btn-test-qr">5️⃣ Solo QR</button>
-    <button id="btn-test-full">6️⃣ Recibo Completo</button>
+  <!-- LOG -->
+  <div class="card">
+    <h2>Log <button style="padding:2px 8px; font-size:0.7rem; float:right;" id="btn-clear-log">Limpiar</button></h2>
+    <div class="log" id="log">Listo.\n</div>
   </div>
 
-  <hr>
-  <h2 style="margin-bottom:8px;">Bytes Generados</h2>
-  <p style="font-size:0.72rem; color:#6b7280; margin-bottom:6px;">
-    <span style="color:#4ade80">■</span> ASCII imprimible &nbsp;
-    <span style="color:#f87171">■</span> ESC/POS control &nbsp;
-    <span style="color:#93c5fd">■</span> Datos binarios
-  </p>
-  <div class="hex-grid" id="hex-preview"><span class="dim">Ejecuta una prueba para ver los bytes...</span></div>
-  <div style="margin-top:6px; font-size:0.72rem; color:#6b7280;">
-    Total: <span id="byte-count">0</span> bytes &nbsp;|&nbsp;
-    <button style="padding:2px 8px; font-size:0.7rem;" id="btn-copy-hex">📋 Copiar hex</button>
-    <button style="padding:2px 8px; font-size:0.7rem;" id="btn-only-generate">👁 Solo Generar (sin enviar)</button>
-  </div>
-</div>
+  <script>
+    // ─── State ────────────────────────────────────────────────────────────────
+    let activeMode = null;   // 'usb' | 'serial'
+    let usbDevice = null;
+    let usbEndpointOut = null;
+    let serialPort = null;
+    let lastBytes = null;
 
-<!-- LOG -->
-<div class="card">
-  <h2>Log <button style="padding:2px 8px; font-size:0.7rem; float:right;" id="btn-clear-log">Limpiar</button></h2>
-  <div class="log" id="log">Listo.\n</div>
-</div>
-
-<script>
-  // ─── State ────────────────────────────────────────────────────────────────
-  let activeMode = null;   // 'usb' | 'serial'
-  let usbDevice = null;
-  let usbEndpointOut = null;
-  let serialPort = null;
-  let lastBytes = null;
-
-  // ─── Tabs ─────────────────────────────────────────────────────────────────
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    // ─── Tabs ─────────────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
     });
-  });
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-  const $ = id => document.getElementById(id);
-  const log = (msg, cls = '') => {
-    const el = $('log');
-    const ts = new Date().toLocaleTimeString('es', { hour12: false });
-    el.innerHTML += `<span class="${cls}">[${ts}] ${msg}</span>\n`;
-    el.scrollTop = el.scrollHeight;
-  };
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const log = (msg, cls = '') => {
+      const el = $('log');
+      const ts = new Date().toLocaleTimeString('es', { hour12: false });
+      el.innerHTML += `<span class="${cls}">[${ts}] ${msg}</span>\n`;
+      el.scrollTop = el.scrollHeight;
+    };
 
-  $('btn-clear-log').onclick = () => { $('log').innerHTML = ''; };
+    $('btn-clear-log').onclick = () => { $('log').innerHTML = ''; };
 
-  // Browser support
-  $('serial-support').innerHTML = navigator.serial
-    ? '<span class="badge badge-green">✓ Disponible</span>'
-    : '<span class="badge badge-red">✗ No disponible</span>';
-  $('usb-support').innerHTML = navigator.usb
-    ? '<span class="badge badge-green">✓ Disponible</span>'
-    : '<span class="badge badge-red">✗ No disponible (activa en chrome://flags)</span>';
+    // Browser support
+    $('serial-support').innerHTML = navigator.serial
+      ? '<span class="badge badge-green">✓ Disponible</span>'
+      : '<span class="badge badge-red">✗ No disponible</span>';
+    $('usb-support').innerHTML = navigator.usb
+      ? '<span class="badge badge-green">✓ Disponible</span>'
+      : '<span class="badge badge-red">✗ No disponible (activa en chrome://flags)</span>';
 
-  function setConnStatus(label, cls) {
-    $('conn-status').innerHTML = `<span class="badge ${cls}">${label}</span>`;
-  }
+    function setConnStatus(label, cls) {
+      $('conn-status').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+    }
 
-  // ─── Hex Preview ──────────────────────────────────────────────────────────
-  function updateHexPreview(bytes) {
-    lastBytes = bytes;
-    $('byte-count').textContent = bytes.length;
-    if (!bytes.length) { $('hex-preview').innerHTML = '<span class="dim">Sin bytes</span>'; return; }
-    $('hex-preview').innerHTML = Array.from(bytes).map((b, i) => {
-      let cls = 'hex-byte', title = `0x${b.toString(16).padStart(2,'0')} (${b}) @ ${i}`;
-      if (b >= 0x20 && b <= 0x7e) { cls += ' printable'; title += ` '${String.fromCharCode(b)}'`; }
-      else if ([0x1b,0x1d,0x0a,0x0d].includes(b)) { cls += ' control'; }
-      return `<span class="${cls}" title="${title}">${b.toString(16).padStart(2,'0')}</span>`;
-    }).join('');
-  }
+    // ─── Hex Preview ──────────────────────────────────────────────────────────
+    function updateHexPreview(bytes) {
+      lastBytes = bytes;
+      $('byte-count').textContent = bytes.length;
+      if (!bytes.length) { $('hex-preview').innerHTML = '<span class="dim">Sin bytes</span>'; return; }
+      $('hex-preview').innerHTML = Array.from(bytes).map((b, i) => {
+        let cls = 'hex-byte', title = `0x${b.toString(16).padStart(2, '0')} (${b}) @ ${i}`;
+        if (b >= 0x20 && b <= 0x7e) { cls += ' printable'; title += ` '${String.fromCharCode(b)}'`; }
+        else if ([0x1b, 0x1d, 0x0a, 0x0d].includes(b)) { cls += ' control'; }
+        return `<span class="${cls}" title="${title}">${b.toString(16).padStart(2, '0')}</span>`;
+      }).join('');
+    }
 
-  $('btn-copy-hex').onclick = () => {
-    const spans = $('hex-preview').querySelectorAll('.hex-byte');
-    navigator.clipboard.writeText(Array.from(spans).map(s => s.textContent).join(' '));
-    log('Hex copiado', 'info');
-  };
+    $('btn-copy-hex').onclick = () => {
+      const spans = $('hex-preview').querySelectorAll('.hex-byte');
+      navigator.clipboard.writeText(Array.from(spans).map(s => s.textContent).join(' '));
+      log('Hex copiado', 'info');
+    };
 
-  $('btn-only-generate').onclick = () => {
-    const label = $('btn-only-generate').dataset.lastTest;
-    log('Solo mostrando bytes, no se enviaron a la impresora', 'warn');
-  };
+    $('btn-only-generate').onclick = () => {
+      const label = $('btn-only-generate').dataset.lastTest;
+      log('Solo mostrando bytes, no se enviaron a la impresora', 'warn');
+    };
 
-  // ─── ESC/POS Builders ─────────────────────────────────────────────────────
-  const escInit  = ()   => [0x1b, 0x40];
-  const escCut   = ()   => [0x1d, 0x56, 0x41, 0x10];
-  const escLF    = ()   => [0x0a];
-  const escAlign = (a)  => [0x1b, 0x61, a==='center' ? 1 : a==='right' ? 2 : 0];
-  const escBold  = (on) => [0x1b, 0x45, on ? 1 : 0];
-  const escText  = (s)  => Array.from(new TextEncoder().encode(
-    s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\x7E\n]/g,"?")
-  ));
+    // ─── ESC/POS Builders ─────────────────────────────────────────────────────
+    const escInit = () => [0x1b, 0x40];
+    const escCut = () => [0x1d, 0x56, 0x41, 0x10];
+    const escLF = () => [0x0a];
+    const escAlign = (a) => [0x1b, 0x61, a === 'center' ? 1 : a === 'right' ? 2 : 0];
+    const escBold = (on) => [0x1b, 0x45, on ? 1 : 0];
+    const escText = (s) => Array.from(new TextEncoder().encode(
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E\n]/g, "?")
+    ));
 
-  // QR Code via GS ( k sequence
-  function escQR(content, size = 5) {
-    const data = new TextEncoder().encode(content);
-    const storeLen = data.length + 3;
-    return new Uint8Array([
-      0x1d,0x28,0x6b, 0x04,0x00, 0x31,0x41,0x32,0x00,  // Model 2
-      0x1d,0x28,0x6b, 0x03,0x00, 0x31,0x43,size,        // Size
-      0x1d,0x28,0x6b, 0x03,0x00, 0x31,0x45,0x33,        // Error correction H
-      0x1d,0x28,0x6b, storeLen & 0xff, (storeLen>>8) & 0xff, 0x31,0x50,0x30, ...data, // Store
-      0x1d,0x28,0x6b, 0x03,0x00, 0x31,0x51,0x30,        // Print
-    ]);
-  }
+    // QR Code via GS ( k sequence
+    function escQR(content, size = 5) {
+      const data = new TextEncoder().encode(content);
+      const storeLen = data.length + 3;
+      return new Uint8Array([
+        0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00,  // Model 2
+        0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, size,        // Size
+        0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x33,        // Error correction H
+        0x1d, 0x28, 0x6b, storeLen & 0xff, (storeLen >> 8) & 0xff, 0x31, 0x50, 0x30, ...data, // Store
+        0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30,        // Print
+      ]);
+    }
 
-  function line(w) { return escText('-'.repeat(w) + '\n'); }
+    function line(w) { return escText('-'.repeat(w) + '\n'); }
 
-  // ─── WEB USB ──────────────────────────────────────────────────────────────
-  $('btn-usb-connect').onclick = async () => {
-    if (!navigator.usb) { log('Web USB no disponible en este navegador', 'err'); return; }
-    try {
-      log('Abriendo selector de dispositivos USB...', 'info');
-      // Empty filters = show all USB devices
-      usbDevice = await navigator.usb.requestDevice({ filters: [] });
-      log(`Dispositivo seleccionado: ${usbDevice.manufacturerName || '?'} / ${usbDevice.productName || '?'}`, 'ok');
-      log(`  VendorID: 0x${usbDevice.vendorId.toString(16).padStart(4,'0')}  ProductID: 0x${usbDevice.productId.toString(16).padStart(4,'0')}`, 'dim');
+    // ─── WEB USB ──────────────────────────────────────────────────────────────
+    $('btn-usb-connect').onclick = async () => {
+      if (!navigator.usb) { log('Web USB no disponible en este navegador', 'err'); return; }
+      try {
+        log('Abriendo selector de dispositivos USB...', 'info');
+        // Empty filters = show all USB devices
+        usbDevice = await navigator.usb.requestDevice({ filters: [] });
+        log(`Dispositivo seleccionado: ${usbDevice.manufacturerName || '?'} / ${usbDevice.productName || '?'}`, 'ok');
+        log(`  VendorID: 0x${usbDevice.vendorId.toString(16).padStart(4, '0')}  ProductID: 0x${usbDevice.productId.toString(16).padStart(4, '0')}`, 'dim');
 
-      await usbDevice.open();
-      log('Dispositivo abierto', 'ok');
+        await usbDevice.open();
+        log('Dispositivo abierto', 'ok');
 
-      if (usbDevice.configuration === null) {
-        await usbDevice.selectConfiguration(1);
-        log('Configuración seleccionada: 1', 'dim');
-      }
-
-      // Find the right interface (usually printer class = 7)
-      let claimedInterface = null;
-      for (const iface of usbDevice.configuration.interfaces) {
-        log(`  Interfaz ${iface.interfaceNumber}: clase ${iface.alternate.interfaceClass} protocolo ${iface.alternate.interfaceProtocol}`, 'dim');
-        if (claimedInterface === null) {
-          claimedInterface = iface.interfaceNumber;
+        if (usbDevice.configuration === null) {
+          await usbDevice.selectConfiguration(1);
+          log('Configuración seleccionada: 1', 'dim');
         }
-      }
 
-      await usbDevice.claimInterface(claimedInterface);
-      log(`Interfaz ${claimedInterface} reclamada`, 'ok');
-
-      // Find bulk OUT endpoint
-      const iface = usbDevice.configuration.interfaces.find(i => i.interfaceNumber === claimedInterface);
-      usbEndpointOut = null;
-      for (const ep of iface.alternate.endpoints) {
-        log(`  Endpoint ${ep.endpointNumber}: dir=${ep.direction} tipo=${ep.type} paquete=${ep.packetSize}`, 'dim');
-        if (ep.direction === 'out' && ep.type === 'bulk') {
-          usbEndpointOut = ep.endpointNumber;
-          log(`  → Usando endpoint OUT ${usbEndpointOut} para enviar datos`, 'ok');
+        // Find the right interface (usually printer class = 7)
+        let claimedInterface = null;
+        for (const iface of usbDevice.configuration.interfaces) {
+          log(`  Interfaz ${iface.interfaceNumber}: clase ${iface.alternate.interfaceClass} protocolo ${iface.alternate.interfaceProtocol}`, 'dim');
+          if (claimedInterface === null) {
+            claimedInterface = iface.interfaceNumber;
+          }
         }
-      }
 
-      if (!usbEndpointOut) {
-        // Fallback: try endpoint 1 (most common for POS printers)
-        usbEndpointOut = 1;
-        log('No se encontró endpoint bulk OUT automáticamente, usando endpoint 1 por defecto', 'warn');
-      }
+        await usbDevice.claimInterface(claimedInterface);
+        log(`Interfaz ${claimedInterface} reclamada`, 'ok');
 
-      activeMode = 'usb';
-      setConnStatus(`✓ USB: ${usbDevice.productName || 'Impresora'}`, 'badge-green');
-      $('btn-usb-disconnect').disabled = false;
-      $('btn-usb-connect').disabled = true;
+        // Find bulk OUT endpoint
+        const iface = usbDevice.configuration.interfaces.find(i => i.interfaceNumber === claimedInterface);
+        usbEndpointOut = null;
+        for (const ep of iface.alternate.endpoints) {
+          log(`  Endpoint ${ep.endpointNumber}: dir=${ep.direction} tipo=${ep.type} paquete=${ep.packetSize}`, 'dim');
+          if (ep.direction === 'out' && ep.type === 'bulk') {
+            usbEndpointOut = ep.endpointNumber;
+            log(`  → Usando endpoint OUT ${usbEndpointOut} para enviar datos`, 'ok');
+          }
+        }
 
-      // Show device info
-      $('usb-device-info').style.display = 'block';
-      $('usb-device-info').innerHTML = `
+        if (!usbEndpointOut) {
+          // Fallback: try endpoint 1 (most common for POS printers)
+          usbEndpointOut = 1;
+          log('No se encontró endpoint bulk OUT automáticamente, usando endpoint 1 por defecto', 'warn');
+        }
+
+        activeMode = 'usb';
+        setConnStatus(`✓ USB: ${usbDevice.productName || 'Impresora'}`, 'badge-green');
+        $('btn-usb-disconnect').disabled = false;
+        $('btn-usb-connect').disabled = true;
+
+        // Show device info
+        $('usb-device-info').style.display = 'block';
+        $('usb-device-info').innerHTML = `
         <strong style="color:#a5f3fc">Dispositivo conectado:</strong><br>
         Fabricante: ${usbDevice.manufacturerName || 'N/A'}<br>
         Producto: ${usbDevice.productName || 'N/A'}<br>
-        VendorID: 0x${usbDevice.vendorId.toString(16).padStart(4,'0')}<br>
-        ProductID: 0x${usbDevice.productId.toString(16).padStart(4,'0')}<br>
+        VendorID: 0x${usbDevice.vendorId.toString(16).padStart(4, '0')}<br>
+        ProductID: 0x${usbDevice.productId.toString(16).padStart(4, '0')}<br>
         Endpoint OUT: ${usbEndpointOut}
       `;
-    } catch (e) {
-      log(`Error USB: ${e.message}`, 'err');
-      usbDevice = null; usbEndpointOut = null;
-    }
-  };
-
-  $('btn-usb-disconnect').onclick = async () => {
-    if (!usbDevice) return;
-    try { await usbDevice.close(); } catch(e) {}
-    usbDevice = null; usbEndpointOut = null; activeMode = null;
-    setConnStatus('Ninguna', 'badge-red');
-    $('btn-usb-connect').disabled = false;
-    $('btn-usb-disconnect').disabled = true;
-    $('usb-device-info').style.display = 'none';
-    log('USB desconectado', 'info');
-  };
-
-  $('btn-usb-info').onclick = async () => {
-    if (!navigator.usb) { log('Web USB no disponible', 'err'); return; }
-    const devices = await navigator.usb.getDevices();
-    log(`Dispositivos USB permitidos (recordados): ${devices.length}`, 'info');
-    devices.forEach((d, i) => {
-      log(`  [${i}] ${d.manufacturerName||'?'} / ${d.productName||'?'} VID:0x${d.vendorId.toString(16)} PID:0x${d.productId.toString(16)}`, 'dim');
-    });
-  };
-
-  // ─── WEB SERIAL ───────────────────────────────────────────────────────────
-  $('btn-list-ports').onclick = async () => {
-    const ports = await navigator.serial.getPorts();
-    log(`Puertos COM recordados: ${ports.length}`, 'info');
-    ports.forEach((p, i) => {
-      try { log(`  [${i}] ${JSON.stringify(p.getInfo())}`, 'dim'); } catch(e) {}
-    });
-  };
-
-  $('btn-serial-connect').onclick = async () => {
-    if (!navigator.serial) { log('Web Serial no disponible', 'err'); return; }
-    try {
-      serialPort = await navigator.serial.requestPort();
-      const baud = parseInt($('cfg-baud').value);
-      if (!serialPort.readable && !serialPort.writable) await serialPort.open({ baudRate: baud });
-      activeMode = 'serial';
-      setConnStatus(`✓ Serial COM (${baud} baud)`, 'badge-green');
-      $('btn-serial-connect').disabled = true;
-      $('btn-serial-disconnect').disabled = false;
-      log(`Puerto serial abierto a ${baud} baud`, 'ok');
-    } catch(e) {
-      log(`Error serial: ${e.message}`, 'err');
-      serialPort = null;
-    }
-  };
-
-  $('btn-serial-disconnect').onclick = async () => {
-    if (!serialPort) return;
-    try { await serialPort.close(); } catch(e) {}
-    serialPort = null; activeMode = null;
-    setConnStatus('Ninguna', 'badge-red');
-    $('btn-serial-connect').disabled = false;
-    $('btn-serial-disconnect').disabled = true;
-    log('Puerto serial cerrado', 'info');
-  };
-
-  // ─── Send ─────────────────────────────────────────────────────────────────
-  async function sendBytes(bytes) {
-    if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes);
-    updateHexPreview(bytes);
-    log(`Bytes generados: ${bytes.length}`, 'dim');
-
-    if (!activeMode) {
-      log('⚠ Sin conexión activa. Conecta USB o Serial primero. Los bytes se muestran pero NO se envían.', 'warn');
-      return false;
-    }
-
-    try {
-      if (activeMode === 'usb') {
-        log(`Enviando ${bytes.length} bytes via USB (endpoint ${usbEndpointOut})...`, 'info');
-        const result = await usbDevice.transferOut(usbEndpointOut, bytes);
-        log(`✓ USB transferOut: status=${result.status} bytes enviados=${result.bytesWritten}`, 'ok');
-        return true;
-      } else {
-        log(`Enviando ${bytes.length} bytes via Serial...`, 'info');
-        const writer = serialPort.writable?.getWriter();
-        if (!writer) { log('No se pudo obtener writer serial', 'err'); return false; }
-        await writer.write(bytes);
-        writer.releaseLock();
-        log(`✓ ${bytes.length} bytes enviados via Serial`, 'ok');
-        return true;
+      } catch (e) {
+        log(`Error USB: ${e.message}`, 'err');
+        usbDevice = null; usbEndpointOut = null;
       }
-    } catch(e) {
-      log(`✗ Error enviando: ${e.message}`, 'err');
-      console.error(e);
-      return false;
+    };
+
+    $('btn-usb-disconnect').onclick = async () => {
+      if (!usbDevice) return;
+      try { await usbDevice.close(); } catch (e) { }
+      usbDevice = null; usbEndpointOut = null; activeMode = null;
+      setConnStatus('Ninguna', 'badge-red');
+      $('btn-usb-connect').disabled = false;
+      $('btn-usb-disconnect').disabled = true;
+      $('usb-device-info').style.display = 'none';
+      log('USB desconectado', 'info');
+    };
+
+    $('btn-usb-info').onclick = async () => {
+      if (!navigator.usb) { log('Web USB no disponible', 'err'); return; }
+      const devices = await navigator.usb.getDevices();
+      log(`Dispositivos USB permitidos (recordados): ${devices.length}`, 'info');
+      devices.forEach((d, i) => {
+        log(`  [${i}] ${d.manufacturerName || '?'} / ${d.productName || '?'} VID:0x${d.vendorId.toString(16)} PID:0x${d.productId.toString(16)}`, 'dim');
+      });
+    };
+
+    // ─── WEB SERIAL ───────────────────────────────────────────────────────────
+    $('btn-list-ports').onclick = async () => {
+      const ports = await navigator.serial.getPorts();
+      log(`Puertos COM recordados: ${ports.length}`, 'info');
+      ports.forEach((p, i) => {
+        try { log(`  [${i}] ${JSON.stringify(p.getInfo())}`, 'dim'); } catch (e) { }
+      });
+    };
+
+    $('btn-serial-connect').onclick = async () => {
+      if (!navigator.serial) { log('Web Serial no disponible', 'err'); return; }
+      try {
+        serialPort = await navigator.serial.requestPort();
+        const baud = parseInt($('cfg-baud').value);
+        if (!serialPort.readable && !serialPort.writable) await serialPort.open({ baudRate: baud });
+        activeMode = 'serial';
+        setConnStatus(`✓ Serial COM (${baud} baud)`, 'badge-green');
+        $('btn-serial-connect').disabled = true;
+        $('btn-serial-disconnect').disabled = false;
+        log(`Puerto serial abierto a ${baud} baud`, 'ok');
+      } catch (e) {
+        log(`Error serial: ${e.message}`, 'err');
+        serialPort = null;
+      }
+    };
+
+    $('btn-serial-disconnect').onclick = async () => {
+      if (!serialPort) return;
+      try { await serialPort.close(); } catch (e) { }
+      serialPort = null; activeMode = null;
+      setConnStatus('Ninguna', 'badge-red');
+      $('btn-serial-connect').disabled = false;
+      $('btn-serial-disconnect').disabled = true;
+      log('Puerto serial cerrado', 'info');
+    };
+
+    // ─── Send ─────────────────────────────────────────────────────────────────
+    async function sendBytes(bytes) {
+      if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes);
+      updateHexPreview(bytes);
+      log(`Bytes generados: ${bytes.length}`, 'dim');
+
+      if (!activeMode) {
+        log('⚠ Sin conexión activa. Conecta USB o Serial primero. Los bytes se muestran pero NO se envían.', 'warn');
+        return false;
+      }
+
+      try {
+        if (activeMode === 'usb') {
+          log(`Enviando ${bytes.length} bytes via USB (endpoint ${usbEndpointOut})...`, 'info');
+          const result = await usbDevice.transferOut(usbEndpointOut, bytes);
+          log(`✓ USB transferOut: status=${result.status} bytes enviados=${result.bytesWritten}`, 'ok');
+          return true;
+        } else {
+          log(`Enviando ${bytes.length} bytes via Serial...`, 'info');
+          const writer = serialPort.writable?.getWriter();
+          if (!writer) { log('No se pudo obtener writer serial', 'err'); return false; }
+          await writer.write(bytes);
+          writer.releaseLock();
+          log(`✓ ${bytes.length} bytes enviados via Serial`, 'ok');
+          return true;
+        }
+      } catch (e) {
+        log(`✗ Error enviando: ${e.message}`, 'err');
+        console.error(e);
+        return false;
+      }
     }
-  }
 
-  // ─── Test Buttons ─────────────────────────────────────────────────────────
-  $('btn-test-raw').onclick = async () => {
-    log('── TEST 1: Solo avance + corte ──', 'info');
-    await sendBytes(new Uint8Array([...escInit(), ...escLF(), ...escLF(), ...escLF(), ...escCut()]));
-  };
+    // ─── Test Buttons ─────────────────────────────────────────────────────────
+    $('btn-test-raw').onclick = async () => {
+      log('── TEST 1: Solo avance + corte ──', 'info');
+      await sendBytes(new Uint8Array([...escInit(), ...escLF(), ...escLF(), ...escLF(), ...escCut()]));
+    };
 
-  $('btn-test-text').onclick = async () => {
-    log('── TEST 2: Texto simple ──', 'info');
-    await sendBytes(new Uint8Array([
-      ...escInit(),
-      ...escText('LABORATORIO MEDICO\n'),
-      ...escText('Prueba de texto\n'),
-      ...escText('Orden: 0001\n'),
-      ...escLF(), ...escLF(), ...escLF(),
-      ...escCut(),
-    ]));
-  };
+    $('btn-test-text').onclick = async () => {
+      log('── TEST 2: Texto simple ──', 'info');
+      await sendBytes(new Uint8Array([
+        ...escInit(),
+        ...escText('LABORATORIO MEDICO\n'),
+        ...escText('Prueba de texto\n'),
+        ...escText('Orden: 0001\n'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]));
+    };
 
-  $('btn-test-align').onclick = async () => {
-    log('── TEST 3: Alineación ──', 'info');
-    await sendBytes(new Uint8Array([
-      ...escInit(),
-      ...escAlign('left'),   ...escText('Izquierda\n'),
-      ...escAlign('center'), ...escText('Centro\n'),
-      ...escAlign('right'),  ...escText('Derecha\n'),
-      ...escAlign('left'),   ...escText('Reset izquierda\n'),
-      ...escLF(), ...escLF(), ...escLF(),
-      ...escCut(),
-    ]));
-  };
+    $('btn-test-align').onclick = async () => {
+      log('── TEST 3: Alineación ──', 'info');
+      await sendBytes(new Uint8Array([
+        ...escInit(),
+        ...escAlign('left'), ...escText('Izquierda\n'),
+        ...escAlign('center'), ...escText('Centro\n'),
+        ...escAlign('right'), ...escText('Derecha\n'),
+        ...escAlign('left'), ...escText('Reset izquierda\n'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]));
+    };
 
-  $('btn-test-bold').onclick = async () => {
-    log('── TEST 4: Bold / Fuente ──', 'info');
-    await sendBytes(new Uint8Array([
-      ...escInit(),
-      ...escText('Normal\n'),
-      ...escBold(true),  ...escText('NEGRITA\n'), ...escBold(false),
-      ...escAlign('center'), ...escBold(true), ...escText('CENTRO NEGRITA\n'), ...escBold(false),
-      ...escAlign('left'),
-      ...escLF(), ...escLF(), ...escLF(),
-      ...escCut(),
-    ]));
-  };
+    $('btn-test-bold').onclick = async () => {
+      log('── TEST 4: Bold / Fuente ──', 'info');
+      await sendBytes(new Uint8Array([
+        ...escInit(),
+        ...escText('Normal\n'),
+        ...escBold(true), ...escText('NEGRITA\n'), ...escBold(false),
+        ...escAlign('center'), ...escBold(true), ...escText('CENTRO NEGRITA\n'), ...escBold(false),
+        ...escAlign('left'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]));
+    };
 
-  $('btn-test-qr').onclick = async () => {
-    log('── TEST 5: Solo QR Code ──', 'info');
-    const url = $('cfg-qr-url').value;
-    log(`QR content (${url.length} chars): ${url}`, 'dim');
+    $('btn-test-qr').onclick = async () => {
+      log('── TEST 5: Solo QR Code ──', 'info');
+      const url = $('cfg-qr-url').value;
+      log(`QR content (${url.length} chars): ${url}`, 'dim');
 
-    if (url.length > 200) {
-      log('⚠ El contenido del QR es muy largo (>200 chars). Puede fallar en algunas impresoras.', 'warn');
-    }
+      if (url.length > 200) {
+        log('⚠ El contenido del QR es muy largo (>200 chars). Puede fallar en algunas impresoras.', 'warn');
+      }
 
-    const qrBytes = escQR(url, 5);
-    log(`  Bytes del QR: ${qrBytes.length}`, 'dim');
+      const qrBytes = escQR(url, 5);
+      log(`  Bytes del QR: ${qrBytes.length}`, 'dim');
 
-    await sendBytes(new Uint8Array([
-      ...escInit(),
-      ...escAlign('center'),
-      ...escText('SCAN QR CODE\n'),
-      ...qrBytes,
-      ...escAlign('left'),
-      ...escLF(), ...escLF(), ...escLF(),
-      ...escCut(),
-    ]));
-  };
+      await sendBytes(new Uint8Array([
+        ...escInit(),
+        ...escAlign('center'),
+        ...escText('SCAN QR CODE\n'),
+        ...qrBytes,
+        ...escAlign('left'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]));
+    };
 
-  $('btn-test-full').onclick = async () => {
-    log('── TEST 6: Recibo Completo ──', 'info');
-    const url = $('cfg-qr-url').value;
-    const w = parseInt($('cfg-width').value);
+    $('btn-test-full').onclick = async () => {
+      log('── TEST 6: Recibo Completo ──', 'info');
+      const url = $('cfg-qr-url').value;
+      const w = parseInt($('cfg-width').value);
 
-    await sendBytes(new Uint8Array([
-      ...escInit(),
-      ...escAlign('center'), ...escBold(true),  ...escText('LABORATORIO MEDICO\n'), ...escBold(false),
-      ...escText('Calle Ejemplo 123\n'),
-      ...escText('Tel: 0412-1234567\n'),
-      ...escLF(),
-      ...line(w),
-      ...escBold(true),  ...escText('NOTA DE ENTREGA\n'), ...escBold(false),
-      ...line(w),
-      ...escAlign('left'),
-      ...escText('ORDEN : 0001\n'),
-      ...escText('FECHA : 30/03/2026\n'),
-      ...escText('PACIENTE\n'),
-      ...escBold(true), ...escText('JUAN PEREZ\n'), ...escBold(false),
-      ...escText('CI: 12345678\n'),
-      ...escLF(),
-      ...line(w),
-      ...escText('EXAMEN              USD\n'),
-      ...line(w),
-      ...escText('Hematologia         $15.00\n'),
-      ...escText('Glucosa             $ 8.00\n'),
-      ...line(w),
-      ...escBold(true),
-      ...escText('TOTAL USD           $23.00\n'),
-      ...escText('TOTAL BS            Bs.885.50\n'),
-      ...escBold(false),
-      ...escLF(), ...line(w),
-      ...escAlign('center'),
-      ...escText('PIN DE ACCESO\n'),
-      ...escBold(true), ...escText('1 2 3 4 5 6\n'), ...escBold(false),
-      ...escLF(),
-      ...escText('CONSULTA TUS RESULTADOS\n'),
-      ...escQR(url, 5),
-      ...escLF(),
-      ...escText('Gracias por su preferencia\n'),
-      ...escLF(), ...escLF(), ...escLF(),
-      ...escCut(),
-    ]));
-  };
+      await sendBytes(new Uint8Array([
+        ...escInit(),
+        ...escAlign('center'), ...escBold(true), ...escText('LABORATORIO MEDICO\n'), ...escBold(false),
+        ...escText('Calle Ejemplo 123\n'),
+        ...escText('Tel: 0412-1234567\n'),
+        ...escLF(),
+        ...line(w),
+        ...escBold(true), ...escText('NOTA DE ENTREGA\n'), ...escBold(false),
+        ...line(w),
+        ...escAlign('left'),
+        ...escText('ORDEN : 0001\n'),
+        ...escText('FECHA : 30/03/2026\n'),
+        ...escText('PACIENTE\n'),
+        ...escBold(true), ...escText('JUAN PEREZ\n'), ...escBold(false),
+        ...escText('CI: 12345678\n'),
+        ...escLF(),
+        ...line(w),
+        ...escText('EXAMEN              USD\n'),
+        ...line(w),
+        ...escText('Hematologia         $15.00\n'),
+        ...escText('Glucosa             $ 8.00\n'),
+        ...line(w),
+        ...escBold(true),
+        ...escText('TOTAL USD           $23.00\n'),
+        ...escText('TOTAL BS            Bs.885.50\n'),
+        ...escBold(false),
+        ...escLF(), ...line(w),
+        ...escAlign('center'),
+        ...escText('PIN DE ACCESO\n'),
+        ...escBold(true), ...escText('1 2 3 4 5 6\n'), ...escBold(false),
+        ...escLF(),
+        ...escText('CONSULTA TUS RESULTADOS\n'),
+        ...escQR(url, 5),
+        ...escLF(),
+        ...escText('Gracias por su preferencia\n'),
+        ...escLF(), ...escLF(), ...escLF(),
+        ...escCut(),
+      ]));
+    };
 
-  // ─── CSS PRINT TEST ───────────────────────────────────────────────────────
-  function buildReceiptHTML(opts = {}) {
-    const paperMm = opts.paperMm || 58;
-    const labName = opts.labName || 'LABORATORIO MEDICO';
-    const labAddr = opts.labAddr || 'Calle Ejemplo 123, Ciudad';
-    const labPhone = opts.labPhone || 'Tel: 0412-1234567';
-    const orderNum = opts.orderNum || '0001';
-    const orderDate = opts.orderDate || '30/03/2026 10:45';
-    const patient = opts.patient || 'JUAN PEREZ';
-    const patientId = opts.patientId || 'CI: 12345678';
-    const items = opts.items || [
-      { name: 'Hematologia Completa', price: 15.00 },
-      { name: 'Glucosa', price: 8.00 },
-      { name: 'Creatinina', price: 10.00 },
-      { name: 'Colesterol Total', price: 12.00 },
-    ];
-    const total = items.reduce((s, i) => s + i.price, 0);
-    const exchangeRate = opts.exchangeRate || 38.50;
-    const totalBs = (total * exchangeRate).toFixed(2);
-    const pin = opts.pin || '123456';
-    const portalUrl = opts.portalUrl || 'https://medlab.test/portal-paciente';
-    const qrUrl = `${portalUrl}?order=${orderNum}&pin=${pin}`;
+    // ─── CSS PRINT TEST ───────────────────────────────────────────────────────
+    function buildReceiptHTML(opts = {}) {
+      const paperMm = opts.paperMm || 58;
+      const labName = opts.labName || 'LABORATORIO MEDICO';
+      const labAddr = opts.labAddr || 'Calle Ejemplo 123, Ciudad';
+      const labPhone = opts.labPhone || 'Tel: 0412-1234567';
+      const orderNum = opts.orderNum || '0001';
+      const orderDate = opts.orderDate || '30/03/2026 10:45';
+      const patient = opts.patient || 'JUAN PEREZ';
+      const patientId = opts.patientId || 'CI: 12345678';
+      const items = opts.items || [
+        { name: 'Hematologia Completa', price: 15.00 },
+        { name: 'Glucosa', price: 8.00 },
+        { name: 'Creatinina', price: 10.00 },
+        { name: 'Colesterol Total', price: 12.00 },
+      ];
+      const total = items.reduce((s, i) => s + i.price, 0);
+      const exchangeRate = opts.exchangeRate || 38.50;
+      const totalBs = (total * exchangeRate).toFixed(2);
+      const pin = opts.pin || '123456';
+      const portalUrl = opts.portalUrl || 'https://medlab.test/portal-paciente';
+      const qrUrl = `${portalUrl}?order=${orderNum}&pin=${pin}`;
 
-    // Google Charts QR (no install needed, works offline-ish via CDN)
-    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}`;
+      // Google Charts QR (no install needed, works offline-ish via CDN)
+      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}`;
 
-    const itemRows = items.map(i => `
+      const itemRows = items.map(i => `
       <tr>
         <td class="item-name">${i.name}</td>
         <td class="item-price">$${i.price.toFixed(2)}</td>
       </tr>`).join('');
 
-    return `<!DOCTYPE html>
+      return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -574,12 +806,13 @@
     /* ── Page size: 58mm wide, auto height ── */
     @page {
       size: ${paperMm}mm auto;
-      margin: 2mm 1mm;   /* tiny margin all sides */
+      margin: 0;   /* Usaremos el padding del body para controlar los bordes */
     }
 
     /* ── Body: same width as paper, auto height ── */
     html, body {
-      width: ${paperMm - 4}mm;   /* subtract margins */
+      width: ${paperMm}mm;
+      padding: 3mm 3mm;  /* Aumentado a 5mm de margen para equilibrar los bordes */
       font-family: 'Courier New', Courier, monospace;
       font-size: 8pt;
       color: #000;
@@ -610,7 +843,7 @@
 
     /* ── Hide everything when printing except receipt ── */
     @media screen {
-      body { background: #f0f0f0; padding: 10px; }
+      body { background: #f0f0f0; padding: 20px; }
       .receipt {
         background: white;
         max-width: ${paperMm}mm;
@@ -639,7 +872,7 @@
 
   <!-- Orden -->
   <table class="mt1">
-    <tr><td>ORDEN</td><td class="right">${orderNum.toString().padStart(4,'0')}</td></tr>
+    <tr><td>ORDEN</td><td class="right">${orderNum.toString().padStart(4, '0')}</td></tr>
     <tr><td>FECHA</td><td class="right">${orderDate}</td></tr>
   </table>
 
@@ -675,91 +908,83 @@
   <div class="center mt1">PIN DE ACCESO</div>
   <div class="center bold large mt1">${pin.split('').join(' ')}</div>
 
-  <!-- QR -->
-  <hr class="hr mt2">
-  <div class="center small">CONSULTA TUS RESULTADOS</div>
-  <div class="qr-block mt1">
-    <img src="${qrImgUrl}" alt="QR" />
-  </div>
-  <div class="center small mt1">${portalUrl}</div>
-
-  <!-- Footer -->
-  <hr class="hr mt2">
-  <div class="center small mt1">Gracias por su preferencia</div>
-  <div class="mt3"></div>
-
 </div>
 </body>
 </html>`;
-  }
+    }
 
-  $('btn-css-preview').onclick = () => {
-    const html = buildReceiptHTML({ paperMm: parseInt($('css-paper-mm').value) });
-    const win = window.open('', '_blank', 'width=400,height=700');
-    win.document.write(html);
-    win.document.close();
-    log('Ventana de preview abierta. Revisa como se ve.', 'info');
-  };
+    window.addEventListener('DOMContentLoaded', () => {
+      $('btn-css-preview').onclick = () => {
+        const html = buildReceiptHTML({ paperMm: parseInt($('css-paper-mm').value) });
+        const win = window.open('', '_blank', 'width=400,height=700');
+        win.document.write(html);
+        win.document.close();
+        log('Ventana de preview abierta. Revisa como se ve.', 'info');
+      };
 
-  $('btn-css-print').onclick = () => {
-    const paperMm = parseInt($('css-paper-mm').value);
-    log(`── CSS PRINT TEST: papel ${paperMm}mm ──`, 'info');
-    const html = buildReceiptHTML({ paperMm });
-    const win = window.open('', '_blank', 'width=400,height=700');
-    win.document.write(html);
-    win.document.close();
-    // Wait for QR image to load before printing
-    win.onload = () => {
-      setTimeout(() => {
-        win.print();
-        log('Dialogo de impresion abierto. Selecciona tu impresora POS-58.', 'ok');
-        log('Tip: si el papel sale muy grande, verifica que el driver de la POS-58 este configurado con el tamano de papel correcto.', 'warn');
-      }, 800);
-    };
-    // Fallback if onload already fired
-    setTimeout(() => {
-      try { if (!win.printed) win.print(); } catch(e) {}
-    }, 1200);
-  };
-</script>
+      $('btn-css-print').onclick = () => {
+        const paperMm = parseInt($('css-paper-mm').value);
+        log(`── CSS PRINT TEST: papel ${paperMm}mm ──`, 'info');
+        const html = buildReceiptHTML({ paperMm });
+        const win = window.open('', '_blank', 'width=400,height=700');
+        win.document.write(html);
+        win.document.close();
+        // Wait for QR image to load before printing
+        win.onload = () => {
+          setTimeout(() => {
+            win.print();
+            log('Dialogo de impresion abierto. Selecciona tu impresora POS-58.', 'ok');
+            log('Tip: si el papel sale muy grande, verifica que el driver de la POS-58 este configurado con el tamano de papel correcto.', 'warn');
+          }, 800);
+        };
+        // Fallback if onload already fired
+        setTimeout(() => {
+          try { if (!win.printed) win.print(); } catch (e) { }
+        }, 1200);
+      };
+    });
+  </script>
 
-<!-- CSS PRINT SECTION (fuera del card principal) -->
-<div class="card" style="border: 1px solid #16a34a;">
-  <h2 style="color:#4ade80;">🖨️ CSS Print (Recomendado para POS-58 USB)</h2>
-  <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
-    No requiere Web USB ni Web Serial. Usa el driver de Windows que ya está instalado.
-    La impresora POS-58 debe estar configurada en Windows (Impresoras y Escáneres) — ya la tienes. 
-  </p>
+  <!-- CSS PRINT SECTION (fuera del card principal) -->
+  <div class="card" style="border: 1px solid #16a34a;">
+    <h2 style="color:#4ade80;">🖨️ CSS Print (Recomendado para POS-58 USB)</h2>
+    <p style="font-size:0.78rem; color:#9ca3af; margin-bottom:12px;">
+      No requiere Web USB ni Web Serial. Usa el driver de Windows que ya está instalado.
+      La impresora POS-58 debe estar configurada en Windows (Impresoras y Escáneres) — ya la tienes.
+    </p>
 
-  <div class="alert" style="background:#052e16; border:1px solid #166534; color:#86efac; margin-bottom:12px;">
-    ✅ <strong>Pasos:</strong>
-    1. Clic en <em>"Previsualizar"</em> para ver cómo quedaría el recibo en pantalla.<br>
-    2. Clic en <em>"Imprimir Prueba"</em> — aparece el diálogo de impresión.<br>
-    3. En el diálogo, selecciona <strong>POS-58</strong> como impresora.<br>
-    4. Si el resultado es correcto, la integraremos en la app.
-  </div>
-
-  <div class="grid2" style="margin-bottom:12px;">
-    <div>
-      <label>Ancho del papel</label>
-      <select id="css-paper-mm">
-        <option value="58" selected>58mm (tu impresora)</option>
-        <option value="80">80mm</option>
-      </select>
+    <div class="alert" style="background:#052e16; border:1px solid #166534; color:#86efac; margin-bottom:12px;">
+      ✅ <strong>Pasos:</strong>
+      1. Clic en <em>"Previsualizar"</em> para ver cómo quedaría el recibo en pantalla.<br>
+      2. Clic en <em>"Imprimir Prueba"</em> — aparece el diálogo de impresión.<br>
+      3. En el diálogo, selecciona <strong>POS-58</strong> como impresora.<br>
+      4. Si el resultado es correcto, la integraremos en la app.
     </div>
-    <div style="display:flex; align-items:flex-end; gap:8px;">
-      <button id="btn-css-preview" style="background:#0f766e; flex:1;">👁 Previsualizar</button>
-      <button id="btn-css-print" class="success" style="flex:1;">🖨️ Imprimir Prueba</button>
+
+    <div class="grid2" style="margin-bottom:12px;">
+      <div>
+        <label>Ancho del papel</label>
+        <select id="css-paper-mm">
+          <option value="58" selected>58mm (tu impresora)</option>
+          <option value="80">80mm</option>
+        </select>
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <button id="btn-css-preview" style="background:#0f766e; flex:1;">👁 Previsualizar</button>
+        <button id="btn-css-print" class="success" style="flex:1;">🖨️ Imprimir Prueba</button>
+      </div>
+    </div>
+
+    <div class="alert"
+      style="background:#1c1917; border:1px solid #44403c; color:#a8a29e; font-size:0.73rem; margin-top:8px;">
+      <strong>Si el papel sale demasiado alto o con espacio en blanco:</strong><br>
+      • Abre <em>Impresoras y Escáneres → POS-58 → Propiedades → Preferencias</em><br>
+      • Cambia el tamaño de papel a <strong>58mm × (altura personalizada mínima)</strong> o busca "Roll Paper" /
+      "Continuous"<br>
+      • También asegúrate que no haya márgenes extra configurados en el driver.
     </div>
   </div>
-
-  <div class="alert" style="background:#1c1917; border:1px solid #44403c; color:#a8a29e; font-size:0.73rem; margin-top:8px;">
-    <strong>Si el papel sale demasiado alto o con espacio en blanco:</strong><br>
-    • Abre <em>Impresoras y Escáneres → POS-58 → Propiedades → Preferencias</em><br>
-    • Cambia el tamaño de papel a <strong>58mm × (altura personalizada mínima)</strong> o busca "Roll Paper" / "Continuous"<br>
-    • También asegúrate que no haya márgenes extra configurados en el driver.
-  </div>
-</div>
 
 </body>
+
 </html>

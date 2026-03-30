@@ -50,6 +50,8 @@ export default function OrderDetailPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
+  const [thermalPaperOpen, setThermalPaperOpen] = useState(false);
+  const [thermalPaperMm, setThermalPaperMm] = useState<"58" | "80">("58");
 
   // Load results_data into state
   useEffect(() => {
@@ -341,11 +343,11 @@ export default function OrderDetailPage() {
     },
   };
 
-  async function handlePrintThermal() {
+  async function handlePrintThermal(paperMm: 58 | 80) {
     setThermalPrinting(true);
     try {
-      await printThermalReceipt(thermalReceiptData);
-      toast.success("Recibo enviado a la impresora termica");
+      await printThermalReceipt(thermalReceiptData, paperMm);
+      toast.success("Recibo enviado a la impresora térmica");
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo imprimir el recibo";
       toast.error(message);
@@ -811,10 +813,53 @@ export default function OrderDetailPage() {
             )}
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={handlePrintThermal} disabled={thermalPrinting || orderItems.length === 0}>
-              {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
+            <Button
+              variant="outline"
+              onClick={() => setThermalPaperOpen(true)}
+              disabled={thermalPrinting || orderItems.length === 0}
+            >
+              {thermalPrinting ? "Imprimiendo..." : "Imprimir térmica"}
             </Button>
             <Button onClick={() => setReceiptOpen(false)}>Cerrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={thermalPaperOpen} onOpenChange={setThermalPaperOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ancho del papel</DialogTitle>
+            <DialogDescription>
+              Elige el ancho que coincida con tu impresora térmica (58&nbsp;mm estándar tipo ticket, 80&nbsp;mm ancho).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="thermal-paper-mm">Impresora</Label>
+            <Select value={thermalPaperMm} onValueChange={(v) => setThermalPaperMm(v as "58" | "80")}>
+              <SelectTrigger id="thermal-paper-mm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="58">58&nbsp;mm (POS-58 / ticket estrecho)</SelectItem>
+                <SelectItem value="80">80&nbsp;mm (POS-80 / ticket ancho)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setThermalPaperOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={thermalPrinting}
+              onClick={async () => {
+                const mm = thermalPaperMm === "80" ? 80 : 58;
+                setThermalPaperOpen(false);
+                await handlePrintThermal(mm);
+              }}
+            >
+              {thermalPrinting ? "Imprimiendo..." : "Imprimir"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
