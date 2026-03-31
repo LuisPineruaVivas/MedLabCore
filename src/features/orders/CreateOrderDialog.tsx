@@ -363,7 +363,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       }}
     >
       <DialogContent className={cn(
-        "max-h-[90vh] overflow-y-auto w-[95vw]",
+        "max-h-[70vh] overflow-y-auto w-[70vw]",
         receiptData ? "sm:max-w-4xl" : "sm:max-w-5xl h-[90vh]",
         "sm:h-auto"
       )}>

@@ -79,7 +79,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw]">
+      <DialogContent className="sm:max-w-3xl max-h-[70vh] overflow-y-auto w-[70vw]">
         <DialogHeader>
           <DialogTitle>Nuevo Paciente</DialogTitle>
           <DialogDescription>Completa la información del paciente a continuación.</DialogDescription>

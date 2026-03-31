@@ -104,7 +104,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[70vh] overflow-y-auto w-[70vw]">
         <DialogHeader>
           <DialogTitle>Editar Paciente</DialogTitle>
           <DialogDescription>Modifica la información del paciente.</DialogDescription>
