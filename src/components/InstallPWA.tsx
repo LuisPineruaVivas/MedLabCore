@@ -14,19 +14,22 @@ export function PWAInstallBanner() {
 useEffect(() => {
   if (isStandalone()) return;
 
-  const cleanup = setupInstallPrompt(() => {
-    setInstallMode('native');
-    setShowBanner(true);
-  });
+  if (localStorage.getItem('pwa-banner-MedLabCore-dismissed') === 'true') {
+    setShowBanner(false);
+    return;
+  }
 
   if (isIOS()) {
     setInstallMode('ios');
     setShowBanner(true);
   }
 
-  if (localStorage.getItem('pwa-banner-MedLabCore-dismissed')) {
-    setShowBanner(false);
-  }
+
+  const cleanup = setupInstallPrompt(() => {
+    console.log('PWA Install Banner - prompt ready');
+    setInstallMode('native');
+    setShowBanner(true);
+  });
 
   return cleanup;
 }, []);
@@ -48,7 +51,7 @@ useEffect(() => {
 
   return (
     <div className={cn(
-      "fixed md:bottom-2 bottom-16 left-64 right-4 z-50 animate-in fade-in slide-in-from-bottom-5",
+      "fixed md:bottom-2 bottom-16 left-4 md:left-64 right-4 z-50 animate-in fade-in slide-in-from-bottom-5",
       sidebarCollapsed && "md:left-[80px]",
        "transition-all duration-300"
     )}>

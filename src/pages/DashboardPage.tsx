@@ -38,11 +38,9 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsLoading ? (
-          <>
-            {Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-[120px] rounded-xl" />
-            ))}
-          </>
+            ))
         ) : (
           <>
             <StatCard
