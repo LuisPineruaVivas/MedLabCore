@@ -30,8 +30,7 @@ import {
   DollarSign,
   Edit,
 } from "lucide-react";
-import { differenceInYears, format } from "date-fns";
-import React from "react";
+import { differenceInYears, format, parse } from "date-fns";
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -114,10 +113,14 @@ export default function PatientDetailPage() {
     );
   }
 
-  const age = differenceInYears(new Date(), new Date(patient.date_of_birth));
+  const patientDateOfBirth =
+    typeof patient.date_of_birth === "string"
+      ? parse(patient.date_of_birth, "yyyy-MM-dd", new Date())
+      : new Date(patient.date_of_birth);
+  const age = differenceInYears(new Date(), patientDateOfBirth);
 
   const infoItems = [
-    { icon: Calendar, label: "Fecha de Nacimiento", value: format(new Date(patient.date_of_birth), "dd/MM/yyyy") },
+    { icon: Calendar, label: "Fecha de Nacimiento", value: format(patientDateOfBirth, "dd/MM/yyyy") },
     { icon: User, label: "Edad", value: `${age} años` },
     { icon: User, label: "Género", value: patient.gender === "masculino" ? "Masculino" : "Femenino" },
     { icon: Phone, label: "Teléfono", value: patient.phone || "—" },

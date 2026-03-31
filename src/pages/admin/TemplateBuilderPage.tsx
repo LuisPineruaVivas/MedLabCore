@@ -402,14 +402,25 @@ export default function TemplateBuilderPage() {
                 <Eye className="w-4 h-4" />
               )}
             </Button>
+
             <Button
               form="template-builder-form"
               type="submit"
               disabled={saveMutation.isPending}
               size="sm"
+              className="hidden sm:inline-flex"
             >
               <Save className="w-4 h-4 mr-2" />
               {saveMutation.isPending ? "Guardando…" : "Guardar Plantilla"}
+            </Button>
+            <Button
+              form="template-builder-form"
+              type="submit"
+              size="icon"
+              className="sm:hidden"
+              disabled={saveMutation.isPending}
+            >
+              <Save className="w-4 h-4" />              
             </Button>
           </div>
         </div>

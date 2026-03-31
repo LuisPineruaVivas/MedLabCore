@@ -112,10 +112,14 @@ export default function PatientsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       queryClient.invalidateQueries({ queryKey: ["patient-stats"] });
-      toast.success("Patient created successfully");
+      toast.success("Paciente creado exitosamente");
     },
     onError: (err: Error) => {
-      toast.error(err.message);
+      if (err.message.includes("patients_id_number_org_unique") || err.message.includes("duplicate key value")) {
+        toast.error("Ya existe un paciente con ese número de cédula en la organización");
+      } else {
+        toast.error(err.message);
+      }
     },
   });
 
@@ -315,10 +319,10 @@ export default function PatientsPage() {
                 <TableCell className="px-6 py-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-foreground leading-tight">
-                    {patient.phone || "+1 (555) 000-0000"}
+                    {patient.phone || "[Sin Teléfono]"}
                     </span>
                     <span className="text-sm text-muted-foreground leading-tight">  
-                      {patient.email || "[EMAIL_ADDRESS]"}
+                      {patient.email || "[Sin Email]"}
                     </span>
                   </div>
                 </TableCell>

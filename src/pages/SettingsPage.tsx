@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Building2, Palette, Shield, DollarSign } from "lucide-react";
+import { Building2, Shield, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/features/orders/useOrders";
 import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
@@ -39,6 +40,8 @@ export default function SettingsPage() {
     },*/
   ];
 
+  const { signOut } = useAuth();
+
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
@@ -64,6 +67,16 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{item.desc}</p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-2 md:mt-8 md:hidden">
+        <button
+          onClick={signOut}
+          className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-medium">Cerrar sesión</span>
+        </button>
       </div>
 
       {/* Organization Dialog */}
