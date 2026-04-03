@@ -5,11 +5,11 @@ import {
   Droppable,
   type DropResult,
 } from "@hello-pangea/dnd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { OrderableExamItem } from "./SortableExamItem";
+import { AlertCircle, Save } from "lucide-react";
+import { toast } from "sonner";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -17,67 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { AlertCircle, Save } from "lucide-react";
-
-type TemplateSetting = {
-  custom_sort_order: number | null;
-  id: string;
-};
+import { OrderableExamItem } from "./SortableExamItem";
+import { useExamOrderTemplates, useSaveExamOrder, useTestCategories } from "./useTestTemplates";
 
 type ExamOrderItem = {
   id: string;
   name: string;
   category: string;
   is_active: boolean;
-  sort_order: number | null;
-  organization_exam_settings?: TemplateSetting[] | null;
-  custom_sort_order?: number | null;
-  settings_id?: string | null;
-  resolvedSortOrder?: number;
 };
 
 export function ExamOrderView() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const orgId = profile?.org_id;
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const { orgId } = useCurrentOrgContext();
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [localItems, setLocalItems] = useState<ExamOrderItem[]>([]);
   const [isDirty, setIsDirty] = useState(false);
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["test-categories", orgId],
-    queryFn: async () => {
-      if (!orgId) return [];
-
-      const { data, error } = await supabase
-        .from("test_templates")
-        .select("category")
-        .or(`org_id.is.null,org_id.eq.${orgId}`);
-
-      if (error) throw error;
-
-      const uniqueCats = Array.from(new Set(data.map((d) => d.category)));
-      return uniqueCats.filter(Boolean).sort();
-    },
-    enabled: !!orgId,
-  });
+  const { data: categories = [], isLoading: categoriesLoading } = useTestCategories();
+  const { data: templates = [], isLoading } = useExamOrderTemplates(selectedCategory);
+  const saveMutation = useSaveExamOrder();
 
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
@@ -85,61 +43,16 @@ export function ExamOrderView() {
     }
   }, [categories, selectedCategory]);
 
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ["test-templates-order", orgId, selectedCategory],
-    queryFn: async () => {
-      if (!orgId || !selectedCategory) return [];
-
-      let query = supabase
-        .from("v_test_templates_filtered")
-        .select(`
-          id, name, category, is_active, sort_order,
-          organization_exam_settings ( custom_sort_order, id )
-        `)
-        .or(`org_id.is.null,org_id.eq.${orgId}`)
-        .eq("category", selectedCategory);
-
-      if (selectedCategory && selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const processed = (data as ExamOrderItem[]).map((t) => {
-        const settings = t.organization_exam_settings?.find(Boolean);
-        const resolvedSortOrder = settings?.custom_sort_order ?? t.sort_order ?? 999999;
-
-        return {
-          ...t,
-          custom_sort_order: settings?.custom_sort_order ?? null,
-          settings_id: settings?.id ?? null,
-          resolvedSortOrder,
-        };
-      });
-
-      processed.sort((a, b) => {
-        if (a.resolvedSortOrder === b.resolvedSortOrder) {
-          return a.name.localeCompare(b.name);
-        }
-        return a.resolvedSortOrder - b.resolvedSortOrder;
-      });
-
-      return processed;
-    },
-    enabled: !!orgId && !!selectedCategory,
-  });
-
   useEffect(() => {
-    if (templates) {
-      setLocalItems(templates);
-      setIsDirty(false);
-    }
+    setLocalItems(templates);
+    setIsDirty(false);
   }, [templates]);
 
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
-    if (!destination || source.index === destination.index) return;
+    if (!destination || source.index === destination.index) {
+      return;
+    }
 
     const items = [...localItems];
     const [movedItem] = items.splice(source.index, 1);
@@ -149,32 +62,14 @@ export function ExamOrderView() {
     setIsDirty(true);
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!orgId) return;
-      if (localItems.length === 0) return;
-
-      const upserts = localItems.map((item, index) => ({
-        org_id: orgId,
-        template_id: item.id,
-        custom_sort_order: index + 1,
-      }));
-
-      const { error } = await supabase
-        .from("organization_exam_settings")
-        .upsert(upserts, { onConflict: "org_id,template_id" });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Orden actualizado correctamente");
-      setIsDirty(false);
-      queryClient.invalidateQueries({ queryKey: ["test-templates-order"] });
-    },
-    onError: (err: Error) => {
-      toast.error("Error al guardar el orden: " + err.message);
-    },
-  });
+  const handleSave = () => {
+    saveMutation.mutate(localItems, {
+      onSuccess: () => {
+        toast.success("Orden actualizado correctamente");
+        setIsDirty(false);
+      },
+    });
+  };
 
   return (
     <Card className="rounded-xl border border-border bg-card shadow-sm">
@@ -193,9 +88,9 @@ export function ExamOrderView() {
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -203,8 +98,8 @@ export function ExamOrderView() {
 
           <Button
             size="sm"
-            onClick={() => saveMutation.mutate()}
-            disabled={!isDirty || saveMutation.isPending}
+            onClick={handleSave}
+            disabled={!orgId || !isDirty || saveMutation.isPending}
             className="flex-shrink-0"
           >
             <Save className="mr-2 h-4 w-4" />

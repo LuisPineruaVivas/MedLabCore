@@ -9,7 +9,7 @@ import {
 import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import { useProfile } from "@/features/orders/useOrders";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -26,8 +26,8 @@ export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentOrders, isLoading: ordersLoading } = usePendingOrders();
   const { data: topTests, isLoading: testsLoading } = useTopTests();
-  const { data: profile } = useProfile();
-  const { data: exchangeRate } = useExchangeRate(profile?.org_id);
+  const { orgId } = useCurrentOrgContext();
+  const { data: exchangeRate } = useExchangeRate(orgId);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -170,9 +170,12 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">
                   Actualizada {format(new Date(exchangeRate.updated_at), "dd MMM yyyy, hh:mm a", { locale: es })}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Fuente: {exchangeRate.source === "api" ? "automatica" : "respaldo local"}
+                </p>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Sin tasa configurada</p>
+              <p className="text-xs text-muted-foreground">Sin tasa disponible</p>
             )}
           </div>
         </div>

@@ -1,48 +1,45 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { format, differenceInYears } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { pdf } from "@react-pdf/renderer";
+import { ArrowLeft, ClipboardCheck, FileText, Receipt, Save } from "lucide-react";
+import { Atom } from "react-loading-indicators";
+import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useOrder, useOrderItems, useUpdateOrderStatus, useSaveResults } from "@/features/orders/useOrders";
-import { findMatchingRange } from "@/features/tests/schemas";
-
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-import { ArrowLeft, Save, FileText, ClipboardCheck, FlaskConical, DollarSign, Calendar, User, Link as LinkIcon, Receipt, IdCard, Phone, Mail } from "lucide-react";
-import { PDFViewer, pdf } from "@react-pdf/renderer";
+import { Card } from "@/components/ui/card";
+import { useOrderResultsEditor } from "@/features/orders/useOrderResultsEditor";
+import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@/features/orders/useOrders";
+import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
+import { ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
+import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
-import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
-import { toast } from "sonner";
-import { Atom } from "react-loading-indicators";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
-import { Textarea } from "@/components/ui/textarea";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { canEnterResults } = usePermissions();
-
+  const { organization } = useCurrentOrgContext();
   const { data: order, isLoading: orderLoading } = useOrder(id || null);
   const { data: orderItems = [], isLoading: itemsLoading } = useOrderItems(id || null);
   const updateStatus = useUpdateOrderStatus();
   const saveResults = useSaveResults();
+  const {
+    resultsState,
+    modifiedIds,
+    groupedItems,
+    updateFieldValue,
+    appendTextOption,
+    resetModified,
+  } = useOrderResultsEditor(orderItems);
 
-  const [resultsState, setResultsState] = useState<Record<string, any>>({});
-  const [modifiedIds, setModifiedIds] = useState<Set<string>>(new Set());
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -51,82 +48,36 @@ export default function OrderDetailPage() {
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
 
-  // Load results_data into state
-  useEffect(() => {
-    if (orderItems.length > 0) {
-      const initialState: Record<string, any> = {};
-      orderItems.forEach(item => {
-        if (item.results_data) {
-          initialState[item.id] = typeof item.results_data === "string"
-            ? JSON.parse(item.results_data)
-            : JSON.parse(JSON.stringify(item.results_data));
-        }
-      });
-      setResultsState(initialState);
-      setModifiedIds(new Set());
-    }
-  }, [orderItems]);
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("org_id").eq("id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const orgId = profile?.org_id;
-
-  const { data: lab } = useQuery({
-    queryKey: ["lab", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!orgId,
-  });
+  const labData = useMemo(() => buildLabData(organization), [organization]);
 
   if (orderLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Atom color={lab?.primary_color || "#0ea5e9"} size="large" text="Cargando orden..." textColor={lab?.primary_color || "#0ea5e9"} />
+      <div className="flex h-64 items-center justify-center">
+        <Atom color={labData.primary_color} size="large" text="Cargando orden..." textColor={labData.primary_color} />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <p className="text-muted-foreground">Orden no encontrada</p>
       </div>
     );
   }
 
-  const patientInfo = {
-    name: `${order.patients.first_name} ${order.patients.last_name}`.toUpperCase(),
-    id: order.patients.id_number,
-    date: format(new Date(order.created_at), "dd/MM/yyyy"),
-    age: order.patients.date_of_birth
-      ? differenceInYears(new Date(), new Date(order.patients.date_of_birth))
-      : "N/A",
-    gender: order.patients.gender || "N/A",
-  };
+  const patientInfo = buildOrderPatientInfo(order);
 
-  function updateFieldValue(itemId: string, sectionIdx: number, fieldIdx: number, value: string) {
-    setResultsState(prev => {
-      const updated = { ...prev };
-      if (!updated[itemId]) return prev;
-
-      const itemData = JSON.parse(JSON.stringify(updated[itemId]));
-      itemData.sections[sectionIdx].fields[fieldIdx].value = value;
-      updated[itemId] = itemData;
-      return updated;
-    });
-    setModifiedIds(prev => new Set(prev).add(itemId));
-  }
+  const thermalReceiptData: ThermalReceiptData = buildThermalReceiptData(
+    order,
+    orderItems,
+    patientInfo,
+    {
+      ...labData,
+      primary_color: organization?.primary_color || "#4f46e5",
+    },
+    window.location.origin
+  );
 
   async function handleSaveAll() {
     if (modifiedIds.size === 0) {
@@ -136,56 +87,44 @@ export default function OrderDetailPage() {
 
     setIsSavingAll(true);
     try {
-      const promises = Array.from(modifiedIds).map(itemId => {
-        return saveResults.mutateAsync({ itemId, resultsData: resultsState[itemId] });
-      });
-      await Promise.all(promises);
+      await Promise.all(
+        Array.from(modifiedIds).map((itemId) =>
+          saveResults.mutateAsync({
+            itemId,
+            orderId: order.id,
+            orgId: order.org_id,
+            resultsData: resultsState[itemId] as unknown as Json,
+          })
+        )
+      );
       toast.success("Resultados guardados correctamente");
-      setModifiedIds(new Set());
-    } catch (err) {
-      toast.error(err.message || "Error al guardar los resultados");
+      resetModified();
+    } catch (error) {
+      toast.error(getUserFacingErrorMessage(error, "No se pudieron guardar los resultados"));
     } finally {
       setIsSavingAll(false);
     }
   }
 
   function handleCompleteOrder() {
-    updateStatus.mutate({ orderId: order.id, status: "completada", completed_at: new Date().toISOString() });
-  }
-
-  function appendTextOption(itemId: string, sectionIdx: number, fieldIdx: number, option: string) {
-    const existing = resultsState[itemId]?.sections?.[sectionIdx]?.fields?.[fieldIdx]?.value || "";
-    const trimmed = String(existing).trim();
-    const separator = trimmed === "" ? "" : " ";
-    const newValue = `${trimmed}${separator}${option}`.trim();
-    updateFieldValue(itemId, sectionIdx, fieldIdx, newValue);
+    updateStatus.mutate({
+      orderId: order.id,
+      orgId: order.org_id,
+      status: "completada",
+      completed_at: new Date().toISOString(),
+    });
   }
 
   async function handleViewReport() {
-    const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-
-    if (!order) return;
-
-    if (isMobile) {
+    if (isMobileDevice()) {
       setReportLoading(true);
       try {
         const reportBlob = await pdf(
           <UnifiedTestReportPDF
             orden={order}
             orderItems={orderItems}
-            patientData={{
-              ...patientInfo,
-              age: `${patientInfo.age} Años`,
-            }}
-            labData={{
-              name: lab?.name || "Laboratorio",
-              address: lab?.address || "",
-              phone: lab?.phone || "",
-              email: lab?.email || "",
-              logo: lab?.logo_url || null,
-              primary_color: lab?.primary_color || "#0ea5e9",
-              secondary_color: lab?.secondary_color || "#0ea5e9",
-            }}
+            patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }}
+            labData={labData}
           />
         ).toBlob();
 
@@ -197,7 +136,6 @@ export default function OrderDetailPage() {
       } finally {
         setReportLoading(false);
       }
-
       return;
     }
 
@@ -205,34 +143,10 @@ export default function OrderDetailPage() {
   }
 
   async function handleViewReceipt() {
-    const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-
-    if (isMobile) {
+    if (isMobileDevice()) {
       setReceiptLoading(true);
       try {
-        const blob = await pdf(
-          <OrderThermalReceiptPDF
-            orderId={order.order_seq}
-            orderDate={format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
-            patientName={patientInfo.name}
-            patientId={patientInfo.id}
-            items={orderItems.filter((i) => Number(i.price_at_order) > 0).map(i => ({ test_name: i.test_name, price: Number(i.price_at_order) }))}
-            total={Number(order.total_amount)}
-            accessPin={order.access_pin}
-            portalUrl={`${window.location.origin}/portal-paciente`}
-            exchangeRate={order.exchange_rate ? Number(order.exchange_rate) : null}
-            totalBs={order.total_bs ? Number(order.total_bs) : null}
-            labData={{
-              name: lab?.name || "Laboratorio",
-              address: lab?.address || "",
-              phone: lab?.phone || "",
-              email: lab?.email || "",
-              logo: lab?.logo_url || null,
-              primary_color: lab?.primary_color || "#4f46e5",
-            }}
-          />
-        ).toBlob();
-
+        const blob = await pdf(<OrderThermalReceiptPDF {...thermalReceiptData} />).toBlob();
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } catch (error) {
@@ -247,141 +161,98 @@ export default function OrderDetailPage() {
     setReceiptOpen(true);
   }
 
-  const handleFileUploadForOCR = async (e: React.ChangeEvent<HTMLInputElement>, categoryItems: typeof orderItems, categoryName: string) => {
-    const file = e.target.files?.[0];
+  async function handleFileUploadForOCR(
+    event: React.ChangeEvent<HTMLInputElement>,
+    categoryItems: typeof orderItems,
+    categoryName: string
+  ) {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     setOcrLoading(categoryName);
     const toastId = toast.loading(`Analizando imagen de ${categoryName}`);
 
     try {
-      // 1. Obtener todos los labels de los campos que queremos llenar
-      const fieldsToExtract: string[] = [];
-      categoryItems.forEach(item => {
-        resultsState[item.id]?.sections?.forEach(section => {
-          section.fields?.forEach(field => {
-            if (field.type === "number" || field.type === "text") {
-              fieldsToExtract.push(field.label);
-            }
-          });
-        });
-      });
+      const fieldsToExtract = collectOcrFieldLabels(categoryItems, resultsState);
 
-      // 2. Convertir imagen a Base64
       const base64Image = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
       });
 
-      // 3. Llamar a la Edge Function de Supabase
-      const { data: extractedResults, error } = await supabase.functions.invoke('analyze-lab-report', {
-        body: { image: base64Image, fields: fieldsToExtract }
+      const { data: extractedResults, error } = await supabase.functions.invoke("analyze-lab-report", {
+        body: { image: base64Image, fields: fieldsToExtract },
       });
 
       if (error) {
-        // Intenta leer el cuerpo del error si es posible
         const errorDetails = await error.context?.json();
-        console.log("Detalles del error 400:", errorDetails);
+        console.log("Detalles del error OCR:", errorDetails);
       }
 
-      // 4. Mapear los resultados de la IA a nuestro estado de React
-      let fieldsUpdated = 0;
-      categoryItems.forEach(item => {
-        const itemResultsData = resultsState[item.id];
-        if (!itemResultsData?.sections) return;
-
-        itemResultsData.sections.forEach((section, sIdx) => {
-          section.fields?.forEach((field, fIdx) => {
-            // Si la IA devolvió un valor para este label exacto
-            const aiValue = extractedResults[field.label];
-            if (aiValue !== undefined && aiValue !== null) {
-              updateFieldValue(item.id, sIdx, fIdx, aiValue.toString());
-              fieldsUpdated++;
-            }
-          });
-        });
-      });
+      const fieldsUpdated = applyOcrResultsToState(categoryItems, resultsState, extractedResults, updateFieldValue);
 
       if (fieldsUpdated > 0) {
         toast.success(`Se autocompletaron ${fieldsUpdated} valores. Por favor, revísalos.`, { id: toastId });
       } else {
         toast.warning("No se detectó valores coincidentes en esta imagen.", { id: toastId });
       }
-
     } catch (error) {
-      console.error("Error con Gemini OCR:", error);
+      console.error("Error con OCR:", error);
       toast.error("No se pudo procesar la imagen.", { id: toastId });
     } finally {
       setOcrLoading(null);
-      e.target.value = '';
+      event.target.value = "";
     }
-  };
-
-  const thermalReceiptData: ThermalReceiptData = {
-    orderId: order.order_seq,
-    orderDate: format(new Date(order.created_at), "dd/MM/yyyy HH:mm"),
-    patientName: patientInfo.name,
-    patientId: patientInfo.id,
-    items: orderItems
-      .filter((item) => Number(item.price_at_order) > 0)
-      .map((item) => ({ test_name: item.test_name, price: Number(item.price_at_order) })),
-    total: Number(order.total_amount),
-    accessPin: order.access_pin,
-    portalUrl: `${window.location.origin}/portal-paciente`,
-    exchangeRate: order.exchange_rate ? Number(order.exchange_rate) : null,
-    totalBs: order.total_bs ? Number(order.total_bs) : null,
-    labData: {
-      name: lab?.name || "Laboratorio",
-      address: lab?.address || "",
-      phone: lab?.phone || "",
-      email: lab?.email || "",
-      logo: lab?.logo_url || null,
-      primary_color: lab?.primary_color || "#4f46e5",
-    },
-  };
+  }
 
   async function handlePrintThermal() {
     setThermalPrinting(true);
     try {
       await printThermalReceipt(thermalReceiptData);
-      toast.success("Recibo enviado a la impresora termica");
+      toast.success("Recibo enviado a la impresora térmica");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo imprimir el recibo";
-      toast.error(message);
+      toast.error(error instanceof Error ? error.message : "No se pudo imprimir el recibo");
     } finally {
       setThermalPrinting(false);
     }
   }
 
+  function handleSharePortalLink() {
+    const portalUrl = `${window.location.origin}/portal-paciente?order=${order.id}&pin=${order.access_pin}`;
+    const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
+    const text = encodeURIComponent(`Tus resultados están listos, los puedes ver en ${portalUrl}`);
+    window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in relative pb-20">
+    <div className="relative space-y-6 animate-fade-in pb-20">
       <PageHeader
-        title={`Orden: ${order.order_seq.toString().padStart(4, '0')}`}
+        title={`Orden: ${order.order_seq.toString().padStart(4, "0")}`}
         description={`Fecha: ${patientInfo.date}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Volver
             </Button>
             {order.status === "pendiente" && (
               <Button variant="outline" size="sm" onClick={handleCompleteOrder}>
-                <ClipboardCheck className="w-4 h-4 mr-2" />
+                <ClipboardCheck className="mr-2 h-4 w-4" />
                 Marcar como completada
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
-              <FileText className="w-4 h-4 mr-2" />
+              <FileText className="mr-2 h-4 w-4" />
               {reportLoading ? "Generando..." : "Ver Informe"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
-              <Receipt className="w-4 h-4 mr-2" />
+              <Receipt className="mr-2 h-4 w-4" />
               {receiptLoading ? "Generando..." : "Ver Nota"}
             </Button>
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
                 {isSavingAll ? "Guardando..." : "Guardar Todos"}
               </Button>
             )}
@@ -389,435 +260,58 @@ export default function OrderDetailPage() {
         }
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <div className="w-full lg:w-[30%] space-y-6 shrink-0">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Datos del Paciente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Paciente</p>
-                    <p className="text-sm font-medium">{patientInfo.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <IdCard className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Cédula</p>
-                    <p className="text-sm font-medium">{patientInfo.id}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Calendar className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Edad / Género</p>
-                    <p className="text-sm font-medium">{patientInfo.age} {typeof patientInfo.age === 'number' ? 'años' : ''} / {patientInfo.gender}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Phone className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Telefono</p>
-                    <p className="text-sm font-medium">{order.patients.phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Correo</p>
-                    <p className="text-sm font-medium">{order.patients.email}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <OrderSidebar order={order} patientInfo={patientInfo} onSharePortalLink={handleSharePortalLink} />
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Datos de la Orden</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
-                    <DollarSign className="w-4 h-4 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total USD</p>
-                    <p className="text-sm font-semibold mono">${Number(order.total_amount).toFixed(2)}</p>
-                  </div>
-                </div>
-                {order.total_bs != null && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <DollarSign className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Total BS</p>
-                      <p className="text-sm font-medium mono">Bs. {Number(order.total_bs).toFixed(2)}</p>
-                    </div>
-                  </div>
-                )}
-                {order.access_pin && (
-                  <div className="pt-2 border-t border-border flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">PIN de Acceso</p>
-                      <p className="text-sm font-medium mono tracking-widest">{order.access_pin}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      const portalUrl = `${window.location.origin}/portal-paciente?order=${order.id}&pin=${order.access_pin}`;
-                      const phoneRaw = order.patients?.phone || "";
-                      const phoneDigits = phoneRaw.replace(/\D/g, "");
-                      const text = encodeURIComponent(`Tus resultados están listos, los puedes ver en ${portalUrl}`);
-                      const waUrl = `https://wa.me/58${phoneDigits}?text=${text}`;
-                      window.open(waUrl, "_blank");
-                    }}>
-                      <LinkIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Panel */}
-        <div className="w-full lg:w-[70%] space-y-6">
+        <div className="w-full space-y-6 lg:w-[70%]">
           {itemsLoading ? (
-            <div className="flex items-center justify-center h-32 border rounded-xl bg-card">
-              <Atom color={lab?.primary_color} size="large" text="Cargando exámenes..." textColor={lab?.primary_color} />
-            </div>
+            <Card className="flex h-32 items-center justify-center rounded-xl border bg-card">
+              <Atom color={labData.primary_color} size="large" text="Cargando exámenes..." textColor={labData.primary_color} />
+            </Card>
           ) : orderItems.length === 0 ? (
-            <div className="flex items-center justify-center h-32 border rounded-xl bg-card">
-              <p className="text-muted-foreground text-sm">No hay exámenes en esta orden.</p>
-            </div>
+            <Card className="flex h-32 items-center justify-center rounded-xl border bg-card">
+              <p className="text-sm text-muted-foreground">No hay exámenes en esta orden.</p>
+            </Card>
+          ) : updateStatus.isPending ? (
+            <Card className="flex h-32 items-center justify-center rounded-xl border bg-card">
+              <Atom color={labData.primary_color} size="large" text="Actualizando orden..." textColor={labData.primary_color} />
+            </Card>
           ) : (
-            updateStatus.isPending ? (
-              <div className="flex items-center justify-center h-32 border rounded-xl bg-card">
-                <Atom color={lab?.primary_color} size="large" text="Actualizando orden..." textColor={lab?.primary_color} />
-              </div>
-            ) : (
-
-              (() => {
-                // Filter out profile header items (they have no results to enter)
-                const enterableItems = orderItems.filter((item) => !item.is_profile_header);
-                const groupedItems = enterableItems.reduce((acc, item) => {
-                  const cat = item.category || 'Otros';
-                  if (!acc[cat]) acc[cat] = [];
-                  acc[cat].push(item);
-                  return acc;
-                }, {} as Record<string, typeof orderItems>);
-
-                return Object.entries(groupedItems).map(([category, itemsInCategory]) => {
-                  const isCategoryModified = itemsInCategory.some(item => modifiedIds.has(item.id));
-                  const allResultsEntered = itemsInCategory.every(item => {
-                    const data = resultsState[item.id];
-                    return data?.sections?.some((s) => s.fields?.some((f) => f.value && f.value !== ""));
-                  });
-                  const anyResultsEntered = itemsInCategory.some(item => {
-                    const data = resultsState[item.id];
-                    return data?.sections?.some((s) => s.fields?.some((f) => f.value && f.value !== ""));
-                  });
-
-                  return (
-                    <Card key={category} className={isCategoryModified ? "border-primary/50 shadow-sm" : ""}>
-                      <CardHeader className="py-3 px-4 bg-muted/30 border-b flex flex-row items-center justify-between pointer-events-auto">
-                        <div className="flex items-center gap-2">
-                          <FlaskConical className="w-4 h-4 text-primary" />
-                          <CardTitle className="text-sm font-semibold">{category}</CardTitle>
-                          {isCategoryModified && (
-                            <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px] uppercase font-bold px-1.5 py-0">Modificado</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {allResultsEntered ? (
-                            <span className="text-xs font-medium text-success flex items-center"><ClipboardCheck className="w-3.5 h-3.5 mr-1" /> Completado</span>
-                          ) : anyResultsEntered ? (
-                            <span className="text-xs font-medium text-amber-500 flex items-center">En Progreso</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pendiente</span>
-                          )}
-                          {!allResultsEntered && canEnterResults && order.status !== "completada" && (
-                            <div className="relative">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                onChange={(e) => handleFileUploadForOCR(e, itemsInCategory, category)}
-                                disabled={ocrLoading === category}
-                              />
-                              <Button variant="outline" size="sm" className="h-7 text-xs px-2 pointer-events-none" disabled={ocrLoading === category}>
-                                {ocrLoading === category ? (
-                                  <span className="animate-pulse">Escaneando...</span>
-                                ) : (
-                                  <>
-                                    <FileText className="w-3 h-3 mr-1.5" />
-                                    Autocompletar
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-0 divide-y divide-border">
-                        {itemsInCategory.map((item) => {
-                          const itemResultsData = resultsState[item.id];
-                          const readOnly = order.status === "completada" || !canEnterResults;
-
-                          return (
-                            <div key={item.id} className="p-4">
-
-                              {itemResultsData ? (
-                                <div className="space-y-6">
-                                  {itemResultsData.sections?.map((section, sIdx: number) => (
-                                    <div key={section.id || sIdx} className="space-y-3">
-                                      <h4 className="text-[13px] font-semibold text-foreground border-b border-border pb-1">
-                                        {section.name}
-                                      </h4>
-                                      <div className="space-y-3">
-                                        {section.fields?.map((field, fIdx: number) => (
-                                          <div
-                                            key={field.id || fIdx}
-                                            className="grid grid-cols-12 gap-3 items-center"
-                                          >
-                                            <Label className="col-span-12 sm:col-span-4 text-xs sm:text-sm">
-                                              {field.label}
-                                              {field.unit && (
-                                                <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">
-                                                  ({field.unit})
-                                                </span>
-                                              )}
-                                            </Label>
-                                            <div className="col-span-12 sm:col-span-5">
-                                              {field.type === "select" ? (
-                                                <Select
-                                                  value={field.value || ""}
-                                                  onValueChange={(val) =>
-                                                    updateFieldValue(item.id, sIdx, fIdx, val)
-                                                  }
-                                                  disabled={readOnly}
-                                                >
-                                                  <SelectTrigger className="h-8 text-sm">
-                                                    <SelectValue placeholder="Seleccionar…" />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    {field.options?.map((opt: string) => (
-                                                      <SelectItem key={opt} value={opt}>
-                                                        {opt}
-                                                      </SelectItem>
-                                                    ))}
-                                                  </SelectContent>
-                                                </Select>
-                                              ) : 
-                                              field.type === "number" ?
-                                              (
-                                                <Input
-                                                  className="h-8 text-sm"
-                                                  type={"number"}
-                                                  value={field.value || ""}
-                                                  onChange={(e) =>
-                                                    updateFieldValue(item.id, sIdx, fIdx, e.target.value)
-                                                  }
-                                                  disabled={readOnly}
-                                                  placeholder={"Ingresar resultado"}
-                                                />
-                                              ) : 
-                                              field.type === "text" ?
-                                              (
-                                                <div className="flex flex-col gap-1">
-                                                  <Textarea
-                                                    className="h-20 text-sm"
-                                                    value={field.value || ""}
-                                                    onChange={(e) =>
-                                                      updateFieldValue(item.id, sIdx, fIdx, e.target.value)
-                                                    }
-                                                    disabled={readOnly}
-                                                    placeholder={"Ingresar resultado"}
-                                                  />
-
-                                                  {field.options?.length > 0 && (
-                                                    <Popover>
-                                                      <PopoverTrigger asChild>
-                                                        <Button
-                                                          type="button"
-                                                          variant="outline"
-                                                          size="sm"
-                                                          className="h-7"
-                                                          disabled={readOnly}
-                                                        >
-                                                          Opciones
-                                                        </Button>
-                                                      </PopoverTrigger>
-                                                      <PopoverContent className="w-80 p-2">
-                                                        <p className="text-xs text-muted-foreground mb-2">
-                                                          Selecciona una o varias opciones para añadir al texto
-                                                        </p>
-                                                        <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                                                          {field.options.map((opt: string) => (
-                                                            <Tooltip key={opt}>
-                                                              <TooltipTrigger asChild>
-                                                                <Button
-                                                                  type="button"
-                                                                  variant="secondary"
-                                                                  size="sm"
-                                                                  className="h-8 w-full justify-start text-left truncate"
-                                                                  onClick={() =>
-                                                                    appendTextOption(item.id, sIdx, fIdx, opt)
-                                                                  }
-                                                                  disabled={readOnly}
-                                                                >
-                                                                  {opt}
-                                                                </Button>
-                                                              </TooltipTrigger>
-                                                              <TooltipContent>
-                                                                <p>{opt}</p>
-                                                              </TooltipContent>
-                                                            </Tooltip>
-                                                          ))}
-                                                        </div>
-                                                      </PopoverContent>
-                                                    </Popover>
-                                                  )}
-                                                </div>
-                                              ) : null
-                                               }
-                                            </div>
-                                            <div className="col-span-12 sm:col-span-3 text-[10px] sm:text-xs text-muted-foreground">
-                                              {(() => {
-                                                const matched = findMatchingRange(
-                                                  field.reference_ranges,
-                                                  patientInfo.gender.toLowerCase(),
-                                                  typeof patientInfo.age === 'number' ? patientInfo.age : parseInt(patientInfo.age, 10) || undefined
-                                                );
-                                                if (matched) return <span>Ref: {matched.min_value} - {matched.max_value}</span>;
-                                                if (field.range) return <span>Ref: {field.range}</span>;
-                                                return null;
-                                              })()}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="text-center py-4 text-sm text-muted-foreground">
-                                  Estructura de resultados no disponible.
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </CardContent>
-                    </Card>
-                  );
-                });
-              }))()
+            <OrderResultsPanel
+              groupedItems={groupedItems}
+              modifiedIds={modifiedIds}
+              resultsState={resultsState}
+              patientInfo={patientInfo}
+              canEnterResults={canEnterResults}
+              orderStatus={order.status}
+              ocrLoading={ocrLoading}
+              updateFieldValue={updateFieldValue}
+              appendTextOption={appendTextOption}
+              handleFileUploadForOCR={handleFileUploadForOCR}
+            />
           )}
         </div>
       </div>
 
-      {/* Floating Action Bar for Mobile */}
-      {modifiedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5">
-          <div className="bg-card border border-border/50 shadow-xl rounded-full px-4 py-2 flex items-center gap-4">
-            <span className="text-sm font-medium whitespace-nowrap hidden sm:inline-block">
-              {modifiedIds.size} {modifiedIds.size === 1 ? "cambio" : "cambios"} sin guardar
-            </span>
-            <span className="text-sm font-medium whitespace-nowrap sm:hidden">
-              {modifiedIds.size} cambios
-            </span>
-            <Button size="sm" className="rounded-full shadow-md" onClick={handleSaveAll} disabled={isSavingAll}>
-              <Save className="w-4 h-4 mr-1.5" />
-              {isSavingAll ? "Guardando..." : "Guardar Todo"}
-            </Button>
-          </div>
-        </div>
-      )}
+      <OrderMobileSaveBar modifiedCount={modifiedIds.size} isSavingAll={isSavingAll} onSaveAll={handleSaveAll} />
 
-      {/* Unified Report Dialog */}
-      <Dialog open={unifiedOpen} onOpenChange={setUnifiedOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col w-[95vw]" >
-          <DialogHeader>
-            <DialogTitle>Informe de Resultados</DialogTitle>
-            <DialogDescription> Revisa el informe de resultados antes de imprimir </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 w-full overflow-hidden rounded-md border bg-muted">
-            {orderItems.length > 0 ? (
-              <PDFViewer width="100%" height="100%" className="border-none">
-                <UnifiedTestReportPDF
-                  orden={order}
-                  orderItems={orderItems}
-                  patientData={{
-                    ...patientInfo,
-                    age: `${patientInfo.age} Años`,
-                  }}
-                  labData={{
-                    name: lab?.name || "Laboratorio",
-                    address: lab?.address || "",
-                    phone: lab?.phone || "",
-                    email: lab?.email || "",
-                    logo: lab?.logo_url || null,
-                    primary_color: lab?.primary_color || "#0ea5e9",
-                    secondary_color: lab?.secondary_color || "#0ea5e9",
-                  }}
-                />
-              </PDFViewer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">Cargando datos del reporte...</p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button onClick={() => setUnifiedOpen(false)}>Cerrar</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ReportPreviewDialog
+        open={unifiedOpen}
+        onOpenChange={setUnifiedOpen}
+        order={order}
+        orderItems={orderItems}
+        patientData={patientInfo}
+        labData={labData}
+      />
 
-      {/* Receipt PDF Dialog */}
-      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col w-[95vw]">
-          <DialogHeader>
-            <DialogTitle>Nota de Entrega</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 w-full overflow-hidden rounded-md border bg-muted">
-            {orderItems.length > 0 ? (
-              <PDFViewer width="100%" height="100%" className="border-none">
-                <OrderThermalReceiptPDF
-                  {...thermalReceiptData}
-                />
-              </PDFViewer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">Cargando datos...</p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={handlePrintThermal} disabled={thermalPrinting || orderItems.length === 0}>
-              {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
-            </Button>
-            <Button onClick={() => setReceiptOpen(false)}>Cerrar</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ReceiptPreviewDialog
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        orderItemsCount={orderItems.length}
+        thermalReceiptData={thermalReceiptData}
+        thermalPrinting={thermalPrinting}
+        onPrintThermal={handlePrintThermal}
+      />
     </div>
   );
 }

@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { UserPlus, Users, Shield, FlaskConical, ClipboardList } from "lucide-react";
-import { toast } from "sonner";
+import { useCreateTeamMember, useTeamMembers } from "./useTeamSettings";
 
 const roleLabels: Record<string, string> = {
   lab_admin: "Administrador",
@@ -33,41 +31,20 @@ interface TeamSettingsProps {
 }
 
 export function TeamSettings({ orgId }: TeamSettingsProps) {
-  const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "secretary" });
 
-  const { data: members = [], isLoading } = useQuery({
-    queryKey: ["team-members", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, role, created_at")
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!orgId,
-  });
+  const { data: members = [], isLoading } = useTeamMembers(orgId);
+  const createUser = useCreateTeamMember(orgId);
 
-  const createUser = useMutation({
-    mutationFn: async () => {
-      const res = await supabase.functions.invoke("lab-create-user", {
-        body: { email: form.email, password: form.password, full_name: form.full_name, role: form.role },
-      });
-      if (res.error) throw new Error(res.error.message);
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast.success("Usuario creado exitosamente");
-      setAddOpen(false);
-      setForm({ email: "", password: "", full_name: "", role: "secretary" });
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const handleCreateUser = () => {
+    createUser.mutate(form, {
+      onSuccess: () => {
+        setAddOpen(false);
+        setForm({ email: "", password: "", full_name: "", role: "secretary" });
+      },
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -167,7 +144,7 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancelar</Button>
             <Button
-              onClick={() => createUser.mutate()}
+              onClick={handleCreateUser}
               disabled={!form.email || !form.password || !form.full_name || createUser.isPending}
             >
               {createUser.isPending ? "Creando…" : "Crear Usuario"}

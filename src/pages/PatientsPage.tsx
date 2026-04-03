@@ -1,89 +1,30 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Search,
-  Calendar,
-  ChevronRight,
-  Users,
-  CheckCircle2,
-} from "lucide-react";
+import { Plus, Search, Calendar, ChevronRight, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInYears, format } from "date-fns";
 import { NewPatientDialog } from "@/features/patients/NewPatientDialog";
-import type { PatientFormData } from "@/features/patients/schemas";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCreatePatient, usePatientStats, usePatientsList } from "@/features/patients/usePatients";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 
 export default function PatientsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user } = useAuth();
   const navigate = useNavigate();
   const debouncedSearch = useDebounce(search, 500);
-  const queryClient = useQueryClient();
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const orgId = profile?.org_id;
-
-  const { data: patientsData, isLoading, refetch } = useQuery({
-    queryKey: ["patients", orgId, page, debouncedSearch],
-    queryFn: async () => {
-      if (!orgId) return { items: [], total: 0 };
-      const offset = (page - 1) * pageSize;
-
-      // 1. Modificamos el select para incluir un conteo de exámenes pendientes
-      // Usamos un filtro de relación: exams(count) con un filtro interno
-      let query = supabase
-        .from("patients")
-        .select(`
-        *,
-        pending_exams:orders(count)
-      `, { count: "exact" })
-        .eq("org_id", orgId!)
-        // Agregamos el filtro para que solo cuente los que NO están listos
-        .neq("orders.status", "completada")
-        .order("created_at", { ascending: false });
-
-      if (debouncedSearch.trim()) {
-        const filter = `%${debouncedSearch.trim()}%`;
-        query = query.or(`first_name.ilike.${filter},last_name.ilike.${filter},id_number.ilike.${filter}`);
-      }
-
-      const { data, error, count } = await query.range(offset, offset + pageSize - 1);
-      if (error) throw error;
-
-      return {
-        items: data ?? [],
-        total: count ?? 0,
-      };
-    },
-    enabled: !!orgId,
-  });
+  const { data: patientsData, isLoading } = usePatientsList(page, debouncedSearch);
+  const { data: stats, isLoading: statsLoading } = usePatientStats();
+  const createMutation = useCreatePatient();
 
   const totalPatients = patientsData?.total ?? 0;
   const patientsToDisplay = patientsData?.items ?? [];
@@ -92,32 +33,6 @@ export default function PatientsPage() {
   useEffect(() => {
     setPage(1);
   }, [search]);
-
-  const createMutation = useMutation({
-    mutationFn: async (formData: PatientFormData) => {
-      const { error } = await supabase.from("patients").insert([{
-        id_number: formData.id_number,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        date_of_birth: formData.date_of_birth,
-        gender: formData.gender,
-        org_id: orgId!,
-        phone: formData.phone || null,
-        email: formData.email || null,
-        address: formData.address || null,
-        occupation: formData.occupation || null,
-      }]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["patients"] });
-      queryClient.invalidateQueries({ queryKey: ["patient-stats"] });
-      toast.success("Patient created successfully");
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
 
   const avatarColors = [
     "bg-blue-100 text-blue-600",
@@ -135,46 +50,6 @@ export default function PatientsPage() {
     return avatarColors[index % avatarColors.length];
   };
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
-      queryKey: ["patient-stats", orgId],
-      queryFn: async () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-        // Ejecutamos 3 conteos en paralelo para máxima velocidad
-        const [total, month, day] = await Promise.all([
-          // Total histórico
-          supabase
-            .from("patients")
-            .select("*", { count: "exact", head: true })
-            .eq("org_id", orgId!),
-          
-          // Registrados este mes
-          supabase
-            .from("patients")
-            .select("*", { count: "exact", head: true })
-            .eq("org_id", orgId!)
-            .gte("created_at", firstDayOfMonth.toISOString()),
-
-          // Registrados hoy
-          supabase
-            .from("patients")
-            .select("*", { count: "exact", head: true })
-            .eq("org_id", orgId!)
-            .gte("created_at", today.toISOString()),
-        ]);
-
-        return {
-          total: total.count || 0,
-          thisMonth: month.count || 0,
-          today: day.count || 0,
-        };
-      },
-      enabled: !!orgId,
-    });
-
   return (
     <div className="space-y-6 sm:space-y-4 animate-fade-in pb-10">
       <PageHeader
@@ -183,13 +58,11 @@ export default function PatientsPage() {
         actions={
           <Button onClick={() => setDialogOpen(true)} size="sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Nuevo Paciente</span>
-            <span className="sm:hidden">Nuevo Paciente</span>
+            <span>Nuevo Paciente</span>
           </Button>
         }
       />
 
-      {/* Statistics Section */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <StatCard
           title="Total Pacientes Registrados"
@@ -206,7 +79,7 @@ export default function PatientsPage() {
         <StatCard
           title="Registrados Hoy"
           value={statsLoading ? "..." : stats?.today.toLocaleString()}
-          icon={Plus} // O CheckCircle2
+          icon={Plus}
           className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
       </div>
@@ -222,59 +95,11 @@ export default function PatientsPage() {
               className="pl-9 h-11 bg-muted/20 border-border"
             />
           </div>
-          {/*<div className="flex flex-wrap items-center gap-3">
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[160px] h-11 bg-muted/20 border-border">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <SelectValue placeholder="Date: All Time" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Date: All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[160px] h-11 bg-muted/20 border-border">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                  <SelectValue placeholder="Status: All" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Status: All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select defaultValue="pathology">
-              <SelectTrigger className="w-[180px] h-11 bg-muted/20 border-border">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-muted-foreground" />
-                  <SelectValue placeholder="Dept: Pathology" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pathology">Dept: Pathology</SelectItem>
-                <SelectItem value="hematology">Dept: Hematology</SelectItem>
-                <SelectItem value="radiology">Dept: Radiology</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="ghost" size="icon" onClick={() => refetch()} className="h-11 w-11 hover:bg-muted/50">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>*/}
         </CardHeader>
-        
+
         <Table className="w-full text-left border-collapse hidden md:table">
           <TableHeader>
-            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border" >
+            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
               <TableHead className="px-6 py-4 font-semibold">Cedula</TableHead>
               <TableHead className="px-6 py-4 font-semibold">Nombre</TableHead>
               <TableHead className="px-6 py-4 font-semibold">Contacto</TableHead>
@@ -283,7 +108,7 @@ export default function PatientsPage() {
             </TableRow>
           </TableHeader>
 
-          <TableBody >
+          <TableBody>
             {patientsToDisplay.map((patient, index) => (
               <TableRow
                 key={patient.id}
@@ -306,7 +131,7 @@ export default function PatientsPage() {
                       <span className="text-sm font-semibold text-foreground leading-tight">
                         {patient.first_name} {patient.last_name}
                       </span>
-                      <span className="text-[11px] text-muted-foreground mt-0.5 capitalize">  
+                      <span className="text-[11px] text-muted-foreground mt-0.5 capitalize">
                         {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth))} anos
                       </span>
                     </div>
@@ -315,10 +140,10 @@ export default function PatientsPage() {
                 <TableCell className="px-6 py-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-foreground leading-tight">
-                    {patient.phone || "+1 (555) 000-0000"}
+                      {patient.phone || "Sin teléfono"}
                     </span>
-                    <span className="text-sm text-muted-foreground leading-tight">  
-                      {patient.email || "[EMAIL_ADDRESS]"}
+                    <span className="text-sm text-muted-foreground leading-tight">
+                      {patient.email || "Sin correo"}
                     </span>
                   </div>
                 </TableCell>
@@ -329,27 +154,22 @@ export default function PatientsPage() {
                 </TableCell>
                 <TableCell className="px-6 py-4 text-sm text-muted-foreground">
                   {(() => {
-                      // Extraemos el conteo del objeto que devuelve Supabase
-                      const pendingCount = patient.pending_exams?.[0]?.count || 0;
+                    const pendingCount = patient.pending_exams?.[0]?.count || 0;
 
-                      return (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                            ${pendingCount > 0
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-emerald-100 text-emerald-700"}`}>
-                          {pendingCount === 0 ? (
-                            <><CheckCircle2 className="w-3 h-3 mr-1" /> Al día</>
-                          ) : (
-                            `${pendingCount} Pendiente${pendingCount > 1 ? 's' : ''}`
-                          )}
-                        </span>
-                      );
-                    })()}
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${pendingCount > 0 ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        {pendingCount === 0 ? (
+                          <><CheckCircle2 className="w-3 h-3 mr-1" /> Al día</>
+                        ) : (
+                          `${pendingCount} Pendiente${pendingCount > 1 ? "s" : ""}`
+                        )}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
-              
         </Table>
 
         {isLoading && (
@@ -366,7 +186,6 @@ export default function PatientsPage() {
           </div>
         )}
 
-        {/* Mobile view - Simple cards */}
         <div className="md:hidden space-y-3 mb-4">
           {patientsToDisplay.map((patient, index) => (
             <div
@@ -401,7 +220,7 @@ export default function PatientsPage() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-md"
-              onClick={(e) => { e.stopPropagation(); setPage(prev => Math.max(prev - 1, 1)); }}
+              onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.max(prev - 1, 1)); }}
               disabled={page <= 1}
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
@@ -436,23 +255,27 @@ export default function PatientsPage() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-md"
-              onClick={(e) => { e.stopPropagation(); setPage(prev => Math.min(prev + 1, pageCount)); }}
+              onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.min(prev + 1, pageCount)); }}
               disabled={page >= pageCount}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </CardFooter>
-
       </Card>
 
       <NewPatientDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSubmit={(data) => createMutation.mutateAsync(data)}
+        onSubmit={async (data) => {
+          try {
+            await createMutation.mutateAsync(data);
+            toast.success("Paciente creado correctamente");
+          } catch (error) {
+            toast.error(getUserFacingErrorMessage(error, "No se pudo crear el paciente"));
+          }
+        }}
       />
     </div>
   );
 }
-
-

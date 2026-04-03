@@ -17,9 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/stores/layoutStore";
 import { useUserRole } from "@/hooks/useUserRole";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/features/orders/useOrders";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useMemo } from "react";
 
 const adminNavItems = [
@@ -32,9 +31,8 @@ export function AppSidebar() {
   const location = useLocation();
   const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
   const { isSuperAdmin } = useUserRole();
-  const permissions = usePermissions();
   const { signOut, user } = useAuth();
-  const { data: profile } = useProfile();
+  const { profile, permissions } = useCurrentOrgContext();
 
   const displayName = user?.email || "Usuario";
   const roleLabel = isSuperAdmin

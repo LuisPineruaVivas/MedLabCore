@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 
 interface BrandConfig {
   logoUrl: string | null;
@@ -34,61 +32,26 @@ const BrandContext = createContext<BrandContextType>({
 });
 
 export function BrandProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { organization, isLoading } = useCurrentOrgContext();
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const orgId = profile?.org_id;
-
-  const { data: orgData, isLoading } = useQuery({
-    queryKey: ["organization-brand", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("name, address, phone, email, logo_url, primary_color, secondary_color")
-        .eq("id", orgId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!orgId,
-  });
-
-  const [brand, setBrand] = useState<BrandConfig>(DEFAULT_BRAND);
+  const brand = useMemo(
+    () => ({
+      logoUrl: organization?.logo_url || DEFAULT_BRAND.logoUrl,
+      primaryColor: organization?.primary_color || DEFAULT_BRAND.primaryColor,
+      secondaryColor: organization?.secondary_color || DEFAULT_BRAND.secondaryColor,
+      name: organization?.name || DEFAULT_BRAND.name,
+      email: organization?.email || DEFAULT_BRAND.email,
+      phone: organization?.phone || DEFAULT_BRAND.phone,
+      address: organization?.address || DEFAULT_BRAND.address,
+    }),
+    [organization]
+  );
 
   useEffect(() => {
-    const currentBrand = {
-      logoUrl: orgData?.logo_url || DEFAULT_BRAND.logoUrl,
-      primaryColor: orgData?.primary_color || DEFAULT_BRAND.primaryColor,
-      secondaryColor: orgData?.secondary_color || DEFAULT_BRAND.secondaryColor,
-      name: orgData?.name || DEFAULT_BRAND.name,
-      email: orgData?.email || DEFAULT_BRAND.email,
-      phone: orgData?.phone || DEFAULT_BRAND.phone,
-      address: orgData?.address || DEFAULT_BRAND.address,
-    };
-
-    setBrand(currentBrand);
-
     // Inject CSS variables into the root
-    document.documentElement.style.setProperty("--primary-brand", currentBrand.primaryColor);
-    document.documentElement.style.setProperty("--secondary-brand", currentBrand.secondaryColor);
-
-    return () => {
-      // Optional: cleanup or let it persist
-    };
-  }, [orgData]);
+    document.documentElement.style.setProperty("--primary-brand", brand.primaryColor);
+    document.documentElement.style.setProperty("--secondary-brand", brand.secondaryColor);
+  }, [brand.primaryColor, brand.secondaryColor]);
 
   return (
     <BrandContext.Provider value={{ brand, isLoading }}>

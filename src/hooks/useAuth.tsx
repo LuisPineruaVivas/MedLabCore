@@ -27,6 +27,8 @@ function authReducer(_state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case "SET_SESSION":
       return { session: action.session, loading: false };
+    default:
+      return _state;
   }
 }
 

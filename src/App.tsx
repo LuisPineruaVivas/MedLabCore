@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,23 +10,24 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
-import DashboardPage from "@/pages/DashboardPage";
-import PatientsPage from "@/pages/PatientsPage";
-import PatientDetailPage from "@/pages/PatientDetailPage";
-import TestsPage from "@/pages/TestsPage";
-import VisitsPage from "@/pages/VisitsPage";
-import BillingPage from "@/pages/BillingPage";
-import OrdersPage from "@/pages/OrdersPage";
-import OrderDetailPage from "@/pages/OrderDetailPage";
-import SettingsPage from "@/pages/SettingsPage";
-import OrganizationsPage from "@/pages/admin/OrganizationsPage";
-import UsersPage from "@/pages/admin/UsersPage";
-import LoginPage from "@/pages/LoginPage";
-import NotFound from "@/pages/NotFound";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
-import TestsTemplatesPage from "./pages/admin/TestsTemplates";
-import TemplateBuilderPage from "./pages/admin/TemplateBuilderPage";
-import PatientPortalPage from "./pages/PatientPortalPage";
+
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
+const PatientDetailPage = lazy(() => import("@/pages/PatientDetailPage"));
+const TestsPage = lazy(() => import("@/pages/TestsPage"));
+const VisitsPage = lazy(() => import("@/pages/VisitsPage"));
+const BillingPage = lazy(() => import("@/pages/BillingPage"));
+const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
+const OrderDetailPage = lazy(() => import("@/pages/OrderDetailPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const OrganizationsPage = lazy(() => import("@/pages/admin/OrganizationsPage"));
+const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
+const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
+const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,55 +54,53 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/portal-paciente" element={<PatientPortalPage />} />
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/portal-paciente" element={<PatientPortalPage />} />
 
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute><BrandProvider><AppLayout /></BrandProvider></ProtectedRoute>}>
-              {/* Role-based home redirect */}
-              <Route path="/" element={<RoleRouter />} />
+              <Route element={<ProtectedRoute><BrandProvider><AppLayout /></BrandProvider></ProtectedRoute>}>
+                <Route path="/" element={<RoleRouter />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/patients/:id" element={<PatientDetailPage />} />
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/orders/:id" element={<OrderDetailPage />} />
 
-              {/* Accessible to all lab roles */}
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/patients" element={<PatientsPage />} />
-              <Route path="/patients/:id" element={<PatientDetailPage />} />
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/orders/:id" element={<OrderDetailPage />} />
+                <Route element={<RoleGuard permission="canViewTests" />}>
+                  <Route path="/tests" element={<TestsPage />} />
+                  <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
+                  <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
+                </Route>
 
-              {/* Tests: admin + bioanalyst only */}
-              <Route element={<RoleGuard permission="canViewTests" />}>
-                <Route path="/tests" element={<TestsPage />} />
-                <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
-                <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
+                <Route path="/visits" element={<VisitsPage />} />
+
+                <Route element={<RoleGuard permission="canViewBilling" />}>
+                  <Route path="/billing" element={<BillingPage />} />
+                </Route>
+
+                <Route element={<RoleGuard permission="canViewSettings" />}>
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+
+                <Route element={<SuperAdminGuard />}>
+                  <Route path="/admin/organizations" element={<OrganizationsPage />} />
+                  <Route path="/admin/users" element={<UsersPage />} />
+                  <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
+                  <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
+                  <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
+                </Route>
               </Route>
 
-              {/* Visits: all roles */}
-              <Route path="/visits" element={<VisitsPage />} />
-
-              {/* Billing: admin + secretary only */}
-              <Route element={<RoleGuard permission="canViewBilling" />}>
-                <Route path="/billing" element={<BillingPage />} />
-              </Route>
-
-              {/* Settings: admin only */}
-              <Route element={<RoleGuard permission="canViewSettings" />}>
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route>
-
-              {/* Super admin routes */}
-              <Route element={<SuperAdminGuard />}>
-                <Route path="/admin/organizations" element={<OrganizationsPage />} />
-                <Route path="/admin/users" element={<UsersPage />} />
-                <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
-                <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
-                <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
-              </Route>
-            </Route>
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

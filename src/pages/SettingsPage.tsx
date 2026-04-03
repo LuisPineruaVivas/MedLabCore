@@ -2,15 +2,14 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Building2, Palette, Shield, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useProfile } from "@/features/orders/useOrders";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
 
 export default function SettingsPage() {
   const [activeDialog, setActiveDialog] = useState<"org" | "dept" | "users" | "exchange" | null>(null);
-  const { data: profile } = useProfile();
-  const orgId = profile?.org_id;
+  const { orgId } = useCurrentOrgContext();
 
   const settingsCards = [
     {

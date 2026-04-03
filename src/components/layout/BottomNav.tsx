@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useMemo } from "react";
 
 const adminNavItems = [
@@ -23,7 +23,7 @@ const adminNavItems = [
 export function BottomNav() {
   const location = useLocation();
   const { isSuperAdmin } = useUserRole();
-  const permissions = usePermissions();
+  const { permissions } = useCurrentOrgContext();
 
   const labNavItems = useMemo(() => {
     const items = [

@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Check, FlaskConical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProfileBuilderTemplates } from "./useTestTemplates";
 
 interface ProfileBuilderDialogProps {
   open: boolean;
@@ -68,20 +67,7 @@ export function ProfileBuilderDialog({
   }, [open, initialData]);
 
   // Fetch available templates
-  const { data: templates = [] } = useQuery({
-    queryKey: ["profile-builder-templates", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_test_templates_filtered")
-        .select("id, name, category, base_price")
-        .or(`org_id.is.null,org_id.eq.${orgId}`)
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!orgId && open,
-  });
+  const { data: templates = [] } = useProfileBuilderTemplates(open);
 
   const filteredTemplates = templateSearch.trim()
     ? templates.filter(

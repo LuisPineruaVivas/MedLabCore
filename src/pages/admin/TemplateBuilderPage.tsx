@@ -2,13 +2,9 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
-
-const uuidv4 = () => crypto.randomUUID();
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +39,6 @@ import {
   TEMPLATE_CATEGORIES,
   ReferenceRange,
 } from "@/features/tests/schemas";
-import { TestTemplateRow } from "@/features/tests/schemas";
 import { ReferenceRangesEditor } from "@/features/tests/ReferenceRangesEditor";
 import {
   Collapsible,
@@ -57,21 +52,16 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getUserFacingErrorMessage } from "@/lib/errors";
+import { createEmptyTemplateField, createEmptyTemplateSection, useSaveTemplate, useTemplateById } from "@/features/admin/useTemplateBuilder";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function emptyField(): TemplateField {
-  return {
-    id: uuidv4(),
-    label: "",
-    type: "number",
-    unit: null,
-    range: null,
-    reference_ranges: [],
-  };
+  return createEmptyTemplateField();
 }
 
 function emptySection(): TemplateSection {
-  return { id: uuidv4(), name: "", fields: [emptyField()] };
+  return createEmptyTemplateSection();
 }
 
 // ── Main Page ────────────────────────────────────────────────────
@@ -80,41 +70,11 @@ export default function TemplateBuilderPage() {
   const { id } = useParams<{ id?: string }>();
   const [searchParams] = useSearchParams();
   const isFork = searchParams.get("fork") === "1";
-  const { user } = useAuth();
+  const { orgId } = useCurrentOrgContext();
   const { isSuperAdmin } = useUserRole();
-  const queryClient = useQueryClient();
 
   // ── Fetch existing template if editing ──────────────────────
-  const { data: existingTemplate, isLoading: isLoadingTemplate } = useQuery({
-    queryKey: ["test-template", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("test_templates")
-        .select("*")
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data as unknown as TestTemplateRow;
-    },
-    enabled: !!id,
-  });
-
-  // ── Fetch profile for org_id ────────────────────────────────
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const orgId = profile?.org_id;
+  const { data: existingTemplate, isLoading: isLoadingTemplate } = useTemplateById(id);
 
   // ── Derive initial form data ────────────────────────────────
   const initialData: TestTemplateFormData | undefined = existingTemplate
@@ -229,51 +189,7 @@ export default function TemplateBuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
 
   // ── Save mutation ────────────────────────────────────────────
-  const saveMutation = useMutation({
-    mutationFn: async (formData: TestTemplateFormData) => {
-      const row = {
-        name: formData.name,
-        category: formData.category,
-        base_price: formData.base_price,
-        schema: formData.schema as unknown as import("@/integrations/supabase/types").Json,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (isFork || !id) {
-        // Insert new
-        const { error } = await supabase.from("test_templates").insert([
-          {
-            ...row,
-            org_id: isSuperAdmin ? null : orgId ?? null,
-            id_global_ref: id
-          },
-        ]);
-        if (error) throw error;
-      } else {
-        // Update existing
-        const { error } = await supabase
-          .from("test_templates")
-          .update({
-            ...row,
-            org_id:
-              isSuperAdmin && existingTemplate?.org_id === null
-                ? null
-                : orgId ?? null,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
-      queryClient.invalidateQueries({ queryKey: ["test-template", id] });
-      toast.success(isFork || !id ? "Plantilla creada" : "Plantilla actualizada");
-      navigate(-1);
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
+  const saveMutation = useSaveTemplate();
 
   const pageTitle = isFork
     ? "Personalizar Plantilla"
@@ -352,7 +268,26 @@ export default function TemplateBuilderPage() {
         <form
           id="template-builder-form"
           onSubmit={handleSubmit(
-            (data) => saveMutation.mutate(data),
+            (data) =>
+              saveMutation.mutate(
+                {
+                  formData: data,
+                  id,
+                  orgId,
+                  isFork,
+                  isSuperAdmin,
+                  existingTemplate,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success(isFork || !id ? "Plantilla creada" : "Plantilla actualizada");
+                    navigate(-1);
+                  },
+                  onError: (error) => {
+                    toast.error(getUserFacingErrorMessage(error, "No se pudo guardar la plantilla"));
+                  },
+                }
+              ),
             (validationErrors) => {
               console.log("❌ Zod Errors Detail:", validationErrors);
             }
