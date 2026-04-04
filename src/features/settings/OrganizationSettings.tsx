@@ -44,8 +44,8 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       phone: "",
       logo_url: "",
       email: "",
-      primary_color: "",
-      secondary_color: "",
+      primary_color: "#000000",
+      secondary_color: "#000000",
     },
   });
 
@@ -60,8 +60,8 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       phone: data.phone || "",
       email: data.email || "",
       logo_url: data.logo_url || "",
-      primary_color: data.primary_color || "",
-      secondary_color: data.secondary_color || "",
+      primary_color: data.primary_color || "#000000",
+      secondary_color: data.secondary_color || "#000000",
     });
 
     setPreviewUrl(data.logo_url || null);

@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Building2, Palette, Shield, DollarSign } from "lucide-react";
+import { Building2, Shield, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
+import { DialogDescription } from "@radix-ui/react-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SettingsPage() {
   const [activeDialog, setActiveDialog] = useState<"org" | "dept" | "users" | "exchange" | null>(null);
   const { orgId } = useCurrentOrgContext();
+  const { signOut } = useAuth();
 
   const settingsCards = [
     {
@@ -65,11 +68,22 @@ export default function SettingsPage() {
         ))}
       </div>
 
+      <div className="mt-2 md:mt-8 md:hidden">
+        <button
+          onClick={signOut}
+          className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-medium">Cerrar sesión</span>
+        </button>
+      </div>
+
       {/* Organization Dialog */}
       <Dialog open={activeDialog === "org"} onOpenChange={(open) => !open && setActiveDialog(null)}>
         <DialogContent className="sm:max-w-[600px] w-[90vw] md:w-full md:h-auto h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Datos del Laboratorio</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">Configura el nombre, logo, información de contacto y otros detalles de tu laboratorio.</DialogDescription>
           </DialogHeader>
           {orgId ? (
             <OrganizationSettings orgId={orgId} />

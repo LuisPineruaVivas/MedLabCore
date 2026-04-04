@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   const labNavItems = useMemo(() => {
     const items = [
-      { label: "Panel de control", icon: LayoutDashboard, path: "/", show: true },
+      { label: "Panel de control", icon: LayoutDashboard, path: "/dashboard", show: true },
       { label: "Pacientes", icon: Users, path: "/patients", show: true },
       { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
       { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },

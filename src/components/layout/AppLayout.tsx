@@ -28,7 +28,7 @@ export function AppLayout() {
         <main className="p-3 sm:p-6 pb-20 md:pb-6">
           <Outlet />
         </main>
-        <footer className="">
+        <footer className="mb-14 md:mb-0">
             <Footer />
         </footer>
       </div>

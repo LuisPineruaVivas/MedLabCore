@@ -28,9 +28,10 @@ export default function OrderDetailPage() {
   const { canEnterResults } = usePermissions();
   const { organization } = useCurrentOrgContext();
   const { data: order, isLoading: orderLoading } = useOrder(id || null);
-  const { data: orderItems = [], isLoading: itemsLoading } = useOrderItems(id || null);
+  const { data: orderItemsData, isLoading: itemsLoading } = useOrderItems(id || null);
   const updateStatus = useUpdateOrderStatus();
   const saveResults = useSaveResults();
+  const orderItems = useMemo(() => orderItemsData ?? [], [orderItemsData]);
   const {
     resultsState,
     modifiedIds,
@@ -47,6 +48,8 @@ export default function OrderDetailPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
+  const [thermalPaperOpen, setThermalPaperOpen] = useState(false);
+  const [thermalPaperMm, setThermalPaperMm] = useState<"58" | "80">("58");
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
 
@@ -206,10 +209,10 @@ export default function OrderDetailPage() {
     }
   }
 
-  async function handlePrintThermal() {
+  async function handlePrintThermal(paperMm: 58 | 80) {
     setThermalPrinting(true);
     try {
-      await printThermalReceipt(thermalReceiptData);
+      await printThermalReceipt(thermalReceiptData, paperMm);
       toast.success("Recibo enviado a la impresora térmica");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo imprimir el recibo");
@@ -221,6 +224,10 @@ export default function OrderDetailPage() {
   function handleSharePortalLink() {
     const portalUrl = `${window.location.origin}/portal-paciente?order=${order.id}&pin=${order.access_pin}`;
     const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
+    if (!phoneDigits) {
+      toast.error("El paciente no tiene un número de teléfono registrado.");
+      return;
+    }
     const text = encodeURIComponent(`Tus resultados están listos, los puedes ver en ${portalUrl}`);
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }
@@ -311,6 +318,10 @@ export default function OrderDetailPage() {
         thermalReceiptData={thermalReceiptData}
         thermalPrinting={thermalPrinting}
         onPrintThermal={handlePrintThermal}
+        thermalPaperOpen={thermalPaperOpen}
+        setThermalPaperOpen={setThermalPaperOpen}
+        thermalPaperMm={thermalPaperMm}
+        setThermalPaperMm={setThermalPaperMm}
       />
     </div>
   );

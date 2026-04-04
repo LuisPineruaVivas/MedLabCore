@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, differenceInYears } from "date-fns";
+import { format, differenceInYears, parse } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { patientSchema, type PatientFormData } from "./schemas";
@@ -63,13 +63,23 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
     },
   });
 
+  const normalizeDateOfBirth = (value: Date | string | null | undefined): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === "string") {
+      // Parse as local date (avoid timezone shift phenomenon)
+      return parse(value, "yyyy-MM-dd", new Date());
+    }
+    return new Date(value);
+  };
+
   useEffect(() => {
     if (patient && open) {
       form.reset({
         id_number: patient.id_number,
         first_name: patient.first_name,
         last_name: patient.last_name,
-        date_of_birth: new Date(patient.date_of_birth),
+        date_of_birth: normalizeDateOfBirth(patient.date_of_birth),
         gender: patient.gender,
         phone: patient.phone || "",
         email: patient.email || "",
@@ -80,7 +90,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
   }, [patient, open, form]);
 
   const dobValue = form.watch("date_of_birth");
-  const age = dobValue ? differenceInYears(new Date(), new Date(dobValue)) : null;
+  const age = dobValue ? differenceInYears(new Date(), normalizeDateOfBirth(dobValue)) : null;
 
   async function handleSubmit(data: PatientFormData) {
     setLoading(true);
@@ -94,7 +104,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[70vh] overflow-y-auto w-[70vw]">
         <DialogHeader>
           <DialogTitle>Editar Paciente</DialogTitle>
           <DialogDescription>Modifica la información del paciente.</DialogDescription>
@@ -162,7 +172,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value ? format(new Date(field.value), "dd/MM/yyyy") : "Seleccionar fecha"}
+                            {field.value ? format(normalizeDateOfBirth(field.value)!, "dd/MM/yyyy") : "Seleccionar fecha"}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -175,7 +185,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
                           toYear={new Date().getFullYear()}
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                            field.onChange(date ? date : "")
                           }
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")

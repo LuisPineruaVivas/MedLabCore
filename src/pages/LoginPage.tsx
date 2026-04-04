@@ -21,7 +21,12 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      const msg = error.message || "Error de autenticación";
+      if (msg.toLowerCase().includes("invalid login credentials") || msg.toLowerCase().includes("invalid email or password")) {
+        toast.error("Usuario o contraseña inválidos");
+      } else {
+        toast.error(msg);
+      }
     } else {
       navigate("/");
     }

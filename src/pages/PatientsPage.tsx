@@ -140,10 +140,10 @@ export default function PatientsPage() {
                 <TableCell className="px-6 py-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-foreground leading-tight">
-                      {patient.phone || "Sin teléfono"}
+                    {patient.phone || "[Sin Teléfono]"}
                     </span>
-                    <span className="text-sm text-muted-foreground leading-tight">
-                      {patient.email || "Sin correo"}
+                    <span className="text-sm text-muted-foreground leading-tight">  
+                      {patient.email || "[Sin Email]"}
                     </span>
                   </div>
                 </TableCell>
@@ -272,7 +272,12 @@ export default function PatientsPage() {
             await createMutation.mutateAsync(data);
             toast.success("Paciente creado correctamente");
           } catch (error) {
-            toast.error(getUserFacingErrorMessage(error, "No se pudo crear el paciente"));
+            if (error.message.includes("patients_id_number_org_unique") || error.message.includes("duplicate key value")) {
+              toast.error("Ya existe un paciente con ese número de cédula en el laboratorio");
+            } else {
+              toast.error(error.message);
+            }
+            throw error;
           }
         }}
       />

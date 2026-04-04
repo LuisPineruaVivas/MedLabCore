@@ -94,8 +94,8 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
 
   useEffect(() => {
     if (orderItems.length === 0) {
-      setResultsState({});
-      setModifiedIds(new Set());
+      setResultsState((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setModifiedIds((prev) => (prev.size === 0 ? prev : new Set()));
       return;
     }
 

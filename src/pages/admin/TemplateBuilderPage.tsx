@@ -45,11 +45,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { TestReportPDF } from "@/lib/testReportGenerator";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getUserFacingErrorMessage } from "@/lib/errors";
@@ -187,6 +189,7 @@ export default function TemplateBuilderPage() {
   // ── Collapsed state ──────────────────────────────────────────
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // ── Save mutation ────────────────────────────────────────────
   const saveMutation = useSaveTemplate();
@@ -239,7 +242,7 @@ export default function TemplateBuilderPage() {
               onClick={() => setShowPreview(true)}
             >
               <Eye className="w-4 h-4 mr-2" />
-              Vista Previa
+              {previewLoading ? "Generando..." : "Vista Previa"}
             </Button>
             <Button
               type="button"
@@ -248,16 +251,31 @@ export default function TemplateBuilderPage() {
               className="text-blue-600 sm:hidden"
               onClick={() => setShowPreview(true)}
             >
-              <Eye className="w-4 h-4" />
+              {previewLoading ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </Button>
+
             <Button
               form="template-builder-form"
               type="submit"
               disabled={saveMutation.isPending}
               size="sm"
+              className="hidden sm:inline-flex"
             >
               <Save className="w-4 h-4 mr-2" />
               {saveMutation.isPending ? "Guardando…" : "Guardar Plantilla"}
+            </Button>
+            <Button
+              form="template-builder-form"
+              type="submit"
+              size="icon"
+              className="sm:hidden"
+              disabled={saveMutation.isPending}
+            >
+              <Save className="w-4 h-4" />              
             </Button>
           </div>
         </div>
@@ -489,7 +507,10 @@ export default function TemplateBuilderPage() {
 
       {/* ── PDF Preview Dialog ── */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogTitle className="sr-only">Vista Previa del Examen</DialogTitle>
+        <DialogHeader>
+          <DialogTitle className="sr-only">Vista Previa del Examen</DialogTitle>
+          <DialogDescription className="sr-only">Revisa como se vera el informe antes de guardarlo</DialogDescription>
+        </DialogHeader>
         <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden border-none">
           <div className="flex flex-col h-full">
             <div className="p-4 border-b border-border flex justify-between items-center">

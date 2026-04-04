@@ -38,24 +38,20 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsLoading ? (
-          <>
-            {Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-[120px] rounded-xl" />
-            ))}
-          </>
+            ))
         ) : (
           <>
             <StatCard
               title="Pacientes Registrados"
               value={stats?.totalPatients.toLocaleString() ?? "0"}
               icon={Users}
-              trend={{ value: stats?.thisMonthPatients ?? 0, label: "creados este mes" }}
             />
             <StatCard
               title="Pruebas realizadas hoy"
               value={stats?.ordersToday ?? 0}
               icon={FlaskConical}
-              trend={{ value: stats?.ordersTrend ?? 0, label: "vs ayer" }}
             />
             <StatCard
               title="Pruebas pendientes"
@@ -66,7 +62,6 @@ export default function DashboardPage() {
               title="Ingresos (Hoy)"
               value={`$${(stats?.todayRevenue ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               icon={DollarSign}
-              trend={{ value: stats?.revenueInBs ?? 0, label: "Ingresos en Bs" }}
             />
           </>
         )}
