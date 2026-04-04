@@ -2,16 +2,17 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Building2, Shield, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/features/orders/useOrders";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
+import { DialogDescription } from "@radix-ui/react-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SettingsPage() {
   const [activeDialog, setActiveDialog] = useState<"org" | "dept" | "users" | "exchange" | null>(null);
-  const { data: profile } = useProfile();
-  const orgId = profile?.org_id;
+  const { orgId } = useCurrentOrgContext();
+  const { signOut } = useAuth();
 
   const settingsCards = [
     {
@@ -39,8 +40,6 @@ export default function SettingsPage() {
       desc: "Configura la tasa USD/BS para facturación en bolívares" 
     },*/
   ];
-
-  const { signOut } = useAuth();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -84,6 +83,7 @@ export default function SettingsPage() {
         <DialogContent className="sm:max-w-[600px] w-[90vw] md:w-full md:h-auto h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Datos del Laboratorio</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">Configura el nombre, logo, información de contacto y otros detalles de tu laboratorio.</DialogDescription>
           </DialogHeader>
           {orgId ? (
             <OrganizationSettings orgId={orgId} />

@@ -9,7 +9,7 @@ import {
 import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import { useProfile } from "@/features/orders/useOrders";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -26,8 +26,8 @@ export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentOrders, isLoading: ordersLoading } = usePendingOrders();
   const { data: topTests, isLoading: testsLoading } = useTopTests();
-  const { data: profile } = useProfile();
-  const { data: exchangeRate } = useExchangeRate(profile?.org_id);
+  const { orgId } = useCurrentOrgContext();
+  const { data: exchangeRate } = useExchangeRate(orgId);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -47,13 +47,11 @@ export default function DashboardPage() {
               title="Pacientes Registrados"
               value={stats?.totalPatients.toLocaleString() ?? "0"}
               icon={Users}
-              trend={{ value: stats?.thisMonthPatients ?? 0, label: "creados este mes" }}
             />
             <StatCard
               title="Pruebas realizadas hoy"
               value={stats?.ordersToday ?? 0}
               icon={FlaskConical}
-              trend={{ value: stats?.ordersTrend ?? 0, label: "vs ayer" }}
             />
             <StatCard
               title="Pruebas pendientes"
@@ -64,7 +62,6 @@ export default function DashboardPage() {
               title="Ingresos (Hoy)"
               value={`$${(stats?.todayRevenue ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               icon={DollarSign}
-              trend={{ value: stats?.revenueInBs ?? 0, label: "Ingresos en Bs" }}
             />
           </>
         )}
@@ -168,9 +165,12 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">
                   Actualizada {format(new Date(exchangeRate.updated_at), "dd MMM yyyy, hh:mm a", { locale: es })}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Fuente: {exchangeRate.source === "api" ? "automatica" : "respaldo local"}
+                </p>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Sin tasa configurada</p>
+              <p className="text-xs text-muted-foreground">Sin tasa disponible</p>
             )}
           </div>
         </div>

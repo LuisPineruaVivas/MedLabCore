@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Building2, ToggleLeft, ToggleRight, Eye, EyeOff, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import {
+  getOrganizationMutationError,
+  useCreateOrganization,
+  useOrganizations,
+  useToggleOrganizationActive,
+  useToggleOrganizationSubscription,
+} from "@/features/admin/useOrganizations";
 
 interface OrgForm {
   org_name: string;
@@ -41,7 +46,6 @@ const emptyForm: OrgForm = {
 };
 
 export default function OrganizationsPage() {
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<OrgForm>(emptyForm);
   const [showPassword, setShowPassword] = useState(false);
@@ -49,65 +53,10 @@ export default function OrganizationsPage() {
   const set = (key: keyof OrgForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const { data: orgs = [], isLoading } = useQuery({
-    queryKey: ["organizations"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const createOrg = useMutation({
-    mutationFn: async (payload: OrgForm) => {
-      const { data, error } = await supabase.functions.invoke("create-organization", {
-        body: payload,
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      toast.success("Organization & admin user created successfully");
-      setOpen(false);
-      setForm(emptyForm);
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const toggleSubscription = useMutation({
-    mutationFn: async ({ id, subscription_active }: { id: string; subscription_active: boolean }) => {
-      const { error } = await supabase
-        .from("organizations")
-        .update({ subscription_active: !subscription_active })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      toast.success("Subscription status updated");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const toggleActive = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
-        .from("organizations")
-        .update({ is_active: !is_active })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      toast.success("Status updated");
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const { data: orgs = [], isLoading } = useOrganizations();
+  const createOrg = useCreateOrganization();
+  const toggleSubscription = useToggleOrganizationSubscription();
+  const toggleActive = useToggleOrganizationActive();
 
   const isFormValid =
     form.org_name.trim() &&
@@ -170,10 +119,16 @@ export default function OrganizationsPage() {
                       variant={(org).subscription_active ? "default" : "destructive"}
                       className="cursor-pointer"
                       onClick={() =>
-                        toggleSubscription.mutate({
-                          id: org.id,
-                          subscription_active: (org).subscription_active ?? true,
-                        })
+                        toggleSubscription.mutate(
+                          {
+                            id: org.id,
+                            subscription_active: (org).subscription_active ?? true,
+                          },
+                          {
+                            onSuccess: () => toast.success("Subscription status updated"),
+                            onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo actualizar la subscripcion")),
+                          }
+                        )
                       }
                     >
                       {(org).subscription_active ? "Active" : "Suspended"}
@@ -192,7 +147,13 @@ export default function OrganizationsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        toggleActive.mutate({ id: org.id, is_active: org.is_active ?? true })
+                        toggleActive.mutate(
+                          { id: org.id, is_active: org.is_active ?? true },
+                          {
+                            onSuccess: () => toast.success("Status updated"),
+                            onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo actualizar el estado")),
+                          }
+                        )
                       }
                     >
                       {org.is_active ? (
@@ -306,7 +267,16 @@ export default function OrganizationsPage() {
               Cancelar
             </Button>
             <Button
-              onClick={() => createOrg.mutate(form)}
+              onClick={() =>
+                createOrg.mutate(form, {
+                  onSuccess: () => {
+                    toast.success("Organization & admin user created successfully");
+                    setOpen(false);
+                    setForm(emptyForm);
+                  },
+                  onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo crear el laboratorio")),
+                })
+              }
               disabled={!isFormValid || createOrg.isPending}
             >
               {createOrg.isPending ? "Creando..." : "Crear Laboratorio"}

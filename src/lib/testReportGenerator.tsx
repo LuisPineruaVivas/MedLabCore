@@ -174,11 +174,13 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         {/* Secciones con encabezado + campos */}
         {sections.map((section: TemplateSection) => (
           <View key={section.id} wrap={false}>
-            {section.name && (
+            {section.name === '' ?
+              null
+              :
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionHeaderText}>{section.name}</Text>
               </View>
-            )}
+            }
             {(section.fields || []).map((field: RenderField) => {
               const matchedRange: ReferenceRange | undefined = findMatchingRange(
                 field.reference_ranges,

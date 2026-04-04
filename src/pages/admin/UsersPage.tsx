@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,51 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { UserRole } from "@/hooks/useUserRole";
+import { getAdminUserError, useAdminOrganizationsList, useAdminUsers, useCreateAdminUser } from "@/features/admin/useAdminUsers";
 
 export default function UsersPage() {
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", org_id: "", role: "lab_admin" as UserRole });
 
-  const { data: orgs = [] } = useQuery({
-    queryKey: ["organizations"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("organizations").select("id, name").order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, role, org_id, created_at, organizations(name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const createUser = useMutation({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("admin-create-user", {
-        body: form,
-      });
-      if (res.error) throw new Error(res.error.message);
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("User created successfully");
-      setOpen(false);
-      setForm({ email: "", password: "", full_name: "", org_id: "", role: "lab_admin" });
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const { data: orgs = [] } = useAdminOrganizationsList();
+  const { data: users = [], isLoading } = useAdminUsers();
+  const createUser = useCreateAdminUser();
 
   const roleColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
     super_admin: "destructive",
@@ -154,7 +116,16 @@ export default function UsersPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => createUser.mutate()}
+              onClick={() =>
+                createUser.mutate(form, {
+                  onSuccess: () => {
+                    toast.success("User created successfully");
+                    setOpen(false);
+                    setForm({ email: "", password: "", full_name: "", org_id: "", role: "lab_admin" });
+                  },
+                  onError: (error) => toast.error(getAdminUserError(error, "No se pudo crear el usuario")),
+                })
+              }
               disabled={!form.email || !form.password || !form.full_name || !form.org_id || createUser.isPending}
             >
               {createUser.isPending ? "Creating…" : "Create User"}

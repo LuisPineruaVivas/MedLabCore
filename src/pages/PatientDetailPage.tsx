@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { EditPatientDialog } from "@/features/patients/EditPatientDialog";
-import type { PatientFormData } from "@/features/patients/schemas";
-import { toast } from "sonner";
+import { usePatientDetail, usePatientOrders, useUpdatePatient } from "@/features/patients/usePatients";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,65 +32,10 @@ export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
-
-  const updatePatient = useMutation({
-    mutationFn: async (data: PatientFormData) => {
-      const { error } = await supabase
-        .from("patients")
-        .update({
-          id_number: data.id_number,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          date_of_birth: data.date_of_birth,
-          gender: data.gender,
-          phone: data.phone || null,
-          email: data.email || null,
-          address: data.address || null,
-          occupation: data.occupation || null,
-        })
-        .eq("id", id!);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      toast.success("Paciente actualizado correctamente");
-    },
-    onError: () => {
-      toast.error("Error al actualizar el paciente");
-    },
-  });
-
-  // Fetch patient
-  const { data: patient, isLoading: patientLoading } = useQuery({
-    queryKey: ["patient", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
-
-  // Fetch orders for this patient
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["patient-orders", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("patient_id", id!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
+  const updatePatient = useUpdatePatient(id ?? null);
+  const { data: patient, isLoading: patientLoading } = usePatientDetail(id ?? null);
+  const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(id ?? null);
 
 
   if (patientLoading) {
@@ -280,7 +221,7 @@ export default function PatientDetailPage() {
           id_number: patient.id_number,
           first_name: patient.first_name,
           last_name: patient.last_name,
-          date_of_birth: patient.date_of_birth,
+          date_of_birth: new Date(patient.date_of_birth),
           gender: patient.gender as "masculino" | "femenino",
           phone: patient.phone || "",
           email: patient.email || "",

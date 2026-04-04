@@ -1,46 +1,198 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import type { OrderWithPatient, OrderItemRow, OrderStatus } from "./schemas";
+import type { Json } from "@/integrations/supabase/types";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { queryKeys } from "@/lib/queryKeys";
+import { getUserFacingErrorMessage } from "@/lib/errors";
+import type { OrderWithPatient, OrderStatus } from "./schemas";
 import { toast } from "@/hooks/use-toast";
 
+export interface CreateOrderItemInput {
+  template_id: string | null;
+  test_name: string;
+  price: number;
+  schema: unknown;
+  isProfileHeader?: boolean;
+  profileId?: string;
+  parentProfileId?: string;
+}
+
+interface CreateLabOrderResponse {
+  success: boolean;
+  orderId: string;
+  access_pin: string | null;
+  order_seq: number | null;
+  userSafeMessage: string;
+  technicalCode: string;
+}
+
+export function buildCreateLabOrderPayload({
+  orgId,
+  patientId,
+  items,
+  notes,
+  exchangeRate,
+  totalBs,
+}: {
+  orgId: string;
+  patientId: string;
+  items: CreateOrderItemInput[];
+  notes?: string | null;
+  exchangeRate?: number | null;
+  totalBs?: number | null;
+}) {
+  return {
+    p_org_id: orgId,
+    p_patient_id: patientId,
+    p_notes: notes ?? null,
+    p_exchange_rate: exchangeRate ?? null,
+    p_total_bs: totalBs ?? null,
+    p_items: items as unknown as Json,
+  };
+}
+
+export function getOrderStatusInvalidationTargets(orderId: string, orgId?: string | null) {
+  return [
+    queryKeys.orders.all(orgId),
+    queryKeys.orders.stats(orgId),
+    queryKeys.dashboard.recentOrders(orgId),
+    ["billing-orders", orgId ?? "none"] as const,
+    queryKeys.orders.detail(orderId),
+  ];
+}
+
+export function getSaveResultsInvalidationTargets(orderId: string, orgId?: string | null) {
+  return [
+    queryKeys.orders.items(orderId, orgId),
+    queryKeys.orders.detail(orderId),
+  ];
+}
+
 export function useProfile() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("org_id, full_name, role, email")
-        .eq("id", user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const { profile, isLoading } = useCurrentOrgContext();
+  return {
+    data: profile,
+    isLoading,
+  };
+}
+
+export function useOrganization() {
+  const { organization, isLoading } = useCurrentOrgContext();
+  return {
+    data: organization,
+    isLoading,
+  };
 }
 
 export function useOrders(statusFilter?: OrderStatus) {
-  const { data: profile } = useProfile();
-  const orgId = profile?.org_id;
+  const { orgId } = useCurrentOrgContext();
 
   return useQuery({
-    queryKey: ["orders", orgId, statusFilter],
+    queryKey: queryKeys.orders.list(orgId, { statusFilter: statusFilter ?? "all" }),
     queryFn: async () => {
-      let q = supabase
+      const query = supabase
         .from("orders")
-        .select("*, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)")
+        .select(
+          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+        )
         .eq("org_id", orgId!)
         .order("created_at", { ascending: false });
 
-      if (statusFilter) {
-        q = q.eq("status", statusFilter);
+      const { data, error } = statusFilter
+        ? await query.eq("status", statusFilter)
+        : await query;
+
+      if (error) throw error;
+      return (data ?? []) as unknown as OrderWithPatient[];
+    },
+    enabled: !!orgId,
+  });
+}
+
+export function useOrdersList(page: number, search: string, statusFilter: string) {
+  const { orgId } = useCurrentOrgContext();
+  const pageSize = 10;
+
+  return useQuery({
+    queryKey: queryKeys.orders.list(orgId, { page, search, statusFilter }),
+    queryFn: async () => {
+      const offset = (page - 1) * pageSize;
+      const searchTerm = search.trim();
+
+      let query = supabase
+        .from("orders")
+        .select(
+          `
+            id,
+            status,
+            total_amount,
+            total_bs,
+            created_at,
+            order_seq,
+            patients!inner(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)
+          `,
+          { count: "exact" }
+        )
+        .eq("org_id", orgId!)
+        .order("created_at", { ascending: false });
+
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as OrderStatus);
       }
 
-      const { data, error } = await q;
+      if (searchTerm) {
+        const searchFilter = `%${searchTerm}%`;
+        query = query.or(
+          `first_name.ilike.${searchFilter},last_name.ilike.${searchFilter},id_number.ilike.${searchFilter}`,
+          { foreignTable: "patients" }
+        );
+      }
+
+      const { data, error, count } = await query.range(offset, offset + pageSize - 1);
       if (error) throw error;
-      return data as unknown as OrderWithPatient[];
+
+      return {
+        items: data ?? [],
+        total: count ?? 0,
+      };
+    },
+    enabled: !!orgId,
+  });
+}
+
+export function useOrderStats() {
+  const { orgId } = useCurrentOrgContext();
+
+  return useQuery({
+    queryKey: queryKeys.orders.stats(orgId),
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const [total, month, day] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", orgId!),
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", orgId!)
+          .gte("created_at", firstDayOfMonth.toISOString()),
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", orgId!)
+          .gte("created_at", today.toISOString()),
+      ]);
+
+      return {
+        total: total.count || 0,
+        thisMonth: month.count || 0,
+        today: day.count || 0,
+      };
     },
     enabled: !!orgId,
   });
@@ -48,13 +200,14 @@ export function useOrders(statusFilter?: OrderStatus) {
 
 export function useOrder(orderId: string | null) {
   return useQuery({
-    queryKey: ["order", orderId],
+    queryKey: queryKeys.orders.detail(orderId),
     queryFn: async () => {
-      if (!orderId) return null;
       const { data, error } = await supabase
         .from("orders")
-        .select("*, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)")
-        .eq("id", orderId)
+        .select(
+          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+        )
+        .eq("id", orderId!)
         .single();
 
       if (error) throw error;
@@ -65,40 +218,40 @@ export function useOrder(orderId: string | null) {
 }
 
 export function useOrderItems(orderId: string | null) {
-  const { data: profile } = useProfile();
-  const orgId = profile?.org_id;
+  const { orgId } = useCurrentOrgContext();
 
-  return useQuery({
-    queryKey: ["order-items", orderId, orgId],
+  return useQuery<any[]>({
+    queryKey: queryKeys.orders.items(orderId, orgId),
     queryFn: async () => {
-      if (!orderId || !orgId) return [];
-
       const { data, error } = await supabase
         .from("order_items")
         .select(`
-          *,
+          id,
+          order_id,
+          template_id,
+          test_name,
+          price_at_order,
+          results_data,
+          created_at,
+          parent_profile_id,
+          is_profile_header,
           test_templates(
             category,
             sort_order,
             organization_exam_settings!template_id(custom_sort_order)
           )
         `)
-        .eq("order_id", orderId);
+        .eq("order_id", orderId!);
 
       if (error) throw error;
 
       return (data || []).map((item: any) => {
-        // Extraemos el orden personalizado si existe para esta organización
         const settings = item.test_templates?.organization_exam_settings;
-        // Buscamos el setting que corresponde a la org del perfil (por si la RLS fallara o devolviera array)
-        const customOrder = Array.isArray(settings) 
-          ? settings[0]?.custom_sort_order 
-          : settings?.custom_sort_order;
+        const customOrder = Array.isArray(settings) ? settings[0]?.custom_sort_order : settings?.custom_sort_order;
 
         return {
           ...item,
-          category: item.test_templates?.category || 'Otros',
-          // Prioridad: 1. Orden personalizado, 2. Orden de plantilla, 3. Al final
+          category: item.test_templates?.category || "Otros",
           resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
         };
       });
@@ -121,114 +274,31 @@ export function useCreateOrder() {
     }: {
       orgId: string;
       patientId: string;
-      items: {
-        template_id: string | null;
-        test_name: string;
-        price: number;
-        schema: any;
-        isProfileHeader?: boolean;
-        profileId?: string;
-        parentProfileId?: string;
-      }[];
+      items: CreateOrderItemInput[];
       notes?: string | null;
       exchangeRate?: number | null;
       totalBs?: number | null;
     }) => {
-      const totalAmount = items.reduce((sum, i) => sum + i.price, 0);
+      const { data, error } = await supabase.rpc("create_lab_order", buildCreateLabOrderPayload({
+        orgId,
+        patientId,
+        items,
+        notes,
+        exchangeRate,
+        totalBs,
+      }));
 
-      // Insert order
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert({
-          org_id: orgId,
-          patient_id: patientId,
-          total_amount: totalAmount,
-          notes: notes || null,
-          exchange_rate: exchangeRate ?? null,
-          total_bs: totalBs ?? null,
-        })
-        .select("id, access_pin")
-        .single();
-
-      if (orderErr) throw orderErr;
-
-      // Separate profile headers, profile children, and standalone exams
-      const profileHeaders = items.filter((i) => i.isProfileHeader);
-      const profileChildren = items.filter((i) => i.parentProfileId);
-      const standaloneExams = items.filter((i) => !i.isProfileHeader && !i.parentProfileId);
-
-      // Map from profileId -> inserted header row id
-      const profileHeaderIdMap = new Map<string, string>();
-
-      // 1. Insert profile header rows
-      if (profileHeaders.length > 0) {
-        for (const header of profileHeaders) {
-          const { data: headerRow, error: headerErr } = await (supabase as any)
-            .from("order_items")
-            .insert({
-              order_id: order.id,
-              template_id: null,
-              test_name: header.test_name,
-              price_at_order: header.price,
-              results_data: null,
-              is_profile_header: true,
-            })
-            .select("id")
-            .single();
-          if (headerErr) throw headerErr;
-          if (header.profileId) {
-            profileHeaderIdMap.set(header.profileId, headerRow.id);
-          }
-        }
-      }
-
-      // 2. Insert profile child items
-      if (profileChildren.length > 0) {
-        const childRows = profileChildren.map((child) => {
-          const parentId = child.parentProfileId
-            ? profileHeaderIdMap.get(child.parentProfileId) || null
-            : null;
-          return {
-            order_id: order.id,
-            template_id: child.template_id,
-            test_name: child.test_name,
-            price_at_order: 0,
-            results_data: buildEmptyResultsData(child.schema),
-            parent_profile_id: parentId,
-            is_profile_header: false,
-          };
-        });
-
-        const { error: childErr } = await (supabase as any)
-          .from("order_items")
-          .insert(childRows);
-        if (childErr) throw childErr;
-      }
-
-      // 3. Insert standalone exam items (same as before)
-      if (standaloneExams.length > 0) {
-        const examRows = standaloneExams.map((item) => ({
-          order_id: order.id,
-          template_id: item.template_id,
-          test_name: item.test_name,
-          price_at_order: item.price,
-          results_data: buildEmptyResultsData(item.schema),
-        }));
-
-        const { error: examErr } = await supabase
-          .from("order_items")
-          .insert(examRows);
-        if (examErr) throw examErr;
-      }
-
-      return order;
+      if (error) throw error;
+      return data as unknown as CreateLabOrderResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(variables.orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.stats(variables.orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentOrders(variables.orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats(variables.orgId, undefined) });
     },
   });
 }
-
 
 export function useSaveResults() {
   const queryClient = useQueryClient();
@@ -236,10 +306,14 @@ export function useSaveResults() {
   return useMutation({
     mutationFn: async ({
       itemId,
+      orderId,
+      orgId,
       resultsData,
     }: {
       itemId: string;
-      resultsData;
+      orderId: string;
+      orgId: string | null | undefined;
+      resultsData: Json;
     }) => {
       const { error } = await supabase
         .from("order_items")
@@ -247,8 +321,10 @@ export function useSaveResults() {
         .eq("id", itemId);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-items"] });
+    onSuccess: (_, variables) => {
+      getSaveResultsInvalidationTargets(variables.orderId, variables.orgId).forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey });
+      });
     },
   });
 }
@@ -259,10 +335,12 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({
       orderId,
+      orgId,
       status,
       completed_at,
     }: {
       orderId: string;
+      orgId?: string | null;
       status: OrderStatus;
       completed_at?: string | null;
     }) => {
@@ -273,7 +351,7 @@ export function useUpdateOrderStatus() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.setQueryData(["order", variables.orderId], (oldData: any) => {
+      queryClient.setQueryData(queryKeys.orders.detail(variables.orderId), (oldData: OrderWithPatient | undefined) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
@@ -281,31 +359,19 @@ export function useUpdateOrderStatus() {
           ...(variables.completed_at !== undefined ? { completed_at: variables.completed_at } : {}),
         };
       });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order"] });
+      getOrderStatusInvalidationTargets(variables.orderId, variables.orgId).forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey });
+      });
       toast({
         title: "Orden actualizada correctamente",
         variant: "default",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error al actualizar la orden",
+        title: getUserFacingErrorMessage(error, "Error al actualizar la orden"),
         variant: "destructive",
       });
     },
   });
-}
-
-function buildEmptyResultsData(schema) {
-  if (!schema?.sections) return { sections: [] };
-  return {
-    sections: schema.sections.map((section) => ({
-      ...section,
-      fields: section.fields.map((field) => ({
-        ...field,
-        value: "",
-      })),
-    })),
-  };
 }

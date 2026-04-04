@@ -138,10 +138,6 @@ export default function PatientPortalPage() {
     setPdfOpen(true);
   }
 
-  function openOrderPDF(order) {
-    handleViewReport(order);
-  }
-
   // Patient info for authenticated session
   const patientInfo = session ? {
     name: `${session.patient_info.first_name} ${session.patient_info.last_name}`.toUpperCase(),
@@ -151,8 +147,6 @@ export default function PatientPortalPage() {
       : "N/A",
     gender: session.patient_info.gender || "N/A",
   } : null;
-
-  console.log(selectedOrder);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
