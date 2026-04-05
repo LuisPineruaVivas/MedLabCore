@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
+import { Analytics } from "@vercel/analytics/react";
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
@@ -103,6 +104,7 @@ const App = () => (
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
