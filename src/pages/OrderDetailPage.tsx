@@ -222,7 +222,7 @@ export default function OrderDetailPage() {
   }
 
   function handleSharePortalLink() {
-    const portalUrl = `${window.location.origin}/portal-paciente?order=${order.id}&pin=${order.access_pin}`;
+    const portalUrl = `${window.location.origin}/portal-paciente?org=${order.org_id}&pin=${order.access_pin}`;
     const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
     if (!phoneDigits) {
       toast.error("El paciente no tiene un número de teléfono registrado.");
