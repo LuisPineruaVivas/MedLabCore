@@ -12,9 +12,11 @@ import { format, differenceInYears } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
+import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
 
 export default function PatientPortalPage() {
   const [searchParams] = useSearchParams();
+  const orgId = searchParams.get("org");
   const [dni, setDni] = useState(searchParams.get("dni") || "");
   const [pin, setPin] = useState(searchParams.get("pin") || "");
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,13 @@ export default function PatientPortalPage() {
   const [error, setError] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  
+
+  const { data: brand, isLoading: isBrandLoading } = usePublicOrgBrand(orgId);
+  const headerStyle = brand ? {
+    background: `linear-gradient(90deg, ${brand.primary_color}, ${brand.secondary_color})`,
+    borderRadius: "0 0 50px 50px",
+  } : {};
+    
   // Rate limiting states
   const MAX_ATTEMPTS = 5;
   const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -113,12 +121,13 @@ export default function PatientPortalPage() {
             patientData={patientInfo || { name: "", id: "", age: "", gender: "" }}
             labData={{
               name: order.org_name || "Laboratorio",
-              address: "",
-              phone: "",
-              email: "",
+              address: brand?.address || "",
+              phone: brand?.phone || "",
+              email: brand?.email || "",
               logo: order.org_logo_url || null,
-              primary_color: "#0ea5e9",
-              secondary_color: "#0ea5e9",
+              primary_color: brand?.primary_color || "#0ea5e9",
+              secondary_color: brand?.secondary_color || "#0ea5e9",
+              
             }}
           />
         ).toBlob();
@@ -151,29 +160,29 @@ export default function PatientPortalPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FlaskConical className="h-5 w-5 text-primary" />
+      <header className="sticky top-0 z-30 shadow-lg transition-all duration-500">
+        <div 
+          className={`flex items-center justify-center px-4 h-28 text-white ${!brand ? 'bg-primary' : ''}`}
+          style={headerStyle}
+        >
+          {isBrandLoading ? (
+             <Loader2 className="h-8 w-8 animate-spin" />
+          ) : brand ? (
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-72 rounded-xl overflow-hidden bg-white p-1 flex items-center justify-center shadow-inner">
+                {brand.logo_url ? (
+                  <img src={brand.logo_url} alt={brand.name} className="h-full w-full object-contain" />
+                ) : (
+                  <span className="text-primary font-bold text-xl">{brand.name?.slice(0,2)}</span>
+                )}
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">
-                {session ? "Historial Clínico" : "Portal de Resultados"}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {session ? `${patientInfo?.name}` : "Consulta tus resultados de laboratorio"}
-              </p>
-            </div>
-          </div>
-          {session && (
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+          ) : (
+            <h1 className="text-xl font-bold">Portal de Pacientes</h1>
           )}
         </div>
       </header>
+    
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Search Form */}
@@ -255,6 +264,10 @@ export default function PatientPortalPage() {
                     Historial Clínico
                   </Badge>
                 </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
               </CardHeader>
             </Card>
 
@@ -298,17 +311,6 @@ export default function PatientPortalPage() {
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            {order.org_logo_url ? (
-                              <img 
-                                src={order.org_logo_url} 
-                                alt={order.org_name} 
-                                className="h-10 w-10 rounded-lg object-contain"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <FlaskConical className="h-5 w-5 text-primary" />
-                              </div>
-                            )}
                             <div>
                               <h3 className="font-semibold text-lg">{order.org_name}</h3>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -376,12 +378,12 @@ export default function PatientPortalPage() {
                   }}
                   labData={{
                     name: selectedOrder.org_name,
-                    address: "",
-                    phone: "",
-                    email: "",
+                    address: brand?.address || "",
+                    phone: brand?.phone || "",
+                    email: brand?.email || "",
                     logo: selectedOrder.org_logo_url || null,
-                    primary_color: "#0ea5e9",
-                    secondary_color: "#0ea5e9",
+                    primary_color: brand?.primary_color,
+                    secondary_color: brand?.secondary_color,
                   }}
                 />
               </PDFViewer>

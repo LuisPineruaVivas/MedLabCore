@@ -189,9 +189,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
         <View style={styles.patientBox}>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patientData.name}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patientData.id}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{patientData.date}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{format(new Date(orden.created_at), "dd/MM/yyyy")}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{patientData.age} / {patientData.gender}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha Muestra: </Text>{format(new Date(orden.created_at), "dd/MM/yyyy")}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Nº Orden: </Text>{orden.order_seq.toString().padStart(4, '0')}</Text></View>
         </View>
 

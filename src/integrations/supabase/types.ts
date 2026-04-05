@@ -564,19 +564,16 @@ export type Database = {
     Functions: {
       create_lab_order: {
         Args: {
-          p_exchange_rate: number | null
+          p_exchange_rate: number
           p_items: Json
-          p_notes: string | null
+          p_notes: string
           p_org_id: string
           p_patient_id: string
-          p_total_bs: number | null
+          p_total_bs: number
         }
         Returns: Json
       }
-      get_dashboard_summary: {
-        Args: { p_org_id: string }
-        Returns: Json
-      }
+      get_dashboard_summary: { Args: { p_org_id: string }; Returns: Json }
       get_dashboard_top_tests: {
         Args: { p_limit?: number; p_org_id: string }
         Returns: {
@@ -620,6 +617,17 @@ export type Database = {
           total_amount: number
         }[]
       }
+      upsert_exam_profile: {
+        Args: {
+          p_description: string
+          p_name: string
+          p_org_id: string
+          p_profile_id: string
+          p_template_ids: string[]
+          p_total_price: number
+        }
+        Returns: Json
+      }
       upsert_test_template: {
         Args: {
           p_base_price: number
@@ -630,17 +638,6 @@ export type Database = {
           p_schema: Json
         }
         Returns: undefined
-      }
-      upsert_exam_profile: {
-        Args: {
-          p_description: string | null
-          p_name: string
-          p_org_id: string
-          p_profile_id: string | null
-          p_template_ids: string[]
-          p_total_price: number
-        }
-        Returns: Json
       }
     }
     Enums: {
