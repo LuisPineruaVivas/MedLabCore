@@ -80,53 +80,93 @@ export const TEMPLATE_CATEGORIES = [
 
 type NumericLikeValue = string | number | null | undefined;
 
-function parseNumericToken(value: string) {
-  const normalized = value.replace(",", ".").trim();
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-type ParsedRangeInput =
+type ParsedResultExpression =
   | { kind: "exact"; value: number }
   | { kind: "interval"; min: number; max: number }
   | { kind: "lt"; value: number }
   | { kind: "gt"; value: number };
 
-function parseSemiQuantitativeValue(rawValue: NumericLikeValue): ParsedRangeInput | null {
-  const value = String(rawValue ?? "").trim();
-  if (!value) return null;
+type ReferenceBounds = {
+  min: number;
+  max: number;
+};
 
-  const lessThanMatch = value.match(/^<\s*(-?\d+(?:[.,]\d+)?)$/);
-  if (lessThanMatch) {
-    const parsed = parseNumericToken(lessThanMatch[1]);
-    return parsed == null ? null : { kind: "lt", value: parsed };
-  }
+function normalizeFreeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
 
-  const greaterThanMatch = value.match(/^>\s*(-?\d+(?:[.,]\d+)?)$/);
-  if (greaterThanMatch) {
-    const parsed = parseNumericToken(greaterThanMatch[1]);
-    return parsed == null ? null : { kind: "gt", value: parsed };
-  }
+function extractNumbers(value: NumericLikeValue) {
+  const matches = String(value ?? "").match(/\d+(?:[.,]\d+)?/g) ?? [];
+  return matches
+    .map((match) => Number(match.replace(",", ".")))
+    .filter((parsed) => Number.isFinite(parsed));
+}
 
-  const intervalMatch = value.match(/^(-?\d+(?:[.,]\d+)?)\s*-\s*(-?\d+(?:[.,]\d+)?)$/);
-  if (intervalMatch) {
-    const first = parseNumericToken(intervalMatch[1]);
-    const second = parseNumericToken(intervalMatch[2]);
-    if (first == null || second == null) return null;
-
+function parseReferenceBounds(
+  matchedRange?: ReferenceRange,
+  legacyRange?: string | null
+): ReferenceBounds | null {
+  if (matchedRange) {
     return {
-      kind: "interval",
-      min: Math.min(first, second),
-      max: Math.max(first, second),
+      min: Math.min(matchedRange.min_value, matchedRange.max_value),
+      max: Math.max(matchedRange.min_value, matchedRange.max_value),
     };
   }
 
-  const exact = parseNumericToken(value);
-  return exact == null ? null : { kind: "exact", value: exact };
+  const values = extractNumbers(legacyRange);
+  if (values.length >= 2) {
+    return {
+      min: Math.min(values[0], values[1]),
+      max: Math.max(values[0], values[1]),
+    };
+  }
+
+  if (values.length === 1) {
+    return {
+      min: values[0],
+      max: values[0],
+    };
+  }
+
+  return null;
 }
 
-export function sanitizeRangeInput(value: string) {
-  return value.replace(/[^\d<>\-\s]/g, "");
+function parseFlexibleResultExpression(rawValue: NumericLikeValue): ParsedResultExpression | null {
+  const rawText = String(rawValue ?? "").trim();
+  if (!rawText) return null;
+
+  const numbers = extractNumbers(rawText);
+  if (numbers.length === 0) return null;
+
+  const normalized = normalizeFreeText(rawText);
+  const hasGreaterComparator =
+    rawText.includes(">") ||
+    /\b(mas de|mayor que|mayores que|superior a|above|over|greater than)\b/.test(normalized);
+  const hasLessComparator =
+    rawText.includes("<") ||
+    /\b(menos de|menor que|menores que|inferior a|below|under|less than)\b/.test(normalized);
+
+  if (hasGreaterComparator && !hasLessComparator) {
+    return { kind: "gt", value: numbers[0] };
+  }
+
+  if (hasLessComparator && !hasGreaterComparator) {
+    return { kind: "lt", value: numbers[0] };
+  }
+
+  if (numbers.length >= 2) {
+    return {
+      kind: "interval",
+      min: Math.min(numbers[0], numbers[1]),
+      max: Math.max(numbers[0], numbers[1]),
+    };
+  }
+
+  return { kind: "exact", value: numbers[0] };
 }
 
 export function getReferenceRangeDisplay(
@@ -143,16 +183,18 @@ export function getReferenceRangeDisplay(
 export function isValueOutOfReferenceRange(
   value: NumericLikeValue,
   matchedRange: ReferenceRange | undefined,
+  legacyRange: string | null | undefined,
   fieldType: FieldType
 ) {
-  if (!matchedRange) return false;
+  const referenceBounds = parseReferenceBounds(matchedRange, legacyRange);
+  if (!referenceBounds) return false;
 
-  const parsed = parseSemiQuantitativeValue(value);
+  const parsed = parseFlexibleResultExpression(value);
   if (!parsed) return false;
 
   if (fieldType === "number") {
     if (parsed.kind !== "exact") return false;
-    return parsed.value < matchedRange.min_value || parsed.value > matchedRange.max_value;
+    return parsed.value < referenceBounds.min || parsed.value > referenceBounds.max;
   }
 
   if (fieldType !== "range") {
@@ -161,13 +203,13 @@ export function isValueOutOfReferenceRange(
 
   switch (parsed.kind) {
     case "exact":
-      return parsed.value < matchedRange.min_value || parsed.value > matchedRange.max_value;
+      return parsed.value < referenceBounds.min || parsed.value > referenceBounds.max;
     case "interval":
-      return parsed.min < matchedRange.min_value || parsed.max > matchedRange.max_value;
+      return parsed.min < referenceBounds.min || parsed.max > referenceBounds.max;
     case "lt":
-      return parsed.value < matchedRange.min_value;
+      return parsed.value <= referenceBounds.min;
     case "gt":
-      return parsed.value > matchedRange.max_value;
+      return parsed.value >= referenceBounds.max;
   }
 }
 
@@ -183,7 +225,7 @@ export function getFieldResultMeta(
 ) {
   const matchedRange = findMatchingRange(field.reference_ranges, patientGender, patientAge);
   const rangeDisplay = getReferenceRangeDisplay(matchedRange, field.range);
-  const isOutOfRange = isValueOutOfReferenceRange(field.value, matchedRange, field.type);
+  const isOutOfRange = isValueOutOfReferenceRange(field.value, matchedRange, field.range, field.type);
 
   return {
     matchedRange,

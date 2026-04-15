@@ -425,13 +425,10 @@ function OrderResultInput({
       <Input
         className={`h-8 text-sm ${isOutOfRange ? "border-destructive/40 text-destructive" : ""}`}
         type="text"
-        inputMode="numeric"
         value={field.value || ""}
-        onChange={(event) =>
-          updateFieldValue(itemId, sectionIdx, fieldIdx, sanitizeRangeInput(event.target.value))
-        }
+        onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
-        placeholder="Ej: 0-2"
+        placeholder="Ej: >100, <0.5 o Más de 80"
       />
     );
   }
