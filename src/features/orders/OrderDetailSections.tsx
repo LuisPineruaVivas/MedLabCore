@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { findMatchingRange } from "@/features/tests/schemas";
+import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import type { EditableOrderItem, OrderItemResultsState, OrderResultFieldState, OrderResultSectionState } from "./useOrderResultsEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,7 @@ export const OrderSidebar = memo(function OrderSidebar({
                   <p className="mono text-sm font-medium tracking-widest">{order.access_pin}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={onSharePortalLink}>
-                  <LinkIcon className="h-4 w-4" />
+                  Compartir <LinkIcon className="h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -340,8 +340,8 @@ function OrderResultFieldRow({
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
 }) {
-  const matchedRange = findMatchingRange(
-    field.reference_ranges,
+  const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
+    field,
     patientInfo.gender.toLowerCase(),
     typeof patientInfo.age === "number" ? patientInfo.age : parseInt(String(patientInfo.age), 10) || undefined
   );
@@ -359,18 +359,13 @@ function OrderResultFieldRow({
           sectionIdx={sectionIdx}
           fieldIdx={fieldIdx}
           readOnly={readOnly}
+          isOutOfRange={isOutOfRange}
           updateFieldValue={updateFieldValue}
           appendTextOption={appendTextOption}
         />
       </div>
       <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
-        {matchedRange ? (
-          <span>
-            Ref: {matchedRange.min_value} - {matchedRange.max_value}
-          </span>
-        ) : field.range ? (
-          <span>Ref: {field.range}</span>
-        ) : null}
+        {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
       </div>
     </div>
   );
@@ -382,6 +377,7 @@ function OrderResultInput({
   sectionIdx,
   fieldIdx,
   readOnly,
+  isOutOfRange,
   updateFieldValue,
   appendTextOption,
 }: {
@@ -390,6 +386,7 @@ function OrderResultInput({
   sectionIdx: number;
   fieldIdx: number;
   readOnly: boolean;
+  isOutOfRange: boolean;
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
 }) {
@@ -413,12 +410,28 @@ function OrderResultInput({
   if (field.type === "number") {
     return (
       <Input
-        className="h-8 text-sm"
+        className={`h-8 text-sm ${isOutOfRange ? "border-destructive/40 text-destructive" : ""}`}
         type="number"
         value={field.value || ""}
         onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
         placeholder="Ingresar resultado"
+      />
+    );
+  }
+
+  if (field.type === "range") {
+    return (
+      <Input
+        className={`h-8 text-sm ${isOutOfRange ? "border-destructive/40 text-destructive" : ""}`}
+        type="text"
+        inputMode="numeric"
+        value={field.value || ""}
+        onChange={(event) =>
+          updateFieldValue(itemId, sectionIdx, fieldIdx, sanitizeRangeInput(event.target.value))
+        }
+        disabled={readOnly}
+        placeholder="Ej: 0-2"
       />
     );
   }

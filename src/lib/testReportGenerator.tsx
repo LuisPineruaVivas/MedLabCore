@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import { TestTemplateRow, findMatchingRange, ReferenceRange, TemplateSection, TemplateField } from '@/features/tests/schemas';
+import { TestTemplateRow, getFieldResultMeta, TemplateSection, TemplateField, FieldType } from '@/features/tests/schemas';
 
 Font.register({
   family: 'Inter',
@@ -26,7 +26,7 @@ interface PdfPatientData {
   id?: string;
 }
 
-type RenderField = TemplateField & { value?: string | number };
+type RenderField = TemplateField & { value?: string | number; type: FieldType };
 
 interface Props {
   template: TestTemplateRow;
@@ -40,7 +40,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
     age: 30,
     gender: "Masculino",
     date: new Date().toLocaleDateString(),
-    id: "000-0000"
+    id: "14822455"
   };
 
 
@@ -57,10 +57,12 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
 
   const styles = StyleSheet.create({
     page: { padding: 40, fontSize: 10, fontFamily: 'Inter', color: '#333' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
-    labInfo: { flexDirection: 'column', maxWidth: '60%', flexShrink: 1 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
+    labInfo: { flexDirection: 'column', width: '45%', minWidth: 0 },
     labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b', flexShrink: 1 },
+    labDetails: { fontSize: 9, color: '#64748b', lineHeight: 1.3 },
+    logoContainer: { width: '35%', alignItems: 'flex-end', justifyContent: 'flex-start' },
+    logo: { width: 270, height: 75, objectFit: 'contain' },
     patientBox: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 4, flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 },
     patientItem: { width: '50%', marginBottom: 4 },
     label: { fontWeight: 'bold', color: '#475569' },
@@ -113,27 +115,6 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
     alertResult: { color: '#dc2626', fontWeight: 'bold' },
   });
 
-  // Mostramos secciones y campos (con encabezado de sección si existe nombre)
-  const wrapText = (value?: string, maxChars = 50): string => {
-    if (!value) return '';
-    const words = value.split(' ');
-    const lines: string[] = [];
-    let current = '';
-
-    for (const word of words) {
-      const attempt = current ? `${current} ${word}` : word;
-      if (attempt.length <= maxChars) {
-        current = attempt;
-      } else {
-        if (current) lines.push(current);
-        current = word;
-      }
-    }
-
-    if (current) lines.push(current);
-    return lines.join('\n');
-  };
-
   const sections = template.schema?.sections || [];
 
   return (
@@ -143,23 +124,28 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>
-            <Text style={styles.labDetails}>{wrapText(lab.address, 50)}</Text>
+            <Text style={styles.labDetails}>{lab.address}</Text>
             <Text style={styles.labDetails}>Tel: {lab.phone}</Text>
             <Text style={styles.labDetails}>Email: {lab.email}</Text>
           </View>
-          {labData?.logo && <Image src={labData.logo} style={{ width: 320, height: 75 }} />}
+          {labData?.logo && (
+            <View style={styles.logoContainer}>
+              <Image src={labData.logo} style={styles.logo} />
+            </View>
+          )}
         </View>
 
         {/* Patient Info */}
         <View style={styles.patientBox}>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patient.name}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patient.id}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{patient.date}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Orden: </Text>{patient.id}</Text></View>
         </View>
 
         {/* Category header */}
-        <View style={styles.categoryHeader}>
+        <View style={styles.categoryHeader} minPresenceAhead={24}>
           <Text style={styles.categoryHeaderText}>{template.category || template.name}</Text>
         </View>
 
@@ -173,32 +159,20 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
 
         {/* Secciones con encabezado + campos */}
         {sections.map((section: TemplateSection) => (
-          <View key={section.id} wrap={false}>
+          <View key={section.id}>
             {section.name === '' ?
               null
               :
-              <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeader} minPresenceAhead={18}>
                 <Text style={styles.sectionHeaderText}>{section.name}</Text>
               </View>
             }
             {(section.fields || []).map((field: RenderField) => {
-              const matchedRange: ReferenceRange | undefined = findMatchingRange(
-                field.reference_ranges,
+              const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
+                field,
                 patientGender,
                 patientAge
               );
-
-              let rangeDisplay = '';
-              if (matchedRange) {
-                rangeDisplay = `${matchedRange.min_value} - ${matchedRange.max_value}`;
-              } else if (field.range) {
-                rangeDisplay = field.range;
-              }
-
-              const resultValue = field.value != null && field.value !== '' ? parseFloat(String(field.value)) : null;
-              const isOutOfRange = !!(matchedRange && resultValue != null && !isNaN(resultValue) && (
-                resultValue < matchedRange.min_value || resultValue > matchedRange.max_value
-              ));
 
               return (
                 <View key={field.id} style={styles.tableRow}>
@@ -210,8 +184,8 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                   ]}>
                     {field.value && field.value !== '' ? field.value : '........'}
                   </Text>
-                  <Text style={styles.colUnit}>{field.unit || '-'}</Text>
-                  <Text style={styles.colRange}>{rangeDisplay || '-'}</Text>
+                  <Text style={styles.colUnit}>{field.unit || ''}</Text>
+                  <Text style={styles.colRange}>{rangeDisplay || ''}</Text>
                 </View>
               );
             })}

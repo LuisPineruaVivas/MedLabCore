@@ -22,7 +22,7 @@ describe("order detail utils", () => {
     expect(info.gender).toBe("femenino");
   });
 
-  it("collects OCR labels only from number/text fields", () => {
+  it("collects OCR labels only from supported editable fields", () => {
     expect(
       collectOcrFieldLabels(
         [{ id: "item-1", results_data: undefined }],
@@ -33,6 +33,7 @@ describe("order detail utils", () => {
                 name: "General",
                 fields: [
                   { label: "Glucosa", type: "number" },
+                  { label: "Leucocitos", type: "range" },
                   { label: "Comentario", type: "text" },
                   { label: "Estado", type: "select" },
                 ],
@@ -41,7 +42,7 @@ describe("order detail utils", () => {
           },
         }
       )
-    ).toEqual(["Glucosa", "Comentario"]);
+    ).toEqual(["Glucosa", "Leucocitos", "Comentario"]);
   });
 
   it("applies OCR results to matching fields", () => {

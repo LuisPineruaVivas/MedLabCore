@@ -13,11 +13,14 @@ export const referenceRangeSchema = z.object({
 
 export type ReferenceRange = z.infer<typeof referenceRangeSchema>;
 
+export const fieldTypeSchema = z.enum(["number", "text", "select", "range"]);
+export type FieldType = z.infer<typeof fieldTypeSchema>;
+
 // ── Field inside a section ──────────────────────────────────────
 export const templateFieldSchema = z.object({
   id: z.string(),
   label: z.string().trim().min(1, "Field label is required"),
-  type: z.enum(["number", "text", "select"]),
+  type: fieldTypeSchema,
   unit: z.string().nullable().optional().or(z.literal("")),
   // Legacy string range kept optional for backward compat
   range: z.string().nullable().optional().or(z.literal("")),
@@ -74,6 +77,120 @@ export const TEMPLATE_CATEGORIES = [
   "Coagulacion",
   "Pruebas Especiales",
 ] as const;
+
+type NumericLikeValue = string | number | null | undefined;
+
+function parseNumericToken(value: string) {
+  const normalized = value.replace(",", ".").trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+type ParsedRangeInput =
+  | { kind: "exact"; value: number }
+  | { kind: "interval"; min: number; max: number }
+  | { kind: "lt"; value: number }
+  | { kind: "gt"; value: number };
+
+function parseSemiQuantitativeValue(rawValue: NumericLikeValue): ParsedRangeInput | null {
+  const value = String(rawValue ?? "").trim();
+  if (!value) return null;
+
+  const lessThanMatch = value.match(/^<\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (lessThanMatch) {
+    const parsed = parseNumericToken(lessThanMatch[1]);
+    return parsed == null ? null : { kind: "lt", value: parsed };
+  }
+
+  const greaterThanMatch = value.match(/^>\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (greaterThanMatch) {
+    const parsed = parseNumericToken(greaterThanMatch[1]);
+    return parsed == null ? null : { kind: "gt", value: parsed };
+  }
+
+  const intervalMatch = value.match(/^(-?\d+(?:[.,]\d+)?)\s*-\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (intervalMatch) {
+    const first = parseNumericToken(intervalMatch[1]);
+    const second = parseNumericToken(intervalMatch[2]);
+    if (first == null || second == null) return null;
+
+    return {
+      kind: "interval",
+      min: Math.min(first, second),
+      max: Math.max(first, second),
+    };
+  }
+
+  const exact = parseNumericToken(value);
+  return exact == null ? null : { kind: "exact", value: exact };
+}
+
+export function sanitizeRangeInput(value: string) {
+  return value.replace(/[^\d<>\-\s]/g, "");
+}
+
+export function getReferenceRangeDisplay(
+  matchedRange?: ReferenceRange,
+  legacyRange?: string | null
+) {
+  if (matchedRange) {
+    return `${matchedRange.min_value} - ${matchedRange.max_value}`;
+  }
+
+  return legacyRange || "";
+}
+
+export function isValueOutOfReferenceRange(
+  value: NumericLikeValue,
+  matchedRange: ReferenceRange | undefined,
+  fieldType: FieldType
+) {
+  if (!matchedRange) return false;
+
+  const parsed = parseSemiQuantitativeValue(value);
+  if (!parsed) return false;
+
+  if (fieldType === "number") {
+    if (parsed.kind !== "exact") return false;
+    return parsed.value < matchedRange.min_value || parsed.value > matchedRange.max_value;
+  }
+
+  if (fieldType !== "range") {
+    return false;
+  }
+
+  switch (parsed.kind) {
+    case "exact":
+      return parsed.value < matchedRange.min_value || parsed.value > matchedRange.max_value;
+    case "interval":
+      return parsed.min < matchedRange.min_value || parsed.max > matchedRange.max_value;
+    case "lt":
+      return parsed.value < matchedRange.min_value;
+    case "gt":
+      return parsed.value > matchedRange.max_value;
+  }
+}
+
+export function getFieldResultMeta(
+  field: {
+    type: FieldType;
+    value?: NumericLikeValue;
+    range?: string | null;
+    reference_ranges?: ReferenceRange[];
+  },
+  patientGender?: string,
+  patientAge?: number
+) {
+  const matchedRange = findMatchingRange(field.reference_ranges, patientGender, patientAge);
+  const rangeDisplay = getReferenceRangeDisplay(matchedRange, field.range);
+  const isOutOfRange = isValueOutOfReferenceRange(field.value, matchedRange, field.type);
+
+  return {
+    matchedRange,
+    rangeDisplay,
+    isOutOfRange,
+  };
+}
 
 // ── Helper: find matching reference range for a patient ─────────
 export function findMatchingRange(
