@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import { findMatchingRange, ReferenceRange } from '@/features/tests/schemas';
+import { getFieldResultMeta } from '@/features/tests/schemas';
 import { OrderRow } from '@/features/orders/schemas';
 import { format } from 'date-fns';
 
@@ -43,10 +43,12 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
   const styles = StyleSheet.create({
     page: { padding: 40, fontSize: 10, fontFamily: 'Inter', color: '#333' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
-    labInfo: { flexDirection: 'column' },
-    labName: { fontSize: 16, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, borderBottom: 1, borderBottomColor: '#EEE', paddingBottom: 10 },
+    labInfo: { flexDirection: 'column', width: '45%', minWidth: 0 },
+    labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor },
+    labDetails: { fontSize: 9, color: '#64748b', lineHeight: 1.3 },
+    logoContainer: { width: '35%', alignItems: 'flex-end', justifyContent: 'flex-start' },
+    logo: { width: 270, height: 75, objectFit: 'contain' },
     patientBox: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 4, flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 },
     patientItem: { width: '50%', marginBottom: 4 },
     label: { fontWeight: 'bold', color: '#475569' },
@@ -93,7 +95,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
     colResult: { width: '20%', textAlign: 'center' },
     colResutlText: { width: '65%', paddingLeft: 4 },
     colUnit: { width: '15%', textAlign: 'center' },
-    colRange: { width: '30%', textAlign: 'right', paddingRight: 4 },
+    colRange: { width: '30%', textAlign: 'center', paddingRight: 4 },
     footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTop: 1, borderTopColor: '#EEE', paddingTop: 10, textAlign: 'center', fontSize: 8, color: '#94a3b8' },
     alertResult: { color: '#dc2626', fontWeight: 'bold' },
   });
@@ -113,7 +115,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
 
   for (const item of sortedItems) {
     const cat = item.category || item.results_data?.category || 'Otros';
-    if (!grouped[cat] && item.category !== 'Otros') grouped[cat] = [];
+    if (!grouped[cat]) grouped[cat] = [];
 
     const sections = item.results_data?.sections || [];
     // Check if this test has multiple fields across all sections
@@ -134,23 +136,11 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
         })
       }
       for (const field of section.fields || []) {
-        const matchedRange: ReferenceRange | undefined = findMatchingRange(
-          field.reference_ranges,
+        const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
+          field,
           patientGender,
           patientAge
         );
-
-        let rangeDisplay = '';
-        if (matchedRange) {
-          rangeDisplay = `${matchedRange.min_value} - ${matchedRange.max_value}`;
-        } else if (field.range) {
-          rangeDisplay = field.range;
-        }
-
-        const resultValue = field.value != null && field.value !== '' ? parseFloat(field.value) : null;
-        const isOutOfRange = !!(matchedRange && resultValue != null && !isNaN(resultValue) && (
-          resultValue < matchedRange.min_value || resultValue > matchedRange.max_value
-        ));
 
         // For single-field tests, use test_name as the label; for multi-field, use field label
         const displayLabel = isMultiField ? field.label : item.test_name;
@@ -182,23 +172,27 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
             <Text style={styles.labDetails}>Tel: {lab.phone}</Text>
             <Text style={styles.labDetails}>Email: {lab.email}</Text>
           </View>
-          {labData?.logo && <Image src={labData.logo} style={{ width: 270, height: 75 }} />}
+          {labData?.logo && (
+            <View style={styles.logoContainer}>
+              <Image src={labData.logo} style={styles.logo} />
+            </View>
+          )}
         </View>
 
         {/* Patient Info */}
         <View style={styles.patientBox}>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patientData.name}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patientData.id}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{format(new Date(orden.created_at), "dd/MM/yyyy")}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha De Muestra: </Text>{format(new Date(orden.created_at), "dd/MM/yyyy")}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{patientData.age} / {patientData.gender}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Nº Orden: </Text>{orden.order_seq.toString().padStart(4, '0')}</Text></View>
         </View>
 
         {/* ── Render grouped by category ─────────────────── */}
         {categoryOrder.map((category) => (
-          <View key={category} wrap={false}>
+          <View key={category}>
             {/* Single category header */}
-            <View style={styles.categoryHeader}>
+            <View style={styles.categoryHeader} minPresenceAhead={24}>
               <Text style={styles.categoryHeaderText}>{category}</Text>
             </View>
 
@@ -220,7 +214,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
                   </View>
                 </View>
                   :
-                  row.value === "........" ? null : row.fieldType === "text" ?
+                  row.value === "........" ? null : row.fieldType === "text" || row.fieldType === "select"  ?
                    <View key={`${category}-${idx}`} style={styles.tableRow}>
                     <Text style={[
                       styles.colExam,
@@ -248,8 +242,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
                     ]}>
                       {row.value}
                     </Text>
-                    <Text style={styles.colUnit}>{row.unit || '-'}</Text>
-                    <Text style={styles.colRange}>{row.rangeDisplay || '-'}</Text>
+                    <Text style={styles.colUnit}>{row.unit || ''}</Text>
+                    <Text style={styles.colRange}>{row.rangeDisplay || ''}</Text>
                   </View>
 )
             })}

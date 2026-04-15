@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FieldType, ReferenceRange } from "@/features/tests/schemas";
 
 export interface OrderResultFieldState {
   id?: string;
   label: string;
-  type: "number" | "text" | "select";
+  type: FieldType;
   value?: string;
   unit?: string | null;
   range?: string | null;
   options?: string[];
-  reference_ranges?: unknown[];
+  reference_ranges?: ReferenceRange[];
 }
 
 export interface OrderResultSectionState {

@@ -587,15 +587,16 @@ function FieldRow({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="number">Número</SelectItem>
+              <SelectItem value="range">Rango</SelectItem>
               <SelectItem value="text">Texto</SelectItem>
               <SelectItem value="select">Selección</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Unit (number only) */}
+        {/* Unit (number/range only) */}
         <div className="sm:col-span-1">
-          {field.type === "number" && (
+          {(field.type === "number" || field.type === "range") && (
             <>
               <Label className="text-xs">Unidades</Label>
               <Input
@@ -609,8 +610,8 @@ function FieldRow({
         </div>
       </div>
 
-      {/* Reference ranges (number only) */}
-      {field.type === "number" && (
+      {/* Reference ranges (number/range only) */}
+      {(field.type === "number" || field.type === "range") && (
         <div>
           <Label className="text-xs mb-1 block">Rangos de Referencia</Label>
           <ReferenceRangesEditor
