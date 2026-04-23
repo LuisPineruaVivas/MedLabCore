@@ -29,6 +29,10 @@ describe("test schemas", () => {
     expect(parsed.schema.sections[0].fields[0].type).toBe("range");
   });
 
+  it("sanitizes range input while preserving comparison symbols", () => {
+    expect(sanitizeRangeInput(" 0-2 abc <10 / > 5 ")).toBe(" 0-2  <10  > 5 ");
+  });
+
   it("marks semiquantitative interval results as out of range when they exceed the reference window", () => {
     const meta = getFieldResultMeta({
       type: "range",

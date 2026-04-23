@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { getFieldResultMeta } from "@/features/tests/schemas";
+import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import type { EditableOrderItem, OrderItemResultsState, OrderResultFieldState, OrderResultSectionState } from "./useOrderResultsEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
