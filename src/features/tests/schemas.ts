@@ -75,6 +75,9 @@ export const TEMPLATE_CATEGORIES = [
   "Immunologia",
   "Serologia",
   "Coagulacion",
+  "Coproanalisis", 
+  "Orina Parcial",
+  "Orina De 24 Horas",
   "Pruebas Especiales",
 ] as const;
 
