@@ -58,6 +58,7 @@ export const queryKeys = {
   settings: {
     teamMembers: (orgId: string | null | undefined) => ["team-members", orgId ?? "none"] as const,
     organization: (orgId: string | null | undefined) => ["organization-settings", orgId ?? "none"] as const,
+    profile: (userId: string | null | undefined) => ["profile-settings", userId ?? "none"] as const,
     manualExchangeRate: (orgId: string | null | undefined) =>
       ["manual-exchange-rate", orgId ?? "none"] as const,
   },

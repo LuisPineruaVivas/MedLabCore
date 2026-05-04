@@ -6,7 +6,6 @@ import { Atom } from "react-loading-indicators";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -21,12 +20,13 @@ import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { LetterHeadPDF } from "@/lib/letterhead";
+import { LetterHeadPreviewDialog } from "@/features/orders/LetterHeadDialog";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canEnterResults } = usePermissions();
-  const { organization } = useCurrentOrgContext();
+  const { organization, role, profile, permissions } = useCurrentOrgContext();
   const { data: order, isLoading: orderLoading } = useOrder(id || null);
   const { data: orderItemsData, isLoading: itemsLoading } = useOrderItems(id || null);
   const updateStatus = useUpdateOrderStatus();
@@ -50,8 +50,10 @@ export default function OrderDetailPage() {
   const [thermalPrinting, setThermalPrinting] = useState(false);
   const [thermalPaperOpen, setThermalPaperOpen] = useState(false);
   const [thermalPaperMm, setThermalPaperMm] = useState<"58" | "80">("58");
+  const [letterHeadOpen, setLetterHeadOpen] = useState(false);
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
+  const canEnterResults = permissions.canEnterResults;
 
   if (orderLoading) {
     return (
@@ -109,14 +111,48 @@ export default function OrderDetailPage() {
     }
   }
 
-  function handleCompleteOrder() {
+  function handleMarkReadyForApproval() {
+    updateStatus.mutate({
+      orderId: order.id,
+      orgId: order.org_id,
+      status: "por_aprobar",
+    });
+  }
+
+  function handleApproveAndSign() {
+    if (!profile?.firma_url || !profile?.sello_url) {
+      toast.error("Primero debes cargar tu firma y sello en Configuracion de Perfil.");
+      navigate("/settings");
+      return;
+    }
+
     updateStatus.mutate({
       orderId: order.id,
       orgId: order.org_id,
       status: "completada",
       completed_at: new Date().toISOString(),
+      firma_url: profile.firma_url,
+      sello_url: profile.sello_url,
     });
   }
+
+  const primaryStatusAction =
+    role === "secretary" && order.status === "pendiente"
+      ? {
+          label: "Marcar por aprobar",
+          onClick: handleMarkReadyForApproval,
+        }
+      : role === "bioanalyst" && order.status === "pendiente"
+        ? {
+            label: "Marcar por aprobar",
+            onClick: handleMarkReadyForApproval,
+          }
+        : role === "bioanalyst" && order.status === "por_aprobar"
+          ? {
+              label: "Aprobar y Firmar",
+              onClick: handleApproveAndSign,
+            }
+          : null;
 
   async function handleViewReport() {
     if (isMobileDevice()) {
@@ -143,6 +179,22 @@ export default function OrderDetailPage() {
     }
 
     setUnifiedOpen(true);
+  }
+
+  async function handleViewLetterhead() {
+    if (isMobileDevice()) {
+      try {
+        const blob = await pdf(<LetterHeadPDF orden={order as never} patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }} />).toBlob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error abriendo membrete móvil:", error);
+        toast.error("No se pudo abrir el membrete en el móvil. Intenta descargarlo.");
+      }
+    } else {
+      setLetterHeadOpen(true);
+    }
+    
   }
 
   async function handleViewReceipt() {
@@ -243,10 +295,10 @@ export default function OrderDetailPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver
             </Button>
-            {order.status === "pendiente" && (
-              <Button variant="outline" size="sm" onClick={handleCompleteOrder}>
+            {primaryStatusAction && (
+              <Button variant="outline" size="sm" onClick={primaryStatusAction.onClick} disabled={updateStatus.isPending}>
                 <ClipboardCheck className="mr-2 h-4 w-4" />
-                Marcar como completada
+                {primaryStatusAction.label}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
@@ -256,6 +308,10 @@ export default function OrderDetailPage() {
             <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
               <Receipt className="mr-2 h-4 w-4" />
               {receiptLoading ? "Generando..." : "Ver Nota"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleViewLetterhead}>
+              <FileText className="mr-2 h-4 w-4" />
+              Ver Membrete
             </Button>
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
@@ -323,6 +379,15 @@ export default function OrderDetailPage() {
         thermalPaperMm={thermalPaperMm}
         setThermalPaperMm={setThermalPaperMm}
       />
+
+      <LetterHeadPreviewDialog
+        open={letterHeadOpen}
+        onOpenChange={setLetterHeadOpen}
+        order={order}
+        patientData={patientInfo}
+      />
+
+
     </div>
   );
 }

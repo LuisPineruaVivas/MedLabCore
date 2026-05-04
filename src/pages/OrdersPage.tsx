@@ -85,6 +85,7 @@ export default function OrdersPage() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="por_aprobar">Por aprobar</SelectItem>
                 <SelectItem value="completada">Completada</SelectItem>
                 <SelectItem value="cancelada">Cancelada</SelectItem>
               </SelectContent>

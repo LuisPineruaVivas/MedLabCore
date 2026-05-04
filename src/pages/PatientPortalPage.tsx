@@ -125,8 +125,7 @@ export default function PatientPortalPage() {
               phone: brand?.phone || "",
               email: brand?.email || "",
               logo: order.org_logo_url || null,
-              primary_color: brand?.primary_color || "#0ea5e9",
-              secondary_color: brand?.secondary_color || "#0ea5e9",
+              primary_color: brand?.primary_color || "#0ea5e9"
               
             }}
           />
@@ -307,6 +306,7 @@ export default function PatientPortalPage() {
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
+                    console.log("Order item:", order),
                     <Card key={order.order_seq} className="border-0 shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
@@ -373,8 +373,7 @@ export default function PatientPortalPage() {
                   orden={selectedOrder}
                   orderItems={selectedOrder.items}
                   patientData={{
-                    ...patientInfo,
-                    date: format(new Date(selectedOrder.created_at), "dd/MM/yyyy"),
+                    ...patientInfo
                   }}
                   labData={{
                     name: selectedOrder.org_name,
@@ -382,8 +381,7 @@ export default function PatientPortalPage() {
                     phone: brand?.phone || "",
                     email: brand?.email || "",
                     logo: selectedOrder.org_logo_url || null,
-                    primary_color: brand?.primary_color,
-                    secondary_color: brand?.secondary_color,
+                    primary_color: brand?.primary_color
                   }}
                 />
               </PDFViewer>

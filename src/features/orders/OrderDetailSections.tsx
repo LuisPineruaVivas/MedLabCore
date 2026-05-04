@@ -52,7 +52,7 @@ type OrderItem = EditableOrderItem & {
 
 type OrderWithPatient = {
   id: string;
-  status: "pendiente" | "procesando" | "completada" | "cancelada";
+  status: "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
   total_amount: number;
   total_bs?: number | null;
   access_pin?: string | null;

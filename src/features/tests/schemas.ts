@@ -6,9 +6,10 @@ export const referenceRangeSchema = z.object({
   gender: z.enum(["masculino", "femenino", "ambos"]),
   age_min: z.coerce.number().nullable().optional(),
   age_max: z.coerce.number().nullable().optional(),
-  min_value: z.coerce.number(),
-  max_value: z.coerce.number(),
+  min_value: z.coerce.number().nullable().optional(),
+  max_value: z.coerce.number().nullable().optional(),
   description: z.string().optional().or(z.literal("")),
+  custom_display: z.string().nullable().optional().or(z.literal("")),
 });
 
 export type ReferenceRange = z.infer<typeof referenceRangeSchema>;
@@ -172,12 +173,21 @@ function parseFlexibleResultExpression(rawValue: NumericLikeValue): ParsedResult
   return { kind: "exact", value: numbers[0] };
 }
 
+export function sanitizeRangeInput(value: string) {
+  return value.replace(/[^\d\s.,<>-]/g, "");
+}
+
 export function getReferenceRangeDisplay(
   matchedRange?: ReferenceRange,
   legacyRange?: string | null
 ) {
   if (matchedRange) {
-    return `${matchedRange.min_value} - ${matchedRange.max_value}`;
+    const customDisplay = matchedRange.custom_display?.trim();
+    if (customDisplay) {
+      return customDisplay;
+    }
+
+    return `${matchedRange.min_value?.toFixed(1) ?? ''} - ${matchedRange.max_value?.toFixed(1) ?? ''}`;
   }
 
   return legacyRange || "";

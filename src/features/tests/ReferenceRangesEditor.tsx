@@ -26,9 +26,10 @@ function emptyRange(): ReferenceRange {
     gender: "ambos",
     age_min: null,
     age_max: null,
-    min_value: 0,
-    max_value: 0,
+    min_value: 0.0,
+    max_value: 0.0,
     description: "",
+    custom_display: "",
   };
 }
 
@@ -118,6 +119,20 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                     }
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Etiqueta de VisualizaciÃ³n</Label>
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Ej: Negativo o 0 - 5 / c"
+                    value={range.custom_display ?? ""}
+                    onChange={(e) =>
+                      updateRange(idx, { custom_display: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[10px]">Sexo</Label>
                   <Select

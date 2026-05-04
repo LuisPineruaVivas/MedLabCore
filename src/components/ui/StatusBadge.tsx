@@ -1,11 +1,15 @@
 import { cn } from "@/lib/utils";
 
-type Status = "pendiente" | "procesando" | "completada" | "cancelada";
+type Status = "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
 
 const statusConfig: Record<Status, { label: string; className: string }> = {
   pendiente: {
     label: "Pendiente",
     className: "bg-warning/10 text-warning border-warning/20",
+  },
+  por_aprobar: {
+    label: "Por aprobar",
+    className: "bg-info/10 text-info border-info/20",
   },
   procesando: {
     label: "Procesando",
