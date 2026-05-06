@@ -1,6 +1,7 @@
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { getFieldResultMeta } from "@/features/tests/schemas";
+import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
 
 Font.register({
@@ -33,6 +34,7 @@ interface FlatRow {
   unit: string;
   rangeDisplay: string;
   isOutOfRange: boolean;
+  resultColor?: string;
   isSectionHeader?: boolean;
   fieldType?: string;
 }
@@ -152,13 +154,19 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
       }
 
       for (const field of section.fields || []) {
-        const { rangeDisplay, isOutOfRange } = getFieldResultMeta(field, patientGender, patientAge);
+        const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(field, patientGender, patientAge);
+        const parsedValue = Number(String(field.value ?? "").replace(",", "."));
+        const resultColor = Number.isFinite(parsedValue)
+          ? getCategoryStyle(parsedValue, matchedRange)
+          : "black";
+
         grouped[category].push({
           fieldLabel: isMultiField ? field.label : item.test_name,
           value: field.value || "........",
           unit: field.unit || "",
           rangeDisplay,
           isOutOfRange,
+          resultColor,
           fieldType: field.type,
         });
       }
@@ -255,7 +263,12 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
               return (
                 <View key={`${category}-${index}`} style={styles.tableRow}>
                   <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                  <Text style={[styles.colResult, { fontWeight: "bold" }, row.isOutOfRange ? styles.alertResult : {}]}>
+                  <Text
+                    style={[
+                      styles.colResult,
+                      { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
+                    ]}
+                  >
                     {row.value}
                   </Text>
                   <Text style={styles.colUnit}>{row.unit || ""}</Text>

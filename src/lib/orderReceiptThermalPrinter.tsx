@@ -83,7 +83,7 @@ export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patien
         <Document>
             {/* 2. LE DAMOS UN SIZE CON ALTO FIJO PARA PRUEBAS */}
             {/* Esto evita que el motor de PDF colapse buscando el final de la página */}
-            <Page size={[226, 400]} style={thermalStyles.page}>
+            <Page size={[175, 400]} style={thermalStyles.page}>
 
                 <View style={thermalStyles.header}>
                     <Text style={thermalStyles.labName}>{lab.name}</Text>

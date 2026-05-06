@@ -32,7 +32,7 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
     /* ── Reset ── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ── Page size: 58mm wide, auto height ── */
+    /* ── Page size: 58mm wide or 80mm wide, auto height ── */
     @page {
       size: ${paperMm}mm auto;
       margin: 0;
@@ -72,6 +72,7 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
       vertical-align: top;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      font-weight: bold;
     }
     table.item-table th:last-child,
     table.item-table td.item-price {
@@ -107,8 +108,8 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
 
   <!-- Encabezado -->
   <div class="center bold large">${labName}</div>
-  ${labAddr ? `<div class="center small mt1">${labAddr}</div>` : ''}
-  ${labPhone ? `<div class="center small">${labPhone}</div>` : ''}
+  ${labAddr ? `<div class="center small bold mt1">${labAddr}</div>` : ''}
+  ${labPhone ? `<div class="center bold small">${labPhone}</div>` : ''}
 
   <hr class="hr mt2">
   <div class="center bold large mt1">NOTA DE ENTREGA</div>
@@ -116,13 +117,13 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
 
   <!-- Orden -->
   <table class="mt1 info-table">
-    <tr><td>ORDEN</td><td class="right">${orderNum.padStart(4, '0')}</td></tr>
-    <tr><td>FECHA</td><td class="right">${orderDate}</td></tr>
+    <tr><td class="bold">ORDEN</td><td class="right bold">${orderNum.padStart(4, '0')}</td></tr>
+    <tr><td class="bold">FECHA</td><td class="right bold">${orderDate}</td></tr>
   </table>
 
-  <div class="mt2">PACIENTE:</div>
+  <div class="mt2 bold">PACIENTE:</div>
   <div class="bold mt1">${patient}</div>
-  <div class="small">${patientId}</div>
+  <div class="small bold">${patientId}</div>
 
   <!-- Items -->
   <hr class="hr mt2">
@@ -138,12 +139,12 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
       </tr>
       ${(exchangeRate !== null && totalBs !== null) ? `
       <tr class="bs-row">
-        <td>TASA BS</td>
+        <td class="bold">TASA BS</td>
         <td class="right">${exchangeRate.toFixed(2)}</td>
       </tr>
       <tr class="bs-row">
-        <td>TOTAL BS</td>
-        <td class="right">Bs. ${totalBs}</td>
+        <td class="bold">TOTAL BS</td>
+        <td class="right">${totalBs}</td>
       </tr>
       ` : ''}
     </tfoot>
@@ -152,13 +153,13 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
   <!-- PIN -->
   ${pin ? `
   <hr class="hr mt2">
-  <div class="center mt1">PIN DE ACCESO</div>
+  <div class="center mt1 bold">PIN DE ACCESO</div>
   <div class="center bold large mt1">${pin.split('').join(' ')}</div>
   ` : ''}
 
   <!-- Footer -->
   <hr class="hr mt2">
-  <div class="center small mt1">Gracias por su preferencia</div>
+  <div class="center small mt1 bold">Gracias por su preferencia</div>
 
 </div>
 </body>
@@ -193,7 +194,9 @@ export async function printThermalReceipt(data: ThermalReceiptData, paperMm: 58 
             win.print();
             resolve();
           }
-        } catch (e) { }
+        } catch (e) { 
+          console.error(e);
+        }
       }, 1500);
 
     } catch (error) {

@@ -1,6 +1,15 @@
 import { z } from "zod";
 
 // ── Reference range for a field ─────────────────────────────────
+export const referenceCategorySchema = z.object({
+  label: z.string().trim().min(1, "Category label is required"),
+  min: z.coerce.number(),
+  max: z.coerce.number(),
+  color: z.enum(["green", "yellow", "red", "None"]).default("None"),
+});
+
+export type ReferenceCategory = z.infer<typeof referenceCategorySchema>;
+
 export const referenceRangeSchema = z.object({
   id: z.string(),
   gender: z.enum(["masculino", "femenino", "ambos"]),
@@ -10,6 +19,7 @@ export const referenceRangeSchema = z.object({
   max_value: z.coerce.number().nullable().optional(),
   description: z.string().optional().or(z.literal("")),
   custom_display: z.string().nullable().optional().or(z.literal("")),
+  categories: z.array(referenceCategorySchema).optional(),
 });
 
 export type ReferenceRange = z.infer<typeof referenceRangeSchema>;
