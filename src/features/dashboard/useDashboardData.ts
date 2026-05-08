@@ -55,7 +55,7 @@ export function usePendingOrders() {
         .from("orders")
         .select("id, status, total_amount, created_at, patients(first_name, last_name), order_items(test_name)")
         .eq("org_id", orgId!)
-        .eq("status", "pendiente")
+        .in("status", ["pendiente", "por_aprobar"])
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -65,7 +65,7 @@ export function usePendingOrders() {
         id: order.id,
         patient: `${order.patients?.first_name ?? ""} ${order.patients?.last_name ?? ""}`.trim(),
         tests: (order.order_items ?? []).map((item) => item.test_name),
-        status: order.status as "pendiente" | "procesando" | "completada" | "cancelada",
+        status: order.status as "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada",
         total: Number(order.total_amount),
         date: format(new Date(order.created_at), "yyyy-MM-dd"),
       }));

@@ -46,7 +46,7 @@ export function buildOrderPatientInfo(order: OrderLike) {
 export function buildThermalReceiptData(
   order: OrderLike,
   orderItems: Array<EditableOrderItem & { test_name?: string; price_at_order?: number }>,
-  patientInfo: { name: string; id: string },
+  patientInfo: { name: string; id: string, age: string | number, gender: string },
   labData: LabData,
   origin: string
 ): ThermalReceiptData {
@@ -55,6 +55,8 @@ export function buildThermalReceiptData(
     orderDate: format(new Date(order.created_at), "dd/MM/yyyy HH:mm"),
     patientName: patientInfo.name,
     patientId: patientInfo.id,
+    age: patientInfo.age,
+    gender: patientInfo.gender,  
     items: orderItems
       .filter((item) => Number(item.price_at_order) > 0)
       .map((item) => ({ test_name: item.test_name || "", price: Number(item.price_at_order) })),

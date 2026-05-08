@@ -20,15 +20,25 @@ import { Badge } from "@/components/ui/badge";
 
 const uuidv4 = () => crypto.randomUUID();
 
+function emptyCategory() {
+  return {
+    label: "",
+    min: 0,
+    max: 0,
+    color: "green" as const,
+  };
+}
+
 function emptyRange(): ReferenceRange {
   return {
     id: uuidv4(),
     gender: "ambos",
     age_min: null,
     age_max: null,
-    min_value: 0,
-    max_value: 0,
+    min_value: 0.0,
+    max_value: 0.0,
     description: "",
+    custom_display: "",
   };
 }
 
@@ -71,7 +81,7 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
           Rangos ({ranges.length})
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[480px] p-0" align="start" side="bottom">
+      <PopoverContent className="w-[600px] p-0" align="start" side="bottom">
         <div className="p-3 border-b border-border">
           <h4 className="text-sm font-semibold">Rangos de Referencia</h4>
           <p className="text-xs text-muted-foreground">
@@ -118,6 +128,20 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                     }
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Etiqueta de Visualizacion</Label>
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Ej: Negativo o 0 - 5 / c"
+                    value={range.custom_display ?? ""}
+                    onChange={(e) =>
+                      updateRange(idx, { custom_display: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[10px]">Sexo</Label>
                   <Select
@@ -192,11 +216,129 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                   />
                 </div>
               </div>
+
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(range.categories?.length)}
+                    onChange={(event) =>
+                      updateRange(idx, {
+                        categories: event.target.checked
+                          ? range.categories?.length
+                            ? range.categories
+                            : [emptyCategory()]
+                          : undefined,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Activar Rangos por Categorías
+                </label>
+              </div>
+
+              {range.categories?.length ? (
+                <div className="space-y-2 rounded border border-border bg-white p-2">
+                  <div className="grid grid-cols-[1fr_70px_70px_70px_30px] gap-2 text-[10px] font-semibold uppercase text-muted-foreground">
+                    <div>Etiqueta</div>
+                    <div className="text-center">Mín</div>
+                    <div className="text-center">Máx</div>
+                    <div className="text-center">Color</div>
+                    <div />
+                  </div>
+                  {range.categories.map((category, categoryIdx) => (
+                    <div
+                      key={`${range.id}-category-${categoryIdx}`}
+                      className="grid grid-cols-[1fr_70px_70px_70px_30px] gap-2 items-center text-[10px]"
+                    >
+                      <Input
+                        className="h-7 text-xs"
+                        value={category.label}
+                        onChange={(e) => {
+                          const categories = [...(range.categories ?? [])];
+                          categories[categoryIdx] = {
+                            ...categories[categoryIdx],
+                            label: e.target.value,
+                          };
+                          updateRange(idx, { categories });
+                        }}
+                        placeholder="Ej: Riesgo"
+                      />
+                      <Input
+                        className="h-7 text-xs"
+                        type="number"
+                        value={category.min}
+                        onChange={(e) => {
+                          const categories = [...(range.categories ?? [])];
+                          categories[categoryIdx] = {
+                            ...categories[categoryIdx],
+                            min: Number(e.target.value),
+                          };
+                          updateRange(idx, { categories });
+                        }}
+                      />
+                      <Input
+                        className="h-7 text-xs"
+                        type="number"
+                        value={category.max}
+                        onChange={(e) => {
+                          const categories = [...(range.categories ?? [])];
+                          categories[categoryIdx] = {
+                            ...categories[categoryIdx],
+                            max: Number(e.target.value),
+                          };
+                          updateRange(idx, { categories });
+                        }}
+                      />
+                      <select
+                        className="h-7 rounded border border-border bg-transparent px-2 text-xs"
+                        value={category.color}
+                        onChange={(e) => {
+                          const categories = [...(range.categories ?? [])];
+                          categories[categoryIdx] = {
+                            ...categories[categoryIdx],
+                            color: e.target.value as "green" | "yellow" | "red",
+                          };
+                          updateRange(idx, { categories });
+                        }}
+                      >
+                        <option value="None">None</option>
+                        <option value="green">Verde</option>
+                        <option value="yellow">Amarillo</option>
+                        <option value="red">Rojo</option>
+                      </select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          const categories = (range.categories ?? []).filter((_, i) => i !== categoryIdx);
+                          updateRange(idx, { categories: categories.length ? categories : undefined });
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() =>
+                      updateRange(idx, {
+                        categories: [...(range.categories ?? []), emptyCategory()],
+                      })
+                    }
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Añadir Categoría
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ))}
-        </div>
 
-        <div className="p-3 border-t border-border">
           <Button
             type="button"
             variant="outline"

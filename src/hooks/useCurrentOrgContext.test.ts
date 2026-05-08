@@ -24,7 +24,7 @@ describe("buildPermissions", () => {
       canViewBilling: false,
       canViewPrices: false,
       canCreateOrders: true,
-      canViewSettings: false,
+      canViewSettings: true,
       canManageTeam: false,
       canViewVisits: true,
     });

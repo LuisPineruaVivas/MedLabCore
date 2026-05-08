@@ -1,4 +1,4 @@
-export type OrderStatus = "pendiente" | "procesando" | "completada" | "cancelada";
+export type OrderStatus = "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
 export type PaymentStatus = "unpaid" | "partial" | "paid";
 
 export interface OrderRow {
@@ -9,6 +9,7 @@ export interface OrderRow {
   payment_status: PaymentStatus;
   total_amount: number;
   exchange_rate: number | null;
+  firma_url: string | null;
   total_bs: number | null;
   notes: string | null;
   access_pin: string | null;
@@ -16,7 +17,7 @@ export interface OrderRow {
   updated_at: string;
   completed_at: string | null;
   order_seq: number;
-
+  sello_url: string | null;
 }
 
 export interface OrderItemRow {

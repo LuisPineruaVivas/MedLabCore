@@ -17,6 +17,8 @@ export interface ThermalReceiptData {
   orderDate: string;
   patientName: string;
   patientId: string;
+  age: string | number;
+  gender: string;
   items: ThermalReceiptItem[];
   total: number;
   accessPin?: string | null;

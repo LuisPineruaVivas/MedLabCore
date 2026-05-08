@@ -1,14 +1,25 @@
 import { z } from "zod";
 
 // ── Reference range for a field ─────────────────────────────────
+export const referenceCategorySchema = z.object({
+  label: z.string().trim().min(1, "Category label is required"),
+  min: z.coerce.number(),
+  max: z.coerce.number(),
+  color: z.enum(["green", "yellow", "red", "None"]).default("None"),
+});
+
+export type ReferenceCategory = z.infer<typeof referenceCategorySchema>;
+
 export const referenceRangeSchema = z.object({
   id: z.string(),
   gender: z.enum(["masculino", "femenino", "ambos"]),
   age_min: z.coerce.number().nullable().optional(),
   age_max: z.coerce.number().nullable().optional(),
-  min_value: z.coerce.number(),
-  max_value: z.coerce.number(),
+  min_value: z.coerce.number().nullable().optional(),
+  max_value: z.coerce.number().nullable().optional(),
   description: z.string().optional().or(z.literal("")),
+  custom_display: z.string().nullable().optional().or(z.literal("")),
+  categories: z.array(referenceCategorySchema).optional(),
 });
 
 export type ReferenceRange = z.infer<typeof referenceRangeSchema>;
@@ -172,12 +183,21 @@ function parseFlexibleResultExpression(rawValue: NumericLikeValue): ParsedResult
   return { kind: "exact", value: numbers[0] };
 }
 
+export function sanitizeRangeInput(value: string) {
+  return value.replace(/[^\d\s.,<>-]/g, "");
+}
+
 export function getReferenceRangeDisplay(
   matchedRange?: ReferenceRange,
   legacyRange?: string | null
 ) {
   if (matchedRange) {
-    return `${matchedRange.min_value} - ${matchedRange.max_value}`;
+    const customDisplay = matchedRange.custom_display?.trim();
+    if (customDisplay) {
+      return customDisplay;
+    }
+
+    return `${matchedRange.min_value?.toFixed(1) ?? ''} - ${matchedRange.max_value?.toFixed(1) ?? ''}`;
   }
 
   return legacyRange || "";

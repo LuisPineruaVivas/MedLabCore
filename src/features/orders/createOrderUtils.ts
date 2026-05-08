@@ -69,11 +69,14 @@ export interface OrderReceiptData {
   orderDate: string;
   patientName: string;
   patientId: string;
+  age: string | number;
+  gender: string;
   items: Array<{ test_name: string; price: number }>;
   total: number;
   accessPin?: string | null;
   exchangeRate?: number | null;
   totalBs?: number | null;
+  order_seq: number | null;
 }
 
 export function buildSearchItems(
@@ -191,6 +194,7 @@ export function calculateCartTotalBs(total: number, exchangeRate?: number | null
 
 export function buildOrderReceiptData(params: {
   orderId: string;
+  order_seq: number | null;
   selectedPatient: SelectedPatient;
   cart: CartItem[];
   total: number;
@@ -199,13 +203,16 @@ export function buildOrderReceiptData(params: {
   accessPin?: string | null;
   now?: Date;
 }) {
-  const { orderId, selectedPatient, cart, total, exchangeRate, totalBs, accessPin, now } = params;
+  const { orderId, order_seq, selectedPatient, cart, total, exchangeRate, totalBs, accessPin, now } = params;
 
   return {
     orderId,
+    order_seq,
     orderDate: format(now ?? new Date(), "dd/MM/yyyy HH:mm"),
     patientName: `${selectedPatient.first_name} ${selectedPatient.last_name}`.toUpperCase(),
     patientId: selectedPatient.id_number,
+    age: differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? "")),
+    gender: selectedPatient.gender,
     items: cart
       .filter((item) => item.price > 0)
       .map((item) => ({ test_name: item.test_name, price: item.price })),

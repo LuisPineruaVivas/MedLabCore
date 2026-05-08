@@ -93,7 +93,7 @@ export function useOrders(statusFilter?: OrderStatus) {
       const query = supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("org_id", orgId!)
         .order("created_at", { ascending: false });
@@ -205,7 +205,7 @@ export function useOrder(orderId: string | null) {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("id", orderId!)
         .single();
@@ -338,15 +338,30 @@ export function useUpdateOrderStatus() {
       orgId,
       status,
       completed_at,
+      firma_url,
+      sello_url,
     }: {
       orderId: string;
       orgId?: string | null;
       status: OrderStatus;
       completed_at?: string | null;
+      firma_url?: string | null;
+      sello_url?: string | null;
     }) => {
+      const updatePayload: {
+        status: OrderStatus;
+        completed_at?: string | null;
+        firma_url?: string | null;
+        sello_url?: string | null;
+      } = { status };
+
+      if (completed_at !== undefined) updatePayload.completed_at = completed_at;
+      if (firma_url !== undefined) updatePayload.firma_url = firma_url;
+      if (sello_url !== undefined) updatePayload.sello_url = sello_url;
+
       const { error } = await supabase
         .from("orders")
-        .update({ status, completed_at })
+        .update(updatePayload)
         .eq("id", orderId);
       if (error) throw error;
     },
@@ -357,6 +372,8 @@ export function useUpdateOrderStatus() {
           ...oldData,
           status: variables.status,
           ...(variables.completed_at !== undefined ? { completed_at: variables.completed_at } : {}),
+          ...(variables.firma_url !== undefined ? { firma_url: variables.firma_url } : {}),
+          ...(variables.sello_url !== undefined ? { sello_url: variables.sello_url } : {}),
         };
       });
       getOrderStatusInvalidationTargets(variables.orderId, variables.orgId).forEach((queryKey) => {

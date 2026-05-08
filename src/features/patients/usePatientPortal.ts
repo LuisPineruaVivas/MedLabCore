@@ -98,6 +98,8 @@ export function usePatientOrders(patientId: string | null) {
         org_name: string;
         org_logo_url: string | null;
         order_seq: number;
+        firma_url: string | null;
+        sello_url: string | null;
         items: OrderItemRow[];
       }) => ({
         id:           row.order_id,
@@ -108,6 +110,8 @@ export function usePatientOrders(patientId: string | null) {
         org_name:     row.org_name ?? "Laboratorio",
         org_logo_url: row.org_logo_url ?? undefined,
         order_seq:    row.order_seq,
+        firma_url:    row.firma_url ?? null,
+        sello_url:    row.sello_url ?? null,
         items:        Array.isArray(row.items) ? row.items : [],
       }));
     },

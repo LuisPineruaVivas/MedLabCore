@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
+import { getCategoryStyle } from "@/utils/validators";
 import type { EditableOrderItem, OrderItemResultsState, OrderResultFieldState, OrderResultSectionState } from "./useOrderResultsEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ type OrderItem = EditableOrderItem & {
 
 type OrderWithPatient = {
   id: string;
-  status: "pendiente" | "procesando" | "completada" | "cancelada";
+  status: "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
   total_amount: number;
   total_bs?: number | null;
   access_pin?: string | null;
@@ -340,11 +341,16 @@ function OrderResultFieldRow({
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
 }) {
-  const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
+  const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(
     field,
     patientInfo.gender.toLowerCase(),
     typeof patientInfo.age === "number" ? patientInfo.age : parseInt(String(patientInfo.age), 10) || undefined
   );
+
+  const parsedNumericValue = typeof field.value === "string" ? parseFloat(field.value.replace(",", ".")) : NaN;
+  const categoryTextColor = Number.isFinite(parsedNumericValue)
+    ? getCategoryStyle(parsedNumericValue, matchedRange)
+    : "black";
 
   return (
     <div className="grid grid-cols-12 items-center gap-3">
@@ -360,6 +366,7 @@ function OrderResultFieldRow({
           fieldIdx={fieldIdx}
           readOnly={readOnly}
           isOutOfRange={isOutOfRange}
+          resultColor={categoryTextColor}
           updateFieldValue={updateFieldValue}
           appendTextOption={appendTextOption}
         />
@@ -380,6 +387,7 @@ function OrderResultInput({
   isOutOfRange,
   updateFieldValue,
   appendTextOption,
+  resultColor,
 }: {
   itemId: string;
   field: ResultField;
@@ -387,6 +395,7 @@ function OrderResultInput({
   fieldIdx: number;
   readOnly: boolean;
   isOutOfRange: boolean;
+  resultColor: string;
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
 }) {
@@ -407,15 +416,18 @@ function OrderResultInput({
     );
   }
 
+  const inputTextColor = resultColor === "black" && isOutOfRange ? "#dc2626" : resultColor;
+
   if (field.type === "number") {
     return (
       <Input
-        className={`h-8 text-sm ${isOutOfRange ? "border-destructive/40 text-destructive" : ""}`}
+        className={`h-8 text-sm ${isOutOfRange && resultColor === "black" ? "border-destructive/40 text-destructive" : ""}`}
         type="number"
         value={field.value || ""}
         onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
         placeholder="Ingresar resultado"
+        style={{ color: inputTextColor }}
       />
     );
   }
@@ -423,12 +435,13 @@ function OrderResultInput({
   if (field.type === "range") {
     return (
       <Input
-        className={`h-8 text-sm ${isOutOfRange ? "border-destructive/40 text-destructive" : ""}`}
+        className={`h-8 text-sm ${isOutOfRange && resultColor === "black" ? "border-destructive/40 text-destructive" : ""}`}
         type="text"
         value={field.value || ""}
         onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
         placeholder="Ej: >100, <0.5 o Más de 80"
+        style={{ color: inputTextColor }}
       />
     );
   }

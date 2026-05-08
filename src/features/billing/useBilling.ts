@@ -37,7 +37,7 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
         .order("created_at", { ascending: false });
 
       if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter as "pendiente" | "procesando" | "completada" | "cancelada");
+        query = query.eq("status", statusFilter as "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada");
       }
 
       if (monthFilterStart && monthFilterEnd) {

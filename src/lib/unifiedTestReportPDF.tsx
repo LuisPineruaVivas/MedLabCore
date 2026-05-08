@@ -1,159 +1,173 @@
-import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import { getFieldResultMeta } from '@/features/tests/schemas';
-import { OrderRow } from '@/features/orders/schemas';
-import { format } from 'date-fns';
+import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { format } from "date-fns";
+import { getFieldResultMeta } from "@/features/tests/schemas";
+import { getCategoryStyle } from "@/utils/validators";
+import type { OrderRow } from "@/features/orders/schemas";
 
 Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: '/fonts/Inter/Inter-VariableFont_opsz,wght.ttf' }
-  ],
+  family: "Inter",
+  fonts: [{ src: "/fonts/Inter/Inter-VariableFont_opsz,wght.ttf" }],
 });
 
 interface UnifiedProps {
   orden: OrderRow;
-  orderItems;
-  patientData;
-  labData?;
+  orderItems: any[];
+  patientData: {
+    name: string;
+    id: string;
+    age: string | number;
+    gender: string;
+  };
+  labData?: {
+    name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    logo?: string | null;
+    primary_color?: string;
+  };
 }
 
-/** Flatten all order items into a flat list of rows grouped by category */
 interface FlatRow {
-  testName: string;
   fieldLabel: string;
   value: string;
   unit: string;
   rangeDisplay: string;
   isOutOfRange: boolean;
+  resultColor?: string;
   isSectionHeader?: boolean;
   fieldType?: string;
 }
 
+const shouldRenderSignatureBlock = (order: OrderRow) =>
+  order.status === "completada" && Boolean(order.firma_url || order.sello_url);
+
 export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }: UnifiedProps) => {
-  const lab = labData || { name: "LABORATORIO CLÍNICO", address: "Av. Principal 123", phone: "555-0123" };
-
-  const patientAge: number | undefined = typeof patientData?.age === 'number'
-    ? patientData.age
-    : typeof patientData?.age === 'string'
-      ? parseInt(patientData.age, 10) || undefined
-      : undefined;
-  const patientGender: string | undefined = patientData?.gender;
-
-  const primaryColor = labData?.primary_color || '#0ea5e9';
+  const lab = labData || { name: "LABORATORIO CLINICO", address: "Av. Principal 123", phone: "555-0123", email: "" };
+  const patientAge =
+    typeof patientData?.age === "number"
+      ? patientData.age
+      : typeof patientData?.age === "string"
+        ? parseInt(patientData.age, 10) || undefined
+        : undefined;
+  const patientGender = patientData?.gender;
+  const primaryColor = labData?.primary_color || "#0ea5e9";
 
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 9, fontFamily: 'Inter', color: '#333' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomColor: '#EEE'},
-    labInfo: { flexDirection: 'column', width: '45%', minWidth: 0 },
-    labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b', lineHeight: 1.3 },
-    logoContainer: { width: '35%', alignItems: 'flex-end', justifyContent: 'flex-start' },
-    logo: { width: 270, height: 75, objectFit: 'contain' },
-    patientBox: { backgroundColor: '#f8fafc', padding: 5, borderRadius: 4, flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: primaryColor },
-    patientItem: { width: '50%', marginBottom: 2 },
-    label: { fontWeight: 'bold', color: '#475569' },
-    categoryHeader: {
-      backgroundColor: primaryColor,
-      padding: 6,
-      marginTop: 5,
-      marginBottom: 0,
+    page: { padding: 40, fontSize: 9, fontFamily: "Inter", color: "#333" },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
+    labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
+    labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
+    labDetails: { fontSize: 9, color: "#64748b", lineHeight: 1.3 },
+    logoContainer: { width: "35%", alignItems: "flex-end", justifyContent: "flex-start" },
+    logo: { width: 270, height: 75, objectFit: "contain" },
+    patientBox: {
+      backgroundColor: "#f8fafc",
+      padding: 5,
+      borderRadius: 4,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      borderWidth: 1,
+      borderColor: primaryColor,
     },
+    patientItem: { width: "50%", marginBottom: 2 },
+    label: { fontWeight: "bold", color: "#475569" },
+    categoryHeader: { backgroundColor: primaryColor, padding: 6, marginTop: 5, marginBottom: 0 },
     categoryHeaderText: {
       fontSize: 10,
-      fontWeight: 'bold',
-      color: '#ffffff',
-      textTransform: 'uppercase',
+      fontWeight: "bold",
+      color: "#ffffff",
+      textTransform: "uppercase",
       letterSpacing: 1,
-      textAlign: 'center',
+      textAlign: "center",
     },
-    sectionHeader: {
-      paddingVertical: 2,
-      paddingHorizontal: 8,
-      backgroundColor: '#e2e8f0',
-    },
-    sectionHeaderText: {
-      fontSize: 9,
-      fontWeight: 'bold',
-      color: '#0f172a',
-    },
+    sectionHeader: { paddingVertical: 2, paddingHorizontal: 8, backgroundColor: "#e2e8f0" },
+    sectionHeaderText: { fontSize: 9, fontWeight: "bold", color: "#0f172a" },
     tableHeader: {
-      flexDirection: 'row',
+      flexDirection: "row",
       borderBottom: 1.5,
-      borderBottomColor: '#333',
+      borderBottomColor: "#333",
       paddingTop: 6,
       paddingBottom: 4,
-      backgroundColor: '#f1f5f9',
+      backgroundColor: "#f1f5f9",
     },
     tableRow: {
-      flexDirection: 'row',
+      flexDirection: "row",
       borderBottom: 0.5,
-      borderBottomColor: '#e2e8f0',
+      borderBottomColor: "#e2e8f0",
       paddingTop: 1,
       paddingBottom: 1,
     },
-    colExam: { width: '35%', paddingLeft: 8 },
-    colResult: { width: '20%', textAlign: 'center' },
-    colResutlText: { width: '65%', paddingLeft: 4 },
-    colUnit: { width: '15%', textAlign: 'center' },
-    colRange: { width: '30%', textAlign: 'center', paddingRight: 4 },
-    footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTop: 1, borderTopColor: '#EEE', paddingTop: 10, textAlign: 'center', fontSize: 8, color: '#94a3b8' },
-    alertResult: { color: '#dc2626', fontWeight: 'bold' },
+    colExam: { width: "35%", paddingLeft: 8 },
+    colResult: { width: "20%", textAlign: "center" },
+    colResultText: { width: "65%", paddingLeft: 4 },
+    colUnit: { width: "15%", textAlign: "center" },
+    colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
+    alertResult: { color: "#dc2626", fontWeight: "bold" },
+    signatureSection: { position: "absolute",
+      bottom: 30,
+      left: 40,
+      right: 40, marginTop: 24, paddingTop: 12, borderTop: 1, borderTopColor: "#e2e8f0" },
+    signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
+    signatureImage: { width: 150, height: 70, objectFit: "contain" },
+    footer: {
+      position: "absolute",
+      bottom: 30,
+      left: 40,
+      right: 40,
+      borderTop: 1,
+      borderTopColor: "#EEE",
+      paddingTop: 10,
+      textAlign: "center",
+      fontSize: 8,
+      color: "#94a3b8",
+    },
   });
 
   const sortedItems = [...orderItems].sort((a, b) => {
-    // Primero por categoría (para que se agrupen bien)
     const catA = a.category || "Otros";
     const catB = b.category || "Otros";
     if (catA !== catB) return catA.localeCompare(catB);
-
-    // Segundo por el orden resuelto que inyectamos en el hook
     return (a.resolved_sort_order || 0) - (b.resolved_sort_order || 0);
   });
 
-  // ── Flatten all items into rows grouped by category ──────
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const cat = item.category || item.results_data?.category || 'Otros';
-    if (!grouped[cat]) grouped[cat] = [];
+    const category = item.category || item.results_data?.category || "Otros";
+    if (!grouped[category]) grouped[category] = [];
 
     const sections = item.results_data?.sections || [];
-    // Check if this test has multiple fields across all sections
-    const allFields: [] = sections.flatMap((s) => s.fields || []);
+    const allFields: Array<{ label: string }> = sections.flatMap((section: any) => section.fields || []);
     const isMultiField = allFields.length > 1;
 
     for (const section of sections) {
-      if (section.name !== '') {
-        // If section has a name, add it as a separate row spanning all columns
-        grouped[cat].push({
-          testName: item.test_name,
+      if (section.name !== "") {
+        grouped[category].push({
           fieldLabel: section.name,
-          value: '',
-          unit: '',
-          rangeDisplay: '',
+          value: "",
+          unit: "",
+          rangeDisplay: "",
           isOutOfRange: false,
-          isSectionHeader: true
-        })
+          isSectionHeader: true,
+        });
       }
+
       for (const field of section.fields || []) {
-        const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
-          field,
-          patientGender,
-          patientAge
-        );
+        const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(field, patientGender, patientAge);
+        const parsedValue = Number(String(field.value ?? "").replace(",", "."));
+        const resultColor = Number.isFinite(parsedValue)
+          ? getCategoryStyle(parsedValue, matchedRange)
+          : "black";
 
-        // For single-field tests, use test_name as the label; for multi-field, use field label
-        const displayLabel = isMultiField ? field.label : item.test_name;
-
-        grouped[cat].push({
-          testName: item.test_name,
-          fieldLabel: displayLabel,
-          value: field.value || '........',
-          unit: field.unit || '',
+        grouped[category].push({
+          fieldLabel: isMultiField ? field.label : item.test_name,
+          value: field.value || "........",
+          unit: field.unit || "",
           rangeDisplay,
           isOutOfRange,
-          isSectionHeader: false,
-          fieldType: field.type
+          resultColor,
+          fieldType: field.type,
         });
       }
     }
@@ -164,7 +178,6 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Lab Header */}
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>
@@ -179,79 +192,108 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
           )}
         </View>
 
-        {/* Patient Info */}
         <View style={styles.patientBox}>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patientData.name}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patientData.id}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha De Muestra: </Text>{format(new Date(orden.created_at), "dd/MM/yyyy")}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{patientData.age} / {patientData.gender}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Nº Orden: </Text>{orden.order_seq.toString().padStart(4, '0')}</Text></View>
+          <View style={styles.patientItem}>
+            <Text>
+              <Text style={styles.label}>Paciente: </Text>
+              {patientData.name}
+            </Text>
+          </View>
+          <View style={styles.patientItem}>
+            <Text>
+              <Text style={styles.label}>CI: </Text>
+              {patientData.id}
+            </Text>
+          </View>
+          <View style={styles.patientItem}>
+            <Text>
+              <Text style={styles.label}>Fecha de muestra: </Text>
+              {format(new Date(orden.created_at), "dd/MM/yyyy")}
+            </Text>
+          </View>
+          <View style={styles.patientItem}>
+            <Text>
+              <Text style={styles.label}>Edad/Sexo: </Text>
+              {patientData.age} / {patientData.gender}
+            </Text>
+          </View>
+          <View style={styles.patientItem}>
+            <Text>
+              <Text style={styles.label}>No. Orden: </Text>
+              {orden.order_seq.toString().padStart(4, "0")}
+            </Text>
+          </View>
         </View>
 
-        {/* ── Render grouped by category ─────────────────── */}
         {categoryOrder.map((category) => (
           <View key={category}>
-            {/* Single category header */}
             <View style={styles.categoryHeader} minPresenceAhead={24}>
               <Text style={styles.categoryHeaderText}>{category}</Text>
             </View>
 
-            {/* Single table header per category */}
             <View style={styles.tableHeader}>
-              <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
-              <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
-              <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
-              <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
+              <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
+              <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
+              <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
+              <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
             </View>
 
-            {/* All rows for this category */}
-            {grouped[category].map((row, idx) => {
-              return(
-              row.isSectionHeader ?
-                <View key={`${category}-${idx}`} style={styles.tableRow}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
+            {grouped[category].map((row, index) => {
+              if (row.isSectionHeader) {
+                return (
+                  <View key={`${category}-${index}`} style={styles.tableRow}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
+                    </View>
                   </View>
-                </View>
-                  :
-                  row.value === "........" ? null : row.fieldType === "text" || row.fieldType === "select"  ?
-                   <View key={`${category}-${idx}`} style={styles.tableRow}>
-                    <Text style={[
-                      styles.colExam,
-                      { fontWeight: row.isSectionHeader ? 'bold' : 'normal' }
-                      ]}>
-                      {row.fieldLabel}
-                    </Text>
-                    <Text style={styles.colResutlText}>
-                      {row.value}
-                    </Text>
+                );
+              }
 
+              if (row.value === "........") return null;
+
+              if (row.fieldType === "text" || row.fieldType === "select") {
+                return (
+                  <View key={`${category}-${index}`} style={styles.tableRow}>
+                    <Text style={styles.colExam}>{row.fieldLabel}</Text>
+                    <Text style={styles.colResultText}>{row.value}</Text>
                   </View>
-                  : 
-                  <View key={`${category}-${idx}`} style={styles.tableRow}>
-                    <Text style={[
-                      styles.colExam,
-                      { fontWeight: row.isSectionHeader ? 'bold' : 'normal' }
-                    ]}>
-                      {row.fieldLabel}
-                    </Text>
-                    <Text style={[
+                );
+              }
+
+              return (
+                <View key={`${category}-${index}`} style={styles.tableRow}>
+                  <Text style={styles.colExam}>{row.fieldLabel}</Text>
+                  <Text
+                    style={[
                       styles.colResult,
-                      { fontWeight: 'bold' },
-                      row.isOutOfRange ? styles.alertResult : {},
-                    ]}>
-                      {row.value}
-                    </Text>
-                    <Text style={styles.colUnit}>{row.unit || ''}</Text>
-                    <Text style={styles.colRange}>{row.rangeDisplay || ''}</Text>
-                  </View>
-)
+                      { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
+                    ]}
+                  >
+                    {row.value}
+                  </Text>
+                  <Text style={styles.colUnit}>{row.unit || ""}</Text>
+                  <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
+                </View>
+              );
             })}
           </View>
         ))}
 
+        {shouldRenderSignatureBlock(orden) && (
+          <View style={styles.signatureSection}>
+            <View style={styles.signatureRow}>
+              <View>
+                {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
+              </View>
+              <View>
+                {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
+              </View>
+            </View>
+          </View>
+        )}
+
         <Text style={styles.footer} fixed>
-          Este reporte contiene los resultados de todos los exámenes solicitados en la orden.
+          Este reporte contiene los resultados de todos los examenes solicitados en la orden.
         </Text>
       </Page>
     </Document>

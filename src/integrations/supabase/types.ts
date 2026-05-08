@@ -148,12 +148,14 @@ export type Database = {
           completed_at: string | null
           created_at: string
           exchange_rate: number | null
+          firma_url: string | null
           id: string
           notes: string | null
           order_seq: number | null
           org_id: string
           patient_id: string
           payment_status: Database["public"]["Enums"]["payment_status"]
+          sello_url: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
           total_bs: number | null
@@ -164,12 +166,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           exchange_rate?: number | null
+          firma_url?: string | null
           id?: string
           notes?: string | null
           order_seq?: number | null
           org_id: string
           patient_id: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          sello_url?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -180,12 +184,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           exchange_rate?: number | null
+          firma_url?: string | null
           id?: string
           notes?: string | null
           order_seq?: number | null
           org_id?: string
           patient_id?: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          sello_url?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -408,26 +414,32 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          firma_url: string | null
           full_name: string | null
           id: string
           org_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          sello_url: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
+          firma_url?: string | null
           full_name?: string | null
           id: string
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          sello_url?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
+          firma_url?: string | null
           full_name?: string | null
           id?: string
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          sello_url?: string | null
         }
         Relationships: [
           {
@@ -641,7 +653,12 @@ export type Database = {
       }
     }
     Enums: {
-      order_status: "pendiente" | "procesando" | "completada" | "cancelada"
+      order_status:
+        | "pendiente"
+        | "procesando"
+        | "por_aprobar"
+        | "completada"
+        | "cancelada"
       payment_status: "unpaid" | "partial" | "paid"
       user_role: "super_admin" | "lab_admin" | "bioanalyst" | "secretary"
     }
@@ -771,7 +788,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      order_status: ["pendiente", "procesando", "completada", "cancelada"],
+      order_status: [
+        "pendiente",
+        "procesando",
+        "por_aprobar",
+        "completada",
+        "cancelada",
+      ],
       payment_status: ["unpaid", "partial", "paid"],
       user_role: ["super_admin", "lab_admin", "bioanalyst", "secretary"],
     },

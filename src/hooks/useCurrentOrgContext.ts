@@ -38,11 +38,11 @@ export function buildPermissions(role: UserRole | null): Permissions {
   return {
     canViewTests: isAdmin || isBioanalyst,
     canEditTests: isAdmin,
-    canEnterResults: isAdmin || isBioanalyst,
+    canEnterResults: isAdmin || isBioanalyst || isSecretary,
     canViewBilling: isAdmin || isSecretary,
     canViewPrices: isAdmin || isSecretary,
     canCreateOrders: true,
-    canViewSettings: isAdmin,
+    canViewSettings: isAdmin || isBioanalyst,
     canManageTeam: isAdmin,
     canViewVisits: isAdmin || isBioanalyst || isSecretary,
   };
@@ -56,7 +56,7 @@ export function useCurrentOrgContext(): CurrentOrgContext {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, org_id, role, full_name, email, created_at")
+        .select("id, org_id, role, full_name, email, created_at, firma_url, sello_url")
         .eq("id", user!.id)
         .single();
 

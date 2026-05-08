@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getFieldResultMeta, testTemplateFormSchema } from "./schemas";
+import { getFieldResultMeta, sanitizeRangeInput, testTemplateFormSchema } from "./schemas";
 
 describe("test schemas", () => {
   it("accepts range as a valid field type", () => {
