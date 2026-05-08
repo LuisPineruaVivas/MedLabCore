@@ -42,6 +42,7 @@ import {
   removeCartItem,
   SearchItem,
 } from "./createOrderUtils";
+import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 
 type SelectedPatient = {
   id: string;
@@ -167,6 +168,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
 
       const generatedReceiptData = buildOrderReceiptData({
         orderId: String((order as { orderId?: string }).orderId),
+        order_seq: (order as { order_seq?: number | null }).order_seq,
         selectedPatient,
         cart,
         total,
@@ -255,7 +257,22 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
             </DialogHeader>
             <div className="h-[65vh] w-full border border-border rounded-lg overflow-hidden">
               <PDFViewer width="100%" height="100%" showToolbar>
-                <OrderReceiptPDF
+                <OrderThermalReceiptPDF
+                  orderId={receiptData.order_seq}
+                  orderDate={receiptData.orderDate}
+                  patientName={receiptData.patientName}
+                  patientId={receiptData.patientId}
+                  age={receiptData.age}
+                  gender={receiptData.gender}
+                  items={receiptData.items}
+                  total={receiptData.total}
+                  accessPin={receiptData.accessPin}
+                  portalUrl={`${window.location.origin}/portal-paciente`}
+                  labData={labData}
+                  exchangeRate={receiptData.exchangeRate}
+                  totalBs={receiptData.totalBs}
+                />
+                {/*<OrderReceiptPDF
                   orderId={receiptData.orderId}
                   orderDate={receiptData.orderDate}
                   patientName={receiptData.patientName}
@@ -267,13 +284,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                   labData={labData}
                   exchangeRate={receiptData.exchangeRate}
                   totalBs={receiptData.totalBs}
-                />
+                />*/}
               </PDFViewer>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleThermalPrint} disabled={thermalPrinting}>
+              {/*<Button variant="outline" onClick={handleThermalPrint} disabled={thermalPrinting}>
                 {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
-              </Button>
+              </Button>*/}
               <Button
                 onClick={() => {
                   resetDialog();

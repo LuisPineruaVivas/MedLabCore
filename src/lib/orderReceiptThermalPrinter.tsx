@@ -9,12 +9,11 @@ const thermalStyles = StyleSheet.create({
         fontFamily: 'Helvetica',
         color: '#000',
         backgroundColor: '#FFFFFF',
-        width: '226pt', // 80mm
-        // Eliminamos el height dinámico por ahora para estabilizar
+        width: '190pt', // 80mm
     },
     header: {
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 5,
         borderBottomWidth: 1,
         borderBottomColor: '#000',
         borderBottomStyle: 'dashed',
@@ -39,8 +38,8 @@ const thermalStyles = StyleSheet.create({
         paddingBottom: 5
     },
     infoRow: { flexDirection: 'row', marginBottom: 2 },
-    label: { width: '35%', fontSize: 7, fontWeight: 'bold' },
-    value: { width: '65%', fontSize: 7 },
+    label: { width: '30%', fontSize: 7, fontWeight: 'bold' },
+    value: { width: '70%', fontSize: 7 },
 
     tableHeader: {
         flexDirection: 'row',
@@ -76,14 +75,23 @@ const thermalStyles = StyleSheet.create({
     },
 });
 
-export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patientId, items, total, accessPin, portalUrl, labData, exchangeRate, totalBs }: ThermalReceiptData) => {
+// Función para formatear el nombre del paciente en líneas
+const formatPatientName = (name: string): string[] => {
+    if (name.length <= 25) return [name];
+    const lastSpace = name.lastIndexOf(' ', 25);
+    if (lastSpace === -1) return [name]; // Si no hay espacio, dejar como está
+    return [name.slice(0, lastSpace), name.slice(lastSpace + 1)];
+};
+
+export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patientId, age, gender, items, total, accessPin, portalUrl, labData, exchangeRate, totalBs }: ThermalReceiptData) => {
     const lab = labData || { name: "LABORATORIO", address: "", phone: "" };
+    const height = 320 + items.length * 12; // Base + 15pt por cada examen
 
     return (
         <Document>
             {/* 2. LE DAMOS UN SIZE CON ALTO FIJO PARA PRUEBAS */}
             {/* Esto evita que el motor de PDF colapse buscando el final de la página */}
-            <Page size={[175, 400]} style={thermalStyles.page}>
+            <Page size={[190, height]} style={thermalStyles.page}>
 
                 <View style={thermalStyles.header}>
                     <Text style={thermalStyles.labName}>{lab.name}</Text>
@@ -104,7 +112,19 @@ export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patien
                     </View>
                     <View style={thermalStyles.infoRow}>
                         <Text style={thermalStyles.label}>PACIENTE:</Text>
-                        <Text style={thermalStyles.value}>{patientName}</Text>
+                        <View>
+                            {formatPatientName(patientName).map((line, index) => (
+                                <Text key={index} style={thermalStyles.value}>{line}</Text>
+                            ))}
+                        </View>
+                    </View>
+                    <View style={thermalStyles.infoRow}>
+                        <Text style={thermalStyles.label}>CEDULA:</Text>
+                        <Text style={thermalStyles.value}>{patientId}</Text>
+                    </View>
+                    <View style={thermalStyles.infoRow}>
+                        <Text style={thermalStyles.label}>EDAD/SEXO</Text>
+                        <Text style={thermalStyles.value}>{age} años/{gender}</Text>
                     </View>
                 </View>
 
@@ -124,6 +144,10 @@ export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patien
                     <View style={thermalStyles.totalRow}>
                         <Text style={{ fontWeight: 'bold' }}>TOTAL USD:</Text>
                         <Text style={{ fontWeight: 'bold' }}>${total.toFixed(2)}</Text>
+                    </View>
+                    <View style={thermalStyles.totalRow}>
+                        <Text style={{ fontWeight: 'bold' }}>TOTAL Bs:</Text>
+                        <Text style={{ fontWeight: 'bold' }}>Bs {totalBs.toFixed(2)}</Text>
                     </View>
                 </View>
 

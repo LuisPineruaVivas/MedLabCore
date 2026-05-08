@@ -114,13 +114,13 @@ export function ReceiptPreviewDialog({
           )}
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <Button
+          {/*<Button
               variant="outline"
               onClick={() => setThermalPaperOpen(true)}
               disabled={thermalPrinting}
             >
               {thermalPrinting ? "Imprimiendo..." : "Imprimir térmica"}
-            </Button>
+            </Button>*/}
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
         </div>
       </DialogContent>
