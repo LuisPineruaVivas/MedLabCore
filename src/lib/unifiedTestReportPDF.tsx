@@ -142,8 +142,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
     const isMultiField = allFields.length > 1;
 
     for (const section of sections) {
+      const sectionRows: FlatRow[] = [];
+
       if (section.name !== "") {
-        grouped[category].push({
+        sectionRows.push({
           fieldLabel: section.name,
           value: "",
           unit: "",
@@ -160,7 +162,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
           ? getCategoryStyle(parsedValue, matchedRange)
           : "black";
 
-        grouped[category].push({
+        sectionRows.push({
           fieldLabel: isMultiField ? field.label : item.test_name,
           value: field.value || "........",
           unit: field.unit || "",
@@ -169,6 +171,13 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
           resultColor,
           fieldType: field.type,
         });
+      }
+
+      // Verificar si hay al menos un campo no vacío en la sección
+      const hasValidField = sectionRows.some(row => !row.isSectionHeader && row.value !== "........" && row.value !== "");
+
+      if (hasValidField) {
+        grouped[category].push(...sectionRows);
       }
     }
   }
@@ -249,7 +258,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
                 );
               }
 
-              if (row.value === "........") return null;
+              if (row.value === "........" || row.value === "") return null;
 
               if (row.fieldType === "text" || row.fieldType === "select") {
                 return (

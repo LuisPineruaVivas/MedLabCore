@@ -68,7 +68,7 @@ export default function BillingPage() {
                 <SelectItem value="cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="w-full sm:w-[160px] px-2" />
+            <Input type="month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="w-full sm:w-[230px] px-2" />
           </div>
         </CardHeader>
 

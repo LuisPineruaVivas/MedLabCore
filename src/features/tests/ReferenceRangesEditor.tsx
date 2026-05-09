@@ -302,7 +302,7 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                           updateRange(idx, { categories });
                         }}
                       >
-                        <option value="None">None</option>
+                        <option value="None">Ninguno</option>
                         <option value="green">Verde</option>
                         <option value="yellow">Amarillo</option>
                         <option value="red">Rojo</option>

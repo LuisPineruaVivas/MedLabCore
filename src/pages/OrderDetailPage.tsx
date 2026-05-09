@@ -10,6 +10,7 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOrderResultsEditor } from "@/features/orders/useOrderResultsEditor";
 import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@/features/orders/useOrders";
 import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
@@ -46,6 +47,9 @@ export default function OrderDetailPage() {
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [reportItemSelectionOpen, setReportItemSelectionOpen] = useState(false);
+  const [selectedReportItemIds, setSelectedReportItemIds] = useState<Set<string>>(new Set());
+  const [previewReportItems, setPreviewReportItems] = useState<unknown[]>([]);
   const [ocrLoading, setOcrLoading] = useState<string | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
   const [thermalPaperOpen, setThermalPaperOpen] = useState(false);
@@ -54,6 +58,16 @@ export default function OrderDetailPage() {
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
   const canEnterResults = permissions.canEnterResults;
+  const orderItemsTyped = useMemo(
+    () => orderItems as Array<{ id: string | number; test_name?: string; name?: string }>,
+    [orderItems]
+  );
+  const allReportItemIds = useMemo(() => orderItemsTyped.map((item) => String(item.id)), [orderItemsTyped]);
+  const selectedReportItems = useMemo(
+    () => orderItemsTyped.filter((item) => selectedReportItemIds.has(String(item.id))),
+    [orderItemsTyped, selectedReportItemIds]
+  );
+  const allItemsSelected = allReportItemIds.length > 0 && selectedReportItemIds.size === allReportItemIds.length;
 
   if (orderLoading) {
     return (
@@ -137,7 +151,7 @@ export default function OrderDetailPage() {
   }
 
   const primaryStatusAction =
-    role === "secretary" && order.status === "pendiente"
+    (role === "secretary" || role === "lab_admin" )&& order.status === "pendiente"
       ? {
           label: "Marcar por aprobar",
           onClick: handleMarkReadyForApproval,
@@ -154,14 +168,32 @@ export default function OrderDetailPage() {
             }
           : null;
 
-  async function handleViewReport() {
+
+  function openReportItemSelection() {
+    if (orderItems.length === 0) {
+      toast.error("No hay exámenes disponibles para imprimir.");
+      return;
+    }
+
+    setSelectedReportItemIds(new Set(allReportItemIds));
+    setReportItemSelectionOpen(true);
+  }
+
+  async function handleConfirmReportSelection() {
+    if (selectedReportItemIds.size === 0) {
+      toast.error("Selecciona al menos un examen para generar el informe.");
+      return;
+    }
+
+    setReportItemSelectionOpen(false);
+
     if (isMobileDevice()) {
       setReportLoading(true);
       try {
         const reportBlob = await pdf(
           <UnifiedTestReportPDF
             orden={order}
-            orderItems={orderItems}
+            orderItems={selectedReportItems as never}
             patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }}
             labData={labData}
           />
@@ -178,7 +210,33 @@ export default function OrderDetailPage() {
       return;
     }
 
+    setPreviewReportItems(selectedReportItems);
     setUnifiedOpen(true);
+  }
+
+  function toggleReportItemSelection(itemId: string) {
+    setSelectedReportItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllReportItems() {
+    setSelectedReportItemIds((prev) => {
+      if (prev.size === allReportItemIds.length) {
+        return new Set();
+      }
+      return new Set(allReportItemIds);
+    });
+  }
+
+  async function handleViewReport() {
+    openReportItemSelection();
   }
 
   async function handleViewLetterhead() {
@@ -309,10 +367,10 @@ export default function OrderDetailPage() {
               <Receipt className="mr-2 h-4 w-4" />
               {receiptLoading ? "Generando..." : "Ver Nota"}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleViewLetterhead}>
+            {/*<Button variant="outline" size="sm" onClick={handleViewLetterhead}>
               <FileText className="mr-2 h-4 w-4" />
               Ver Membrete
-            </Button>
+            </Button>*/}
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
                 <Save className="mr-2 h-4 w-4" />
@@ -345,7 +403,15 @@ export default function OrderDetailPage() {
               modifiedIds={modifiedIds}
               resultsState={resultsState}
               patientInfo={patientInfo}
-              canEnterResults={canEnterResults}
+              canEnterResults={
+                 (role === "secretary" || role === "lab_admin" )&& order.status === "pendiente"
+                      ? canEnterResults
+                      : role === "bioanalyst" && order.status === "pendiente"
+                        ? canEnterResults
+                        : role === "bioanalyst" && order.status === "por_aprobar"
+                          ? canEnterResults
+                          : null
+              }
               orderStatus={order.status}
               ocrLoading={ocrLoading}
               updateFieldValue={updateFieldValue}
@@ -358,11 +424,58 @@ export default function OrderDetailPage() {
 
       <OrderMobileSaveBar modifiedCount={modifiedIds.size} isSavingAll={isSavingAll} onSaveAll={handleSaveAll} />
 
+      <Dialog open={reportItemSelectionOpen} onOpenChange={setReportItemSelectionOpen}>
+        <DialogContent className="sm:max-w-3xl w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Seleccionar exámenes para el informe</DialogTitle>
+            <DialogDescription>
+              Elige los exámenes que quieres incluir en el informe. Puedes seleccionar todos o marcar los que ya estén completos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm transition hover:bg-muted">
+              <input
+                type="checkbox"
+                checked={allItemsSelected}
+                onChange={toggleSelectAllReportItems}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="font-medium">Imprimir todos</span>
+            </label>
+            <div className="grid gap-2 max-h-[50vh] overflow-y-auto rounded-lg border border-border bg-background p-3">
+              {orderItemsTyped.map((item) => {
+                const itemId = String(item.id);
+                const itemLabel = item.test_name || item.name || itemId;
+                return (
+                  <label key={itemId} className="flex cursor-pointer items-center gap-2 rounded-md border border-border/70 p-3 text-sm hover:bg-muted">
+                    <input
+                      type="checkbox"
+                      checked={selectedReportItemIds.has(itemId)}
+                      onChange={() => toggleReportItemSelection(itemId)}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <span>{itemLabel}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => setReportItemSelectionOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmReportSelection} disabled={selectedReportItemIds.size === 0}>
+              Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ReportPreviewDialog
         open={unifiedOpen}
         onOpenChange={setUnifiedOpen}
         order={order}
-        orderItems={orderItems}
+        orderItems={previewReportItems}
         patientData={patientInfo}
         labData={labData}
       />
