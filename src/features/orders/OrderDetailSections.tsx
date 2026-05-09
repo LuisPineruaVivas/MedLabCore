@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { EditableOrderItem, OrderItemResultsState, OrderResultFieldState, OrderResultSectionState } from "./useOrderResultsEditor";
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Calendar,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
   DollarSign,
   FileText,
@@ -160,10 +162,16 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
   appendTextOption,
   handleFileUploadForOCR,
 }: OrderResultsPanelProps) {
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  };
   return (
     <>
       {Object.entries(groupedItems).map(([category, itemsInCategory]) => {
         const categoryStats = getCategoryStats(itemsInCategory, resultsState, modifiedIds);
+        const isExpanded = expandedCategories[category] !== true;
 
         return (
           <Card key={category} className={categoryStats.isCategoryModified ? "border-primary/50 shadow-sm" : ""}>
@@ -209,21 +217,26 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     </Button>
                   </div>
                 )}
+                <Button variant="ghost" size="sm" onClick={() => toggleCategory(category)}>
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
               </div>
             </CardHeader>
-            <CardContent className="divide-y divide-border p-0">
-              {itemsInCategory.map((item) => (
-                <OrderResultItemEditor
-                  key={item.id}
-                  item={item}
-                  itemResultsData={resultsState[item.id]}
-                  patientInfo={patientInfo}
-                  readOnly={orderStatus === "completada" || !canEnterResults}
-                  updateFieldValue={updateFieldValue}
-                  appendTextOption={appendTextOption}
-                />
-              ))}
-            </CardContent>
+            {isExpanded && (
+              <CardContent className="divide-y divide-primary/50 p-0">
+                {itemsInCategory.map((item) => (
+                  <OrderResultItemEditor
+                    key={item.id}
+                    item={item}
+                    itemResultsData={resultsState[item.id]}
+                    patientInfo={patientInfo}
+                    readOnly={orderStatus === "completada" || !canEnterResults}
+                    updateFieldValue={updateFieldValue}
+                    appendTextOption={appendTextOption}
+                  />
+                ))}
+              </CardContent>
+            )}
           </Card>
         );
       })}
@@ -299,8 +312,11 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
       <div className="space-y-6">
         {itemResultsData.sections?.map((section, sectionIdx) => (
           <div key={section.id || sectionIdx} className="space-y-3">
-            <h4 className="border-b border-border pb-1 text-[13px] font-semibold text-foreground">{section.name}</h4>
-            <div className="space-y-3">
+            <h4 className="text-[13px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+            {section.name && (
+              <h4 className="border-b border-border pb-1 text-[13px] font-semibold text-foreground">{section.name}</h4>
+            )}
+            <div className="space-y-2 border-l-2 border-border pl-5">
               {section.fields?.map((field, fieldIdx) => (
                 <OrderResultFieldRow
                   key={field.id || fieldIdx}
