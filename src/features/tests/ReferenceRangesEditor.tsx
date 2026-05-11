@@ -17,6 +17,7 @@ import {
 import { Plus, Trash2, Ruler } from "lucide-react";
 import { ReferenceRange } from "./schemas";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 const uuidv4 = () => crypto.randomUUID();
 
@@ -127,10 +128,29 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                       updateRange(idx, { description: e.target.value })
                     }
                   />
+                    <Label className="text-[10px]">Sexo</Label>
+                    <Select
+                      value={range.gender}
+                      onValueChange={(v) =>
+                        updateRange(idx, {
+                          gender: v as ReferenceRange["gender"],
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ambos">Ambos</SelectItem>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="femenino">Femenino</SelectItem>
+                      </SelectContent>
+                    </Select>
+
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Etiqueta de Visualizacion</Label>
-                  <Input
+                  <Textarea
                     className="h-7 text-xs"
                     placeholder="Ej: Negativo o 0 - 5 / c"
                     value={range.custom_display ?? ""}
@@ -138,29 +158,6 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                       updateRange(idx, { custom_display: e.target.value })
                     }
                   />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px]">Sexo</Label>
-                  <Select
-                    value={range.gender}
-                    onValueChange={(v) =>
-                      updateRange(idx, {
-                        gender: v as ReferenceRange["gender"],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ambos">Ambos</SelectItem>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="femenino">Femenino</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

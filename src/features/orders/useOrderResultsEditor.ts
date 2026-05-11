@@ -55,7 +55,7 @@ export function initializeResultsState(orderItems: EditableOrderItem[]): Results
 export function groupEditableOrderItems(orderItems: EditableOrderItem[]) {
   const enterableItems = orderItems.filter((item) => !item.is_profile_header);
   return enterableItems.reduce<Record<string, EditableOrderItem[]>>((acc, item) => {
-    const category = item.category || "Otros";
+    const category = item.category || "Pruebas Especiales";
     if (!acc[category]) {
       acc[category] = [];
     }

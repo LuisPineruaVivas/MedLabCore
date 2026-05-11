@@ -251,7 +251,7 @@ export function useOrderItems(orderId: string | null) {
 
         return {
           ...item,
-          category: item.test_templates?.category || "Otros",
+          category: item.test_templates?.category || "Pruebas Especiales",
           resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
         };
       });

@@ -54,7 +54,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
   const primaryColor = labData?.primary_color || "#0ea5e9";
 
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 9, fontFamily: "Inter", color: "#333" },
+    page: { padding: 40, fontSize: 11, fontFamily: "Inter", color: "#333" },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
     labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
     labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
@@ -82,7 +82,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
       textAlign: "center",
     },
     sectionHeader: { paddingVertical: 2, paddingHorizontal: 8, backgroundColor: "#e2e8f0" },
-    sectionHeaderText: { fontSize: 9, fontWeight: "bold", color: "#0f172a" },
+    sectionHeaderText: { fontWeight: "bold", color: "#0f172a" },
     tableHeader: {
       flexDirection: "row",
       borderBottom: 1.5,
@@ -125,8 +125,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
   });
 
   const sortedItems = [...orderItems].sort((a, b) => {
-    const catA = a.category || "Otros";
-    const catB = b.category || "Otros";
+    const catA = a.category || "Pruebas Especiales";
+    const catB = b.category || "Pruebas Especiales";
     if (catA !== catB) return catA.localeCompare(catB);
     return (a.resolved_sort_order || 0) - (b.resolved_sort_order || 0);
   });
@@ -134,7 +134,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const category = item.category || item.results_data?.category || "Otros";
+    const category = item.category || item.results_data?.category || "Pruebas Especiales";
     if (!grouped[category]) grouped[category] = [];
 
     const sections = item.results_data?.sections || [];

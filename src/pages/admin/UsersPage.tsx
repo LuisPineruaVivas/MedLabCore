@@ -75,11 +75,11 @@ export default function UsersPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>Crear Nuevo Usuario</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
-              <Label>Full Name</Label>
+              <Label>Nombre Completo</Label>
               <Input placeholder="Dr. John Smith" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
             </div>
             <div className="space-y-2">
@@ -128,7 +128,7 @@ export default function UsersPage() {
               }
               disabled={!form.email || !form.password || !form.full_name || !form.org_id || createUser.isPending}
             >
-              {createUser.isPending ? "Creating…" : "Create User"}
+              {createUser.isPending ? "Creando..." : "Crear Usuario"}
             </Button>
           </DialogFooter>
         </DialogContent>
