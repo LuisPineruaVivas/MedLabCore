@@ -56,13 +56,13 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const patientGender: string | undefined = patient.gender;
 
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 9, fontFamily: "Inter", color: "#333" },
+   page: { padding: 40, fontSize: 11, fontFamily: "Inter", color: "#333" },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
-    labInfo: { flexDirection: 'column', width: '45%', minWidth: 0 },
-    labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b', lineHeight: 1.3 },
-    logoContainer: { width: '35%', alignItems: 'flex-end', justifyContent: 'flex-start' },
-    logo: { width: 270, height: 75, objectFit: 'contain' },
+    labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
+    labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
+    labDetails: { fontSize: 9, color: "#64748b", lineHeight: 1.3 },
+    logoContainer: { width: "35%", alignItems: "flex-end", justifyContent: "flex-start" },
+    logo: { width: 270, height: 75, objectFit: "contain" },
     patientBox: {
       backgroundColor: "#f8fafc",
       padding: 5,
@@ -73,7 +73,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
       borderColor: primaryColor,
     },
     patientItem: { width: "50%", marginBottom: 2 },
-    label: { fontWeight: 'bold', color: '#475569' },
+    label: { fontWeight: "bold", color: "#475569" },
     categoryHeader: { backgroundColor: primaryColor, padding: 6, marginTop: 5, marginBottom: 0 },
     categoryHeaderText: {
       fontSize: 10,
@@ -84,7 +84,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
       textAlign: "center",
     },
     sectionHeader: { paddingVertical: 2, paddingHorizontal: 8, backgroundColor: "#e2e8f0" },
-    sectionHeaderText: { fontSize: 9, fontWeight: "bold", color: "#0f172a" },
+    sectionHeaderText: { fontWeight: "bold", color: "#0f172a" },
     tableHeader: {
       flexDirection: "row",
       borderBottom: 1.5,
@@ -101,11 +101,29 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
       paddingBottom: 1,
     },
     colExam: { width: "35%", paddingLeft: 8 },
-    colResult: { width: '20%', textAlign: 'center' },
-    colUnit: { width: '15%', textAlign: 'center' },
-    colRange: { width: '30%', textAlign: 'right', paddingRight: 4 },
-    footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTop: 1, borderTopColor: '#EEE', paddingTop: 10, textAlign: 'center', fontSize: 8, color: '#94a3b8' },
-    alertResult: { color: '#dc2626', fontWeight: 'bold' },
+    colResult: { width: "20%", textAlign: "center" },
+    colResultText: { width: "65%", paddingLeft: 4 },
+    colUnit: { width: "15%", textAlign: "center" },
+    colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
+    alertResult: { color: "#dc2626", fontWeight: "bold" },
+    signatureSection: { position: "absolute",
+      bottom: 30,
+      left: 40,
+      right: 40, marginTop: 24, paddingTop: 12, borderTop: 1, borderTopColor: "#e2e8f0" },
+    signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
+    signatureImage: { width: 150, height: 70, objectFit: "contain" },
+    footer: {
+      position: "absolute",
+      bottom: 30,
+      left: 40,
+      right: 40,
+      borderTop: 1,
+      borderTopColor: "#EEE",
+      paddingTop: 10,
+      textAlign: "center",
+      fontSize: 8,
+      color: "#94a3b8",
+    },
   });
 
   const sections = template.schema?.sections || [];
@@ -134,7 +152,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
           <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patient.id}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{patient.date}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Orden: </Text>{patient.id}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>Orden: </Text>00001</Text></View>
         </View>
 
         {/* Category header */}
@@ -156,8 +174,10 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
             {section.name === '' ?
               null
               :
-              <View style={styles.sectionHeader} minPresenceAhead={18}>
-                <Text style={styles.sectionHeaderText}>{section.name}</Text>
+              <View style={styles.tableRow}>
+                <View style={styles.sectionHeader} minPresenceAhead={18}>
+                  <Text style={styles.sectionHeaderText}>{section.name}</Text>
+                </View>
               </View>
             }
             {(section.fields || []).map((field: RenderField) => {

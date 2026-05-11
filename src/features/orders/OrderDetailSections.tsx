@@ -69,15 +69,21 @@ interface OrderSidebarProps {
   order: OrderWithPatient;
   patientInfo: PatientInfo;
   onSharePortalLink: () => void;
+  onGenerateCertificate: () => void;
+  onGenerateCompanionCertificate: () => void;
+  onGenerateLetterHead: () => void;
 }
 
 export const OrderSidebar = memo(function OrderSidebar({
   order,
   patientInfo,
   onSharePortalLink,
+  onGenerateCertificate,
+  onGenerateCompanionCertificate,
+  onGenerateLetterHead,
 }: OrderSidebarProps) {
   return (
-    <div className="w-full shrink-0 space-y-6 lg:w-[30%]">
+    <div className="w-[100%] shrink-0 space-y-6  lg:w-[30%]">
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Datos del Paciente</CardTitle>
@@ -103,7 +109,8 @@ export const OrderSidebar = memo(function OrderSidebar({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <InfoRow
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <InfoRow
               icon={DollarSign}
               label="Total USD"
               value={`$${Number(order.total_amount).toFixed(2)}`}
@@ -119,6 +126,7 @@ export const OrderSidebar = memo(function OrderSidebar({
                 valueClassName="font-medium mono"
               />
             )}
+            </div>
             {order.access_pin && (
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <div>
@@ -133,6 +141,29 @@ export const OrderSidebar = memo(function OrderSidebar({
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Constancias</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button variant="outline" className="w-full justify-start" onClick={onGenerateCertificate}>
+            <FileText className="mr-2 h-4 w-4" />
+            Generar Constancia Paciente
+          </Button>
+
+          <Button variant="outline" className="w-full justify-start" onClick={onGenerateCompanionCertificate}>
+            <FileText className="mr-2 h-4 w-4" />
+            Generar Constancia Acompañante
+          </Button>
+
+           <Button variant="outline" className="w-full justify-start" onClick={onGenerateLetterHead} >
+              <FileText className="mr-2 h-4 w-4" />
+              Ver Carta
+          </Button>
+        </CardContent>
+      </Card>
+
     </div>
   );
 });
@@ -174,11 +205,11 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
         const isExpanded = expandedCategories[category] !== true;
 
         return (
-          <Card key={category} className={categoryStats.isCategoryModified ? "border-primary/50 shadow-sm" : ""}>
-            <CardHeader className="pointer-events-auto flex flex-row items-center justify-between border-b bg-muted/30 px-4 py-3">
+          <Card key={category} className={`w-[100%] shrink-0 space-y-6   ${categoryStats.isCategoryModified ? "border-primary/50 shadow-sm" : ""}`}>
+            <CardHeader className="pointer-events-auto flex md:flex-row items-center justify-between border-b bg-muted/30 px-4 py-3">
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">{category}</CardTitle>
+                <CardTitle className="text-sm font-semibold">{category}</CardTitle> 
                 {categoryStats.isCategoryModified && (
                   <Badge variant="secondary" className="bg-primary/10 px-1.5 py-0 text-[10px] font-bold uppercase text-primary">
                     Modificado
@@ -310,11 +341,11 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   return (
     <div className="p-4">
       <div className="space-y-6">
+        <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
         {itemResultsData.sections?.map((section, sectionIdx) => (
           <div key={section.id || sectionIdx} className="space-y-3">
-            <h4 className="text-[13px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
             {section.name && (
-              <h4 className="border-b border-border pb-1 text-[13px] font-semibold text-foreground">{section.name}</h4>
+              <h4 className="border-b border-border pb-1 text-[13px] font-semibold text-foreground">Seccion: {section.name}</h4>
             )}
             <div className="space-y-2 border-l-2 border-border pl-5">
               {section.fields?.map((field, fieldIdx) => (
@@ -444,6 +475,7 @@ function OrderResultInput({
         disabled={readOnly}
         placeholder="Ingresar resultado"
         style={{ color: inputTextColor }}
+        onWheel={(e) => (e.target as HTMLInputElement).blur()}
       />
     );
   }
@@ -458,6 +490,7 @@ function OrderResultInput({
         disabled={readOnly}
         placeholder="Ej: >100, <0.5 o Más de 80"
         style={{ color: inputTextColor }}
+        onWheel={(e) => (e.target as HTMLInputElement).blur()}
       />
     );
   }

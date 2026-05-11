@@ -259,7 +259,7 @@ export default function TestsPage() {
         <>
           <Card className="rounded-xl border border-border bg-card p-0 shadow-sm">
             <CardHeader className="border-b border-border px-6 py-4">
-              <div className="flex items-center gap-3"><Package className="h-5 w-5 text-primary" /><div><h3 className="text-sm font-semibold">Perfiles de Examenes</h3><p className="text-xs text-muted-foreground">Paquetes de examenes con precio promocional</p></div></div>
+              <div className="flex items-center gap-3"><Package className="h-5 w-5 text-primary" /><div><h3 className="text-sm font-semibold">Perfiles de Examenes</h3><p className="text-xs text-muted-foreground">Paquetes de examenes con precio establecido</p></div></div>
             </CardHeader>
 
             {profilesLoading ? (

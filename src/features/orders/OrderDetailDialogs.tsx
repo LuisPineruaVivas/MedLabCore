@@ -6,6 +6,7 @@ import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 
 interface ReportPreviewDialogProps {
   open: boolean;
@@ -60,6 +61,56 @@ export function ReportPreviewDialog({
               <p className="text-muted-foreground">Cargando datos del reporte...</p>
             </div>
           )}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface AttendanceCertificatePreviewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  order: unknown;
+  labData: {
+    name?: string;
+    address?: string;
+    logo?: string | null;
+  };
+  subjectName?: string;
+  subjectDocumentId?: string;
+  title?: string;
+  description?: string;
+}
+
+export function AttendanceCertificatePreviewDialog({
+  open,
+  onOpenChange,
+  order,
+  labData,
+  subjectName,
+  subjectDocumentId,
+  title = "Constancia de Asistencia",
+  description = "Revisa la constancia antes de imprimir",
+}: AttendanceCertificatePreviewDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[90vh] w-[95vw] max-w-5xl flex-col">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="h-full flex-1 overflow-hidden rounded-md border bg-muted">
+          <PDFViewer width="100%" height="100%" className="border-none">
+            <AttendanceCertificatePDF
+              order={order as never}
+              labData={labData}
+              subjectName={subjectName}
+              subjectDocumentId={subjectDocumentId}
+            />
+          </PDFViewer>
         </div>
         <div className="mt-4 flex justify-end">
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>

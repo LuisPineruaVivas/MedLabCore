@@ -72,7 +72,7 @@ export default function TemplateBuilderPage() {
   const { id } = useParams<{ id?: string }>();
   const [searchParams] = useSearchParams();
   const isFork = searchParams.get("fork") === "1";
-  const { orgId } = useCurrentOrgContext();
+  const { orgId, organization } = useCurrentOrgContext();
   const { isSuperAdmin } = useUserRole();
 
   // ── Fetch existing template if editing ──────────────────────
@@ -206,6 +206,18 @@ export default function TemplateBuilderPage() {
         Cargando…
       </div>
     );
+  }
+
+  function getLabData(organization: ReturnType<typeof useCurrentOrgContext>["organization"]) {
+    return {
+      name: organization?.name || "Nombre del Laboratorio",
+      address: organization?.address || "Dirección desde Perfil",
+      phone: organization?.phone || "Teléfono desde Perfil",
+      email: organization?.email || "Correo desde Perfil",
+      logo: organization?.logo_url || null,
+      primary_color: organization?.primary_color || "#0ea5e9",
+      secondary_color: organization?.secondary_color || "#4f46e5",
+    };
   }
 
   return (
@@ -532,6 +544,7 @@ export default function TemplateBuilderPage() {
                     created_at: "",
                     updated_at: "",
                   }}
+                  labData={getLabData(organization)}
                 />
               </PDFViewer>
             </div>

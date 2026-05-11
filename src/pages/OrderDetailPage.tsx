@@ -10,11 +10,13 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOrderResultsEditor } from "@/features/orders/useOrderResultsEditor";
 import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@/features/orders/useOrders";
 import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
-import { ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
+import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
 import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
@@ -23,6 +25,7 @@ import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { LetterHeadPDF } from "@/lib/letterhead";
 import { LetterHeadPreviewDialog } from "@/features/orders/LetterHeadDialog";
+import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +58,11 @@ export default function OrderDetailPage() {
   const [thermalPaperOpen, setThermalPaperOpen] = useState(false);
   const [thermalPaperMm, setThermalPaperMm] = useState<"58" | "80">("58");
   const [letterHeadOpen, setLetterHeadOpen] = useState(false);
+  const [attendanceCertificateOpen, setAttendanceCertificateOpen] = useState(false);
+  const [companionCertificateFormOpen, setCompanionCertificateFormOpen] = useState(false);
+  const [companionCertificateOpen, setCompanionCertificateOpen] = useState(false);
+  const [companionName, setCompanionName] = useState("");
+  const [companionDocumentId, setCompanionDocumentId] = useState("");
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
   const canEnterResults = permissions.canEnterResults;
@@ -274,6 +282,59 @@ export default function OrderDetailPage() {
     setReceiptOpen(true);
   }
 
+  async function handleViewAttendanceCertificate() {
+    if (isMobileDevice()) {
+      try {
+        const blob = await pdf(<AttendanceCertificatePDF order={order} labData={labData} />).toBlob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error abriendo constancia mÃ³vil:", error);
+        toast.error("No se pudo abrir la constancia en el mÃ³vil. Intenta descargarla.");
+      }
+      return;
+    }
+
+    setAttendanceCertificateOpen(true);
+  }
+
+  function handleOpenCompanionCertificateForm() {
+    setCompanionCertificateFormOpen(true);
+  }
+
+  async function handleConfirmCompanionCertificate() {
+    const trimmedName = companionName.trim();
+    const trimmedDocumentId = companionDocumentId.trim();
+
+    if (!trimmedName || !trimmedDocumentId) {
+      toast.error("Debes ingresar el nombre y la cédula del acompañante.");
+      return;
+    }
+
+    setCompanionCertificateFormOpen(false);
+
+    if (isMobileDevice()) {
+      try {
+        const blob = await pdf(
+          <AttendanceCertificatePDF
+            order={order}
+            labData={labData}
+            subjectName={trimmedName}
+            subjectDocumentId={trimmedDocumentId}
+          />
+        ).toBlob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error abriendo constancia de acompanante movil:", error);
+        toast.error("No se pudo abrir la constancia del acompañante en el móvil. Intenta descargarla.");
+      }
+      return;
+    }
+
+    setCompanionCertificateOpen(true);
+  }
+
   async function handleFileUploadForOCR(
     event: React.ChangeEvent<HTMLInputElement>,
     categoryItems: typeof orderItems,
@@ -367,10 +428,7 @@ export default function OrderDetailPage() {
               <Receipt className="mr-2 h-4 w-4" />
               {receiptLoading ? "Generando..." : "Ver Nota"}
             </Button>
-            {/*<Button variant="outline" size="sm" onClick={handleViewLetterhead}>
-              <FileText className="mr-2 h-4 w-4" />
-              Ver Membrete
-            </Button>*/}
+
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
                 <Save className="mr-2 h-4 w-4" />
@@ -382,7 +440,14 @@ export default function OrderDetailPage() {
       />
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        <OrderSidebar order={order} patientInfo={patientInfo} onSharePortalLink={handleSharePortalLink} />
+        <OrderSidebar
+          order={order}
+          patientInfo={patientInfo}
+          onSharePortalLink={handleSharePortalLink}
+          onGenerateCertificate={handleViewAttendanceCertificate}
+          onGenerateCompanionCertificate={handleOpenCompanionCertificateForm}
+          onGenerateLetterHead={handleViewLetterhead}
+        />
 
         <div className="w-full space-y-6 lg:w-[70%]">
           {itemsLoading ? (
@@ -471,6 +536,51 @@ export default function OrderDetailPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={companionCertificateFormOpen}
+        onOpenChange={(open) => {
+          setCompanionCertificateFormOpen(open);
+          if (!open) {
+            setCompanionCertificateOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Datos del acompañante</DialogTitle>
+            <DialogDescription>
+              Ingresa el nombre y la cédula que deben aparecer en la constancia del acompañante.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="companion-name">Nombre completo</Label>
+              <Input
+                id="companion-name"
+                value={companionName}
+                onChange={(event) => setCompanionName(event.target.value)}
+                placeholder="Ej. Maria Perez"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="companion-document">Cédula</Label>
+              <Input
+                id="companion-document"
+                value={companionDocumentId}
+                onChange={(event) => setCompanionDocumentId(event.target.value)}
+                placeholder="Ej. 12345678"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompanionCertificateFormOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmCompanionCertificate}>Generar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ReportPreviewDialog
         open={unifiedOpen}
         onOpenChange={setUnifiedOpen}
@@ -498,6 +608,24 @@ export default function OrderDetailPage() {
         onOpenChange={setLetterHeadOpen}
         order={order}
         patientData={patientInfo}
+      />
+
+      <AttendanceCertificatePreviewDialog
+        open={attendanceCertificateOpen}
+        onOpenChange={setAttendanceCertificateOpen}
+        order={order}
+        labData={labData}
+      />
+
+      <AttendanceCertificatePreviewDialog
+        open={companionCertificateOpen}
+        onOpenChange={setCompanionCertificateOpen}
+        order={order}
+        labData={labData}
+        subjectName={companionName}
+        subjectDocumentId={companionDocumentId}
+        title="Constancia de Acompañante"
+        description="Revisa la constancia del acompañante antes de imprimir"
       />
 
 
