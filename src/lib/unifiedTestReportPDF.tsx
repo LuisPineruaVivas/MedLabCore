@@ -70,7 +70,8 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
       borderWidth: 1,
       borderColor: primaryColor,
     },
-    patientItem: { width: "50%", marginBottom: 2 },
+    patientItemData: { width: "60%", marginBottom: 2 },
+    patientItem: { width: "40%", marginBottom: 2 },
     label: { fontWeight: "bold", color: "#475569" },
     categoryHeader: { backgroundColor: primaryColor, padding: 6, marginTop: 5, marginBottom: 0 },
     categoryHeaderText: {
@@ -202,16 +203,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
         </View>
 
         <View style={styles.patientBox}>
-          <View style={styles.patientItem}>
+          <View style={styles.patientItemData}>
             <Text>
               <Text style={styles.label}>Paciente: </Text>
               {patientData.name}
-            </Text>
-          </View>
-          <View style={styles.patientItem}>
-            <Text>
-              <Text style={styles.label}>CI: </Text>
-              {patientData.id}
             </Text>
           </View>
           <View style={styles.patientItem}>
@@ -220,16 +215,22 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
               {format(new Date(orden.created_at), "dd/MM/yyyy")}
             </Text>
           </View>
-          <View style={styles.patientItem}>
+          <View style={styles.patientItemData}>
             <Text>
-              <Text style={styles.label}>Edad/Sexo: </Text>
-              {patientData.age} / {patientData.gender}
+              <Text style={styles.label}>CI: </Text>
+              {patientData.id}
             </Text>
           </View>
           <View style={styles.patientItem}>
             <Text>
               <Text style={styles.label}>No. Orden: </Text>
               {orden.order_seq.toString().padStart(4, "0")}
+            </Text>
+          </View>
+          <View style={styles.patientItemData}>
+            <Text>
+              <Text style={styles.label}>Edad/Sexo: </Text>
+              {patientData.age} / {patientData.gender}
             </Text>
           </View>
         </View>
