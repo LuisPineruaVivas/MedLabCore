@@ -1,13 +1,5 @@
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { OrderRow } from '@/features/orders/schemas';
-import { T } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
-
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: '/fonts/Inter/Inter-VariableFont_opsz,wght.ttf' }
-  ],
-});
 
 interface PatientData {
   name: string;
@@ -29,15 +21,14 @@ export const LetterHeadPDF = ({ orden, patientData }: UnifiedProps) => {
   const styles = StyleSheet.create({
     page: {
       padding: 40,
-      fontSize: 10,
-      fontFamily: 'Inter',
+      fontSize: 12,
       color: '#111',
       position: 'relative',
     },
     contentBox: {
       position: 'absolute',
       top: 370,
-      left: 170,
+      left: 60,
       right: 80,
       minHeight: 140,
       justifyContent: 'center',
@@ -49,8 +40,7 @@ export const LetterHeadPDF = ({ orden, patientData }: UnifiedProps) => {
       textAlign: 'left',
     },
     label: {
-      fontSize: 10,
-      fontWeight: 'bold',
+      fontSize: 12,
       color: '#1f2937',
       textAlign: 'left',
     },
@@ -62,18 +52,15 @@ export const LetterHeadPDF = ({ orden, patientData }: UnifiedProps) => {
         <View style={styles.contentBox}>
 
           <View style={styles.row}>
-            <Text style={styles.label}>Paciente: {patientData.name}</Text>
-            <Text style={styles.label}>Orden #: {orderNumber.toString().padStart(4, "0")}</Text>
+            <Text style={styles.label}><Text style={{ fontWeight: 'bold' }}>Paciente:</Text> {patientData.name}</Text>
+            <Text style={styles.label}><Text style={{ fontWeight: 'bold' }}>Orden #:</Text> {orderNumber.toString().padStart(4, "0")}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Cédula: {patientData.id}</Text>
-            <Text style={styles.label}>Fecha: {orderDate}</Text>
+            <Text style={styles.label}><Text style={{ fontWeight: 'bold' }}>Cédula:</Text> {patientData.id}</Text>
+            <Text style={styles.label}><Text style={{ fontWeight: 'bold' }}>Fecha:</Text> {orderDate}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Edad: {patientData.age}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Género: {patientData.gender} </Text>
+            <Text style={styles.label}><Text style={{ fontWeight: 'bold' }}>Edad:</Text> {patientData.age}</Text>
           </View>
         </View>
 
