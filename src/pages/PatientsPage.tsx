@@ -13,7 +13,6 @@ import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCreatePatient, usePatientStats, usePatientsList } from "@/features/patients/usePatients";
-import { getUserFacingErrorMessage } from "@/lib/errors";
 
 export default function PatientsPage() {
   const [search, setSearch] = useState("");
