@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, differenceInYears } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { differenceInYears } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { patientSchema, type PatientFormData } from "./schemas";
 import {
@@ -23,12 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Form,
   FormControl,
@@ -37,6 +31,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "./datepicker-custom.css";
 
 interface NewPatientDialogProps {
   open: boolean;
@@ -79,14 +76,14 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[70vh] overflow-y-auto w-[70vw]">
+      <DialogContent className="sm:max-w-4xl overflow-y-auto sm:h-[80vh] w-[80vw]">
         <DialogHeader>
-          <DialogTitle>Nuevo Paciente</DialogTitle>
+          <DialogTitle className="text-xl">Nuevo Paciente</DialogTitle>
           <DialogDescription>Completa la información del paciente a continuación.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
             {/* ID Number */}
             <FormField
               control={form.control}
@@ -140,41 +137,25 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fecha de Nacimiento *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? format(field.value, "dd/MM/yyyy")  : "Seleccionar"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-
-                          mode="single"
-                          captionLayout="dropdown-buttons"
-                          fromYear={1900}
-                          toYear={new Date().getFullYear()}
-                          selected={field.value ? field.value : undefined}
-                          onSelect={(date) =>{
-                            field.onChange(date ? date : "")
-                          }
-                          }
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePicker
+                        selected={field.value}
+                        onChange={(date) => field.onChange(date)}
+                        dateFormat="dd/MM/yyyy"
+                        locale={es}
+                        showMonthDropdown
+                        showYearDropdown
+                        dropdownMode="select"
+                        minDate={new Date("1900-01-01")}
+                        maxDate={new Date()}
+                        placeholderText="Seleccionar fecha"
+                        className={cn(
+                          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        wrapperClassName="w-full"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
