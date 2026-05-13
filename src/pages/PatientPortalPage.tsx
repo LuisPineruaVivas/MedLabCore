@@ -38,7 +38,7 @@ export default function PatientPortalPage() {
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   
   const { session, authenticate, logout } = usePatientSession();
-  const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null);
+  const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null, pin);
 
   // Auto-login if URL has params
   useEffect(() => {
@@ -118,6 +118,7 @@ export default function PatientPortalPage() {
           <UnifiedTestReportPDF
             orden={order}
             orderItems={order.items}
+            departmentOrder={order.departmentOrder}
             patientData={patientInfo || { name: "", id: "", age: "", gender: "" }}
             labData={{
               name: order.org_name || "Laboratorio",
@@ -372,6 +373,7 @@ export default function PatientPortalPage() {
                 <UnifiedTestReportPDF
                   orden={selectedOrder}
                   orderItems={selectedOrder.items}
+                  departmentOrder={selectedOrder.departmentOrder}
                   patientData={{
                     ...patientInfo
                   }}

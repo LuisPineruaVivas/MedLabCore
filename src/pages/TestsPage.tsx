@@ -16,6 +16,7 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileBuilderDialog } from "@/features/tests/ProfileBuilderDialog";
 import { ExamOrderView } from "@/features/tests/ExamOrderView";
+import { DepartmentOrderView } from "@/features/tests/DepartmentOrderView";
 import {
   useDeleteExamProfile,
   useExamProfiles,
@@ -65,7 +66,7 @@ export default function TestsPage() {
   const { orgId, organization } = useCurrentOrgContext();
   const { role, isSuperAdmin } = useUserRole();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "order">("exams");
+  const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "order" | "departments">("exams");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [previewTpl, setPreviewTpl] = useState<TestTemplateRow | null>(null);
@@ -141,12 +142,12 @@ export default function TestsPage() {
                 <Plus className="mr-1 h-4 w-4 sm:mr-2" />
                 Nuevo Perfil
               </Button>
-            ) : (
+            ) : activeTab === "exams" ? (
               <Button size="sm" onClick={() => navigate("/tests/templates/new")}>
                 <Plus className="mr-1 h-4 w-4 sm:mr-2" />
                 Nuevo Examen
               </Button>
-            )}
+            ) : null}
           </div>
         )}
       />
@@ -161,6 +162,7 @@ export default function TestsPage() {
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Examenes</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "profiles" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("profiles")}><Package className="mr-1.5 inline-block h-4 w-4" />Perfiles</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "order" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("order")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Impresion</button>
+        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "departments" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("departments")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Departamentos</button>
       </div>
 
       {activeTab === "exams" ? (
@@ -308,8 +310,10 @@ export default function TestsPage() {
 
           {orgId && <ProfileBuilderDialog open={profileDialogOpen} onOpenChange={(open) => { setProfileDialogOpen(open); if (!open) setEditingProfile(null); }} onSave={(data) => { profileSaveMutation.mutate(data, { onSuccess: () => { toast.success("Perfil guardado correctamente"); setProfileDialogOpen(false); setEditingProfile(null); }, onError: (error) => toast.error(getUserFacingErrorMessage(error, "No se pudo guardar el perfil")) }); }} initialData={editingProfile ?? undefined} isSaving={profileSaveMutation.isPending} orgId={orgId} />}
         </>
-      ) : (
+      ) : activeTab === "order" ? (
         <ExamOrderView />
+      ) : (
+        <DepartmentOrderView />
       )}
     </div>
   );

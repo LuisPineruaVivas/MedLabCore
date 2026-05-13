@@ -4,6 +4,7 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 import type { TestTemplateRow } from "./schemas";
 
 type ExamOrderItem = {
@@ -20,6 +21,13 @@ type ExamOrderItem = {
   settings_id?: string | null;
   resolvedSortOrder?: number;
 };
+
+type DepartmentOrderItem = {
+  name: string;
+  custom_sort_order: number | null;
+};
+
+type DepartmentOrderSettingRow = Tables<"organization_test_category_settings">;
 
 export function buildUpsertExamProfilePayload(
   orgId: string,
@@ -52,6 +60,17 @@ export function buildExamOrderUpserts(
   }));
 }
 
+export function buildDepartmentOrderUpserts(
+  orgId: string,
+  items: Array<{ name: string }>,
+) {
+  return items.map((item, index) => ({
+    org_id: orgId,
+    department_name: item.name,
+    custom_sort_order: index + 1,
+  }));
+}
+
 function mapExamOrderItems(items: ExamOrderItem[]) {
   return [...items]
     .map((item) => {
@@ -72,6 +91,26 @@ function mapExamOrderItems(items: ExamOrderItem[]) {
 
       return (left.resolvedSortOrder ?? 999999) - (right.resolvedSortOrder ?? 999999);
     });
+}
+
+function mapDepartmentOrderItems(
+  categories: string[],
+  settings: DepartmentOrderItem[],
+) {
+  const settingsByName = new Map(
+    settings.map((item) => [item.name, item.custom_sort_order ?? 999999] as const),
+  );
+
+  return [...categories].sort((left, right) => {
+    const leftOrder = settingsByName.get(left) ?? 999999;
+    const rightOrder = settingsByName.get(right) ?? 999999;
+
+    if (leftOrder === rightOrder) {
+      return left.localeCompare(right);
+    }
+
+    return leftOrder - rightOrder;
+  });
 }
 
 export function useTestTemplates(page: number, search: string) {
@@ -201,6 +240,46 @@ export function useTestCategories(enabled = true) {
 
       const uniqueCategories = Array.from(new Set((data ?? []).map((item) => item.category)));
       return uniqueCategories.filter(Boolean).sort();
+    },
+    enabled: !!orgId && enabled,
+  });
+}
+
+export function useDepartmentOrder(enabled = true) {
+  const { orgId } = useCurrentOrgContext();
+
+  return useQuery({
+    queryKey: queryKeys.testTemplates.departmentOrder(orgId),
+    queryFn: async () => {
+      if (!orgId) {
+        return [];
+      }
+
+      const [{ data: categoriesData, error: categoriesError }, { data: settingsData, error: settingsError }] = await Promise.all([
+        supabase
+          .from("test_templates")
+          .select("category")
+          .or(`org_id.is.null,org_id.eq.${orgId}`),
+        supabase
+          .from("organization_test_category_settings")
+          .select("department_name, custom_sort_order")
+          .eq("org_id", orgId),
+      ]);
+
+      if (categoriesError) throw categoriesError;
+      if (settingsError) throw settingsError;
+
+      const uniqueCategories = Array.from(
+        new Set((categoriesData ?? []).map((item) => item.category).filter(Boolean)),
+      ) as string[];
+
+      return mapDepartmentOrderItems(
+        uniqueCategories,
+        ((settingsData ?? []) as DepartmentOrderSettingRow[]).map((item) => ({
+          name: item.department_name,
+          custom_sort_order: item.custom_sort_order,
+        })),
+      );
     },
     enabled: !!orgId && enabled,
   });
@@ -377,6 +456,32 @@ export function useSaveExamOrder() {
     },
     onError: (error) => {
       toast.error(getUserFacingErrorMessage(error, "No se pudo guardar el orden de impresion"));
+    },
+  });
+}
+
+export function useSaveDepartmentOrder() {
+  const queryClient = useQueryClient();
+  const { orgId } = useCurrentOrgContext();
+
+  return useMutation({
+    mutationFn: async (items: Array<{ name: string }>) => {
+      if (!orgId || items.length === 0) {
+        return;
+      }
+
+      const { error } = await supabase
+        .from("organization_test_category_settings")
+        .upsert(buildDepartmentOrderUpserts(orgId, items), { onConflict: "org_id,department_name" });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.departmentOrder(orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.categories(orgId) });
+    },
+    onError: (error) => {
+      toast.error(getUserFacingErrorMessage(error, "No se pudo guardar el orden de departamentos"));
     },
   });
 }

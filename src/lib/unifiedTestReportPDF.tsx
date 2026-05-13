@@ -12,6 +12,7 @@ Font.register({
 interface UnifiedProps {
   orden: OrderRow;
   orderItems: any[];
+  departmentOrder?: string[];
   patientData: {
     name: string;
     id: string;
@@ -42,7 +43,26 @@ interface FlatRow {
 const shouldRenderSignatureBlock = (order: OrderRow) =>
   order.status === "completada" && Boolean(order.firma_url || order.sello_url);
 
-export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }: UnifiedProps) => {
+function buildDepartmentOrderMap(departmentOrder: string[] = []) {
+  return new Map(departmentOrder.map((department, index) => [department, index] as const));
+}
+
+function sortCategoriesByDepartmentOrder(categories: string[], departmentOrder: string[] = []) {
+  const orderMap = buildDepartmentOrderMap(departmentOrder);
+
+  return [...categories].sort((left, right) => {
+    const leftIndex = orderMap.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightIndex = orderMap.get(right) ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftIndex === rightIndex) {
+      return left.localeCompare(right);
+    }
+
+    return leftIndex - rightIndex;
+  });
+}
+
+export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], patientData, labData }: UnifiedProps) => {
   const lab = labData || { name: "LABORATORIO CLINICO", address: "Av. Principal 123", phone: "555-0123", email: "" };
   const patientAge =
     typeof patientData?.age === "number"
@@ -126,10 +146,21 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
     },
   });
 
+  const departmentOrderMap = buildDepartmentOrderMap(departmentOrder);
+
   const sortedItems = [...orderItems].sort((a, b) => {
     const catA = a.category || "Pruebas Especiales";
     const catB = b.category || "Pruebas Especiales";
-    if (catA !== catB) return catA.localeCompare(catB);
+    if (catA !== catB) {
+      const catAIndex = departmentOrderMap.get(catA) ?? Number.MAX_SAFE_INTEGER;
+      const catBIndex = departmentOrderMap.get(catB) ?? Number.MAX_SAFE_INTEGER;
+
+      if (catAIndex !== catBIndex) {
+        return catAIndex - catBIndex;
+      }
+
+      return catA.localeCompare(catB);
+    }
     return (a.resolved_sort_order || 0) - (b.resolved_sort_order || 0);
   });
 
@@ -184,7 +215,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, patientData, labData }
     }
   }
 
-  const categoryOrder = Object.keys(grouped).sort();
+  const categoryOrder = sortCategoriesByDepartmentOrder(Object.keys(grouped), departmentOrder);
 
   return (
     <Document>

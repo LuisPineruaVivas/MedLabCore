@@ -150,6 +150,7 @@ export type Database = {
           exchange_rate: number | null
           firma_url: string | null
           id: string
+          is_exempted: boolean
           notes: string | null
           order_seq: number | null
           org_id: string
@@ -168,6 +169,7 @@ export type Database = {
           exchange_rate?: number | null
           firma_url?: string | null
           id?: string
+          is_exempted?: boolean
           notes?: string | null
           order_seq?: number | null
           org_id: string
@@ -186,6 +188,7 @@ export type Database = {
           exchange_rate?: number | null
           firma_url?: string | null
           id?: string
+          is_exempted?: boolean
           notes?: string | null
           order_seq?: number | null
           org_id?: string
@@ -259,6 +262,41 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "v_test_templates_filtered"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_test_category_settings: {
+        Row: {
+          created_at: string
+          custom_sort_order: number
+          department_name: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_sort_order: number
+          department_name: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_sort_order?: number
+          department_name?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_test_category_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -577,6 +615,7 @@ export type Database = {
       create_lab_order: {
         Args: {
           p_exchange_rate: number
+          p_is_exempted: boolean
           p_items: Json
           p_notes: string
           p_org_id: string
@@ -616,15 +655,18 @@ export type Database = {
         }[]
       }
       portal_get_patient_orders: {
-        Args: { p_patient_id: string }
+        Args: { p_patient_id: string; p_pin: string }
         Returns: {
           access_pin: string
           created_at: string
-          id: string
+          department_order: Json
+          firma_url: string
           items: Json
+          order_id: string
           order_seq: number
           org_logo_url: string
           org_name: string
+          sello_url: string
           status: string
           total_amount: number
         }[]

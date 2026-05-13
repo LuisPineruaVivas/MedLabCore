@@ -40,6 +40,7 @@ export const queryKeys = {
     stats: (orgId: string | null | undefined) => ["test-templates-stats", orgId ?? "none"] as const,
     orderTemplates: (orgId: string | null | undefined) => ["order-templates", orgId ?? "none"] as const,
     categories: (orgId: string | null | undefined) => ["test-categories", orgId ?? "none"] as const,
+    departmentOrder: (orgId: string | null | undefined) => ["department-order", orgId ?? "none"] as const,
     profileBuilderTemplates: (orgId: string | null | undefined) =>
       ["profile-builder-templates", orgId ?? "none"] as const,
     orderByCategory: (orgId: string | null | undefined, category: string | null | undefined) =>

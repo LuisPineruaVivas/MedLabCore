@@ -192,6 +192,24 @@ export function calculateCartTotalBs(total: number, exchangeRate?: number | null
   return total * exchangeRate;
 }
 
+export function resolveOrderTotals(
+  total: number,
+  totalBs: number | null,
+  isExempted: boolean
+) {
+  if (!isExempted) {
+    return {
+      total,
+      totalBs,
+    };
+  }
+
+  return {
+    total: 0,
+    totalBs: totalBs === null ? null : 0,
+  };
+}
+
 export function buildOrderReceiptData(params: {
   orderId: string;
   order_seq: number | null;

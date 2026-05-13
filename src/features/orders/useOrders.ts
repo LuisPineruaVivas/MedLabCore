@@ -33,6 +33,7 @@ export function buildCreateLabOrderPayload({
   notes,
   exchangeRate,
   totalBs,
+  isExempted,
 }: {
   orgId: string;
   patientId: string;
@@ -40,6 +41,7 @@ export function buildCreateLabOrderPayload({
   notes?: string | null;
   exchangeRate?: number | null;
   totalBs?: number | null;
+  isExempted?: boolean;
 }) {
   return {
     p_org_id: orgId,
@@ -47,6 +49,7 @@ export function buildCreateLabOrderPayload({
     p_notes: notes ?? null,
     p_exchange_rate: exchangeRate ?? null,
     p_total_bs: totalBs ?? null,
+    p_is_exempted: isExempted ?? false,
     p_items: items as unknown as Json,
   };
 }
@@ -93,7 +96,7 @@ export function useOrders(statusFilter?: OrderStatus) {
       const query = supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("org_id", orgId!)
         .order("created_at", { ascending: false });
@@ -126,6 +129,7 @@ export function useOrdersList(page: number, search: string, statusFilter: string
             id,
             status,
             total_amount,
+            is_exempted,
             total_bs,
             created_at,
             order_seq,
@@ -205,7 +209,7 @@ export function useOrder(orderId: string | null) {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("id", orderId!)
         .single();
@@ -271,6 +275,7 @@ export function useCreateOrder() {
       notes,
       exchangeRate,
       totalBs,
+      isExempted,
     }: {
       orgId: string;
       patientId: string;
@@ -278,6 +283,7 @@ export function useCreateOrder() {
       notes?: string | null;
       exchangeRate?: number | null;
       totalBs?: number | null;
+      isExempted?: boolean;
     }) => {
       const { data, error } = await supabase.rpc("create_lab_order", buildCreateLabOrderPayload({
         orgId,
@@ -286,6 +292,7 @@ export function useCreateOrder() {
         notes,
         exchangeRate,
         totalBs,
+        isExempted,
       }));
 
       if (error) throw error;

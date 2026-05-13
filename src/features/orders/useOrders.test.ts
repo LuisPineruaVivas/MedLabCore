@@ -10,6 +10,7 @@ describe("order mutation helpers", () => {
         notes: "Ayunas",
         exchangeRate: 40,
         totalBs: 600,
+        isExempted: true,
         items: [
           {
             template_id: "tpl-1",
@@ -25,6 +26,7 @@ describe("order mutation helpers", () => {
       p_notes: "Ayunas",
       p_exchange_rate: 40,
       p_total_bs: 600,
+      p_is_exempted: true,
       p_items: [
         {
           template_id: "tpl-1",
