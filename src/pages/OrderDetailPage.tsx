@@ -18,6 +18,7 @@ import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@
 import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
 import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
 import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
+import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
@@ -33,6 +34,7 @@ export default function OrderDetailPage() {
   const { organization, role, profile, permissions } = useCurrentOrgContext();
   const { data: order, isLoading: orderLoading } = useOrder(id || null);
   const { data: orderItemsData, isLoading: itemsLoading } = useOrderItems(id || null);
+  const { data: departmentOrder = [] } = useDepartmentOrder();
   const updateStatus = useUpdateOrderStatus();
   const saveResults = useSaveResults();
   const orderItems = useMemo(() => orderItemsData ?? [], [orderItemsData]);
@@ -202,6 +204,7 @@ export default function OrderDetailPage() {
           <UnifiedTestReportPDF
             orden={order}
             orderItems={selectedReportItems as never}
+            departmentOrder={departmentOrder}
             patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }}
             labData={labData}
           />
@@ -586,6 +589,7 @@ export default function OrderDetailPage() {
         onOpenChange={setUnifiedOpen}
         order={order}
         orderItems={previewReportItems}
+        departmentOrder={departmentOrder}
         patientData={patientInfo}
         labData={labData}
       />

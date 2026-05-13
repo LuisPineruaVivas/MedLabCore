@@ -8,6 +8,7 @@ import {
   calculateCartTotalBs,
   filterSearchItems,
   removeCartItem,
+  resolveOrderTotals,
 } from "./createOrderUtils";
 
 const templates = [
@@ -136,6 +137,23 @@ describe("createOrderUtils", () => {
     ]);
     expect(receipt.patientName).toBe("ANA PEREZ");
     expect(receipt.totalBs).toBe(1300);
+  });
+
+  it("resolves exempted orders to zero without losing non-exempt totals", () => {
+    expect(resolveOrderTotals(32.5, 1300, false)).toEqual({
+      total: 32.5,
+      totalBs: 1300,
+    });
+
+    expect(resolveOrderTotals(32.5, 1300, true)).toEqual({
+      total: 0,
+      totalBs: 0,
+    });
+
+    expect(resolveOrderTotals(32.5, null, true)).toEqual({
+      total: 0,
+      totalBs: null,
+    });
   });
 
   it("builds patient summary text with optional age and gender", () => {

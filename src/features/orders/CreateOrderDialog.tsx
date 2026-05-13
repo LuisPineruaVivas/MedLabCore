@@ -21,9 +21,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { NewPatientDialog } from "../patients/NewPatientDialog";
 import type { PatientFormData } from "../patients/schemas";
@@ -40,6 +42,7 @@ import {
   CartItem,
   filterSearchItems,
   removeCartItem,
+  resolveOrderTotals,
   SearchItem,
 } from "./createOrderUtils";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
@@ -89,6 +92,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const [testSearch, setTestSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
+  const [isExempted, setIsExempted] = useState(false);
   const [receiptData, setReceiptData] = useState<ReturnType<typeof buildOrderReceiptData> | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
 
@@ -106,6 +110,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   );
   const total = useMemo(() => calculateCartTotal(cart), [cart]);
   const totalBs = useMemo(() => calculateCartTotalBs(total, currentRate), [currentRate, total]);
+  const effectiveTotals = useMemo(
+    () => resolveOrderTotals(total, totalBs, isExempted),
+    [isExempted, total, totalBs]
+  );
 
   function addToCart(item: SearchItem) {
     setCart((previousCart) => addSearchItemToCart(previousCart, item));
@@ -123,6 +131,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     setCart([]);
     setReceiptData(null);
     setNotes("");
+    setIsExempted(false);
   }
 
   const createMutation = useCreatePatient();
@@ -161,7 +170,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         })),
         notes: notes.trim() || null,
         exchangeRate: currentRate,
-        totalBs,
+        totalBs: effectiveTotals.totalBs,
+        isExempted,
       });
 
       toast.success("Orden creada correctamente");
@@ -171,10 +181,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         order_seq: (order as { order_seq?: number | null }).order_seq,
         selectedPatient,
         cart,
-        total,
+        total: effectiveTotals.total,
         accessPin: (order as { access_pin?: string | null }).access_pin,
         exchangeRate: currentRate,
-        totalBs,
+        totalBs: effectiveTotals.totalBs,
       });
 
       if (isMobileReceiptFlow()) {
@@ -542,20 +552,50 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                         </table>
                       </div>
                       <div className="px-3 py-2.5 bg-muted/20 border-t border-border space-y-1 mt-auto">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold">Total USD</span>
-                          <span className="text-base font-bold mono text-primary">
-                            ${total.toFixed(2)}
-                          </span>
+                        <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-background/80 px-3 py-2">
+                          <div className="space-y-1">
+                            <Label htmlFor="order-exempt-switch" className="text-sm font-semibold cursor-pointer">
+                              Exonerar Orden
+                            </Label>
+                          </div>
+                          <Switch
+                            id="order-exempt-switch"
+                            checked={isExempted}
+                            onCheckedChange={setIsExempted}
+                            aria-label="Exonerar orden"
+                          />
                         </div>
-                        {totalBs !== null && currentRate && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">Total USD</span>
+                            {isExempted && <Badge variant="secondary">Exonerado</Badge>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isExempted && (
+                              <span className="text-sm mono text-muted-foreground line-through">
+                                ${total.toFixed(2)}
+                              </span>
+                            )}
+                            <span className="text-base font-bold mono text-primary">
+                              ${effectiveTotals.total.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        {effectiveTotals.totalBs !== null && currentRate && (
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-muted-foreground">
                               Total BS (Tasa: {currentRate.toFixed(2)})
                             </span>
-                            <span className="text-sm font-bold mono text-foreground">
-                              Bs. {totalBs.toFixed(2)}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {isExempted && totalBs !== null && (
+                                <span className="text-xs mono text-muted-foreground line-through">
+                                  Bs. {totalBs.toFixed(2)}
+                                </span>
+                              )}
+                              <span className="text-sm font-bold mono text-foreground">
+                                Bs. {effectiveTotals.totalBs.toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>

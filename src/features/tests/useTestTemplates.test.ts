@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExamOrderUpserts, buildUpsertExamProfilePayload } from "./useTestTemplates";
+import { buildDepartmentOrderUpserts, buildExamOrderUpserts, buildUpsertExamProfilePayload } from "./useTestTemplates";
 
 describe("exam profile payload helpers", () => {
   it("builds the RPC payload for new profiles", () => {
@@ -48,6 +48,18 @@ describe("exam profile payload helpers", () => {
     ).toEqual([
       { org_id: "org-1", template_id: "tpl-1", custom_sort_order: 1 },
       { org_id: "org-1", template_id: "tpl-2", custom_sort_order: 2 },
+    ]);
+  });
+
+  it("builds stable upserts for department order settings", () => {
+    expect(
+      buildDepartmentOrderUpserts("org-1", [
+        { name: "Bioquimica" },
+        { name: "Hematologia" },
+      ])
+    ).toEqual([
+      { org_id: "org-1", department_name: "Bioquimica", custom_sort_order: 1 },
+      { org_id: "org-1", department_name: "Hematologia", custom_sort_order: 2 },
     ]);
   });
 });

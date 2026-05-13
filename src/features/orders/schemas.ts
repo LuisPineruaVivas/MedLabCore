@@ -8,6 +8,7 @@ export interface OrderRow {
   status: OrderStatus;
   payment_status: PaymentStatus;
   total_amount: number;
+  is_exempted: boolean;
   exchange_rate: number | null;
   firma_url: string | null;
   total_bs: number | null;

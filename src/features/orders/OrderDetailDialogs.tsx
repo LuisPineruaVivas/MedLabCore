@@ -13,6 +13,7 @@ interface ReportPreviewDialogProps {
   onOpenChange: (open: boolean) => void;
   order: unknown;
   orderItems: unknown[];
+  departmentOrder?: string[];
   patientData: {
     name: string;
     id: string;
@@ -36,6 +37,7 @@ export function ReportPreviewDialog({
   onOpenChange,
   order,
   orderItems,
+  departmentOrder = [],
   patientData,
   labData,
 }: ReportPreviewDialogProps) {
@@ -52,6 +54,7 @@ export function ReportPreviewDialog({
               <UnifiedTestReportPDF
                 orden={order as never}
                 orderItems={orderItems as never}
+                departmentOrder={departmentOrder}
                 patientData={{ ...patientData, age: `${patientData.age} Años` }}
                 labData={labData}
               />

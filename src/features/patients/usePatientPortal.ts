@@ -3,6 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { OrderItemRow } from "@/features/orders/schemas";
 
+interface PatientPortalOrderItem extends OrderItemRow {
+  category?: string;
+  resolved_sort_order?: number;
+}
+
 interface PatientSession {
   patient_id: string;
   patient_info: {
@@ -25,7 +30,10 @@ interface OrderWithItems {
   org_name: string;
   org_logo_url?: string;
   order_seq: number;
-  items: OrderItemRow[];
+  firma_url: string | null;
+  sello_url: string | null;
+  departmentOrder: string[];
+  items: PatientPortalOrderItem[];
 }
 
 export function usePatientSession() {
@@ -76,14 +84,15 @@ export function usePatientSession() {
   return { session, authenticate, logout };
 }
 
-export function usePatientOrders(patientId: string | null) {
+export function usePatientOrders(patientId: string | null, pin: string | null) {
   return useQuery({
-    queryKey: ["patient-orders", patientId],
+    queryKey: ["patient-orders", patientId, pin],
     queryFn: async (): Promise<OrderWithItems[]> => {
       if (!patientId) return [];
 
       const { data, error } = await (supabase.rpc as any)("portal_get_patient_orders", {
         p_patient_id: patientId,
+        p_pin: pin.trim().toUpperCase()
       });
 
       if (error) throw error;
@@ -100,7 +109,8 @@ export function usePatientOrders(patientId: string | null) {
         order_seq: number;
         firma_url: string | null;
         sello_url: string | null;
-        items: OrderItemRow[];
+        department_order: unknown;
+        items: PatientPortalOrderItem[];
       }) => ({
         id:           row.order_id,
         created_at:   row.created_at,
@@ -112,9 +122,12 @@ export function usePatientOrders(patientId: string | null) {
         order_seq:    row.order_seq,
         firma_url:    row.firma_url ?? null,
         sello_url:    row.sello_url ?? null,
+        departmentOrder: Array.isArray(row.department_order)
+          ? row.department_order.filter((item): item is string => typeof item === "string")
+          : [],
         items:        Array.isArray(row.items) ? row.items : [],
       }));
     },
-    enabled: !!patientId,
+    enabled: !!patientId && !!pin,
   });
 }
