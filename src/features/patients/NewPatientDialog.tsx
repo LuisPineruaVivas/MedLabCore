@@ -50,7 +50,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       id_number: "",
       first_name: "",
       last_name: "",
-      date_of_birth: new Date(),
+      date_of_birth: null,
       gender: "masculino",
       phone: "",
       email: "",
@@ -76,7 +76,10 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl overflow-y-auto sm:h-[80vh] w-[80vw]">
+      <DialogContent className={cn(
+              "sm:max-w-5xl h-[90vh] overflow-y-auto sm:w-[70vw]",
+              "sm:h-auto"
+            )}>
         <DialogHeader>
           <DialogTitle className="text-xl">Nuevo Paciente</DialogTitle>
           <DialogDescription>Completa la información del paciente a continuación.</DialogDescription>
@@ -130,7 +133,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
             </div>
 
             {/* DOB + Age + Gender */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="date_of_birth"

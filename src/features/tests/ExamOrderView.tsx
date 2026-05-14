@@ -77,14 +77,13 @@ export function ExamOrderView() {
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">Configuracion de Orden de Impresion</h3>
           <p className="text-xs text-muted-foreground">
-            Arrastra y suelta los examenes para definir el orden en que apareceran agrupados en el reporte (
-            {selectedCategory === "all" ? "Todas las categorias" : selectedCategory}).
+            Arrastra y suelta los examenes para definir el orden en que apareceran agrupados en el reporte
           </p>
         </div>
 
-        <div className="flex flex-shrink-0 items-center gap-3">
+        <div className="sm:flex flex-shrink-0 items-center gap-3 space-y-2 md:space-y-0 ">
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="h-9 w-[180px] text-sm">
+            <SelectTrigger className="h-9 w-full sm:w-[180px] text-sm">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
@@ -100,7 +99,7 @@ export function ExamOrderView() {
             size="sm"
             onClick={handleSave}
             disabled={!orgId || !isDirty || saveMutation.isPending}
-            className="flex-shrink-0"
+            className="w-full sm:w-auto"
           >
             <Save className="mr-2 h-4 w-4" />
             Guardar Cambios

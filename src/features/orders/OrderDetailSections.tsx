@@ -43,6 +43,11 @@ type OrganizationInfo = {
   logo_url?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
+  city?: string | null;
+  rif: string | null;
+  profiles?: {
+    full_name: string;
+  } | null;
 };
 
 type ResultField = OrderResultFieldState;
@@ -147,19 +152,19 @@ export const OrderSidebar = memo(function OrderSidebar({
           <CardTitle className="text-base">Constancias</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-start" onClick={onGenerateCertificate}>
+          <Button variant="outline" className="w-full justify-start py-6" onClick={onGenerateCertificate}>
             <FileText className="mr-2 h-4 w-4" />
-            Generar Constancia Paciente
+            <span className="whitespace-normal">Generar Constancia Paciente</span>
           </Button>
 
-          <Button variant="outline" className="w-full justify-start" onClick={onGenerateCompanionCertificate}>
+          <Button variant="outline" className="w-full justify-start py-6" onClick={onGenerateCompanionCertificate}>
             <FileText className="mr-2 h-4 w-4" />
-            Generar Constancia Acompañante
+            <span className="whitespace-normal">Generar Constancia Acompañante</span>
           </Button>
 
-           <Button variant="outline" className="w-full justify-start" onClick={onGenerateLetterHead} >
+           <Button variant="outline" className="w-full justify-start py-6" onClick={onGenerateLetterHead} >
               <FileText className="mr-2 h-4 w-4" />
-              Ver Carta
+              <span className="whitespace-normal">Ver Carta</span>
           </Button>
         </CardContent>
       </Card>
@@ -581,5 +586,8 @@ export function buildLabData(lab: OrganizationInfo | null | undefined) {
     logo: lab?.logo_url || null,
     primary_color: lab?.primary_color || "#0ea5e9",
     secondary_color: lab?.secondary_color || "#0ea5e9",
+    ciudad: lab?.city || "",
+    rif: lab?.rif || "",
+    lab_admin: lab?.profiles[0]?.full_name || ""
   };
 }

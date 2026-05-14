@@ -158,7 +158,7 @@ export default function TestsPage() {
         <StatCard title="Perfiles" value={statsLoading ? "..." : String(stats?.profiles ?? 0)} icon={Package} className="border-border bg-white shadow-sm transition-shadow hover:shadow-md" />
       </div>
 
-      <div className="flex w-fit items-center gap-1 rounded-lg bg-muted/50 p-1">
+      <div className="w-fit items-center gap-1 rounded-lg bg-muted/50 p-1 md:inline-flex">
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Examenes</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "profiles" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("profiles")}><Package className="mr-1.5 inline-block h-4 w-4" />Perfiles</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "order" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("order")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Impresion</button>

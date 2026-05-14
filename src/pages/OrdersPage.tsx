@@ -168,7 +168,7 @@ export default function OrdersPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-md font-semibold truncate">{order.patients?.first_name} {order.patients?.last_name}</p>
+                    <p className="text-md font-semibold">{order.patients?.first_name} {order.patients?.last_name}</p>
                     <p className="text-sm text-muted-foreground font-mono">{order.patients?.id_number}</p>
                   </div>
                   <StatusBadge status={order.status} />
