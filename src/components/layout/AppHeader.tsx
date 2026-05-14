@@ -33,7 +33,7 @@ export function AppHeader() {
               <span className="text-xs uppercase tracking-wider">{labName.slice(0, 2)}</span>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 hidden sm:block">
             <p className="truncate text-sm font-semibold">{labName}</p>
             <p className="truncate text-xs text-white/90">{labInfo}</p>
           </div>

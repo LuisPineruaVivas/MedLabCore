@@ -27,6 +27,7 @@ import { getUserFacingErrorMessage } from "@/lib/errors";
 import { LetterHeadPDF } from "@/lib/letterhead";
 import { LetterHeadPreviewDialog } from "@/features/orders/LetterHeadDialog";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
+import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -319,7 +320,7 @@ export default function OrderDetailPage() {
     if (isMobileDevice()) {
       try {
         const blob = await pdf(
-          <AttendanceCertificatePDF
+          <CompanionAttendanceCertificatePDF
             order={order}
             labData={labData}
             subjectName={trimmedName}
@@ -619,6 +620,11 @@ export default function OrderDetailPage() {
         onOpenChange={setAttendanceCertificateOpen}
         order={order}
         labData={labData}
+        subjectName={patientInfo.name}
+        subjectDocumentId={patientInfo.id}
+        title="Constancia de Asistencia"
+        description="Revisa la constancia antes de imprimir"
+        type="patient"
       />
 
       <AttendanceCertificatePreviewDialog
@@ -630,6 +636,7 @@ export default function OrderDetailPage() {
         subjectDocumentId={companionDocumentId}
         title="Constancia de Acompañante"
         description="Revisa la constancia del acompañante antes de imprimir"
+        type="companion"
       />
 
 

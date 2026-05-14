@@ -444,6 +444,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                           onClick={() => {
                             if (!inCart) {
                               addToCart(item);
+                              setTestSearch("");
                             }
                           }}
                           disabled={inCart}

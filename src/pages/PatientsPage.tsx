@@ -199,7 +199,7 @@ export default function PatientsPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate text-foreground">
+                  <p className="text-sm font-bold text-foreground">
                     {patient.first_name} {patient.last_name}
                   </p>
                   <p className="text-[12px] text-muted-foreground font-mono">{patient.id_number || patient.id.slice(0, 4)}</p>

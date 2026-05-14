@@ -7,6 +7,7 @@ import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
+import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
 
 interface ReportPreviewDialogProps {
   open: boolean;
@@ -86,6 +87,7 @@ interface AttendanceCertificatePreviewDialogProps {
   subjectDocumentId?: string;
   title?: string;
   description?: string;
+  type: "patient" | "companion";
 }
 
 export function AttendanceCertificatePreviewDialog({
@@ -97,6 +99,7 @@ export function AttendanceCertificatePreviewDialog({
   subjectDocumentId,
   title = "Constancia de Asistencia",
   description = "Revisa la constancia antes de imprimir",
+  type = "patient"
 }: AttendanceCertificatePreviewDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,12 +110,19 @@ export function AttendanceCertificatePreviewDialog({
         </DialogHeader>
         <div className="h-full flex-1 overflow-hidden rounded-md border bg-muted">
           <PDFViewer width="100%" height="100%" className="border-none">
-            <AttendanceCertificatePDF
+            {type === "companion" ? 
+            <CompanionAttendanceCertificatePDF
+              order={order as never}
+              labData={labData}
+              subjectName={subjectName}
+              subjectDocumentId={subjectDocumentId} 
+              />
+             : <AttendanceCertificatePDF
               order={order as never}
               labData={labData}
               subjectName={subjectName}
               subjectDocumentId={subjectDocumentId}
-            />
+            />}
           </PDFViewer>
         </div>
         <div className="mt-4 flex justify-end">
