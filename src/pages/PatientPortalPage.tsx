@@ -194,7 +194,10 @@ export default function PatientPortalPage() {
               </div>
               <CardTitle className="text-2xl">Consulta de Resultados</CardTitle>
               <CardDescription className="text-base">
-                Ingresa tu número de cédula y el PIN de acceso proporcionado por el laboratorio.
+                Ingresa tu número de cédula y el PIN de acceso.
+                EJ: <span className="font-bold bg-slate-200 p-1 rounded">19458302</span> <br></br>  
+                En caso de ser menor de edad el paciente, agrega un guion y un 1 al final <br></br> 
+                de la cedula del representante EJ: <span className="font-bold bg-slate-200 p-1 rounded">11948302-1</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -203,7 +206,7 @@ export default function PatientPortalPage() {
                   <Label htmlFor="dni">Cédula de Identidad</Label>
                   <Input
                     id="dni"
-                    placeholder="Ej: V-12345678"
+                    placeholder="Ej: 12345678"
                     value={dni}
                     onChange={(e) => setDni(e.target.value)}
                     required
