@@ -46,7 +46,7 @@ export function AttendanceCertificatePDF({
       marginBottom: 32,
     },
     logo: {
-      width: 270,
+      width: 350,
       height: 75,
       objectFit: "contain",
       marginBottom: 8,
@@ -77,6 +77,13 @@ export function AttendanceCertificatePDF({
       textAlign: "center",
       fontSize: 12,
     },
+    footerLine: {
+      width: "70%",
+      height: 1,
+      backgroundColor: "#111827",
+      marginBottom: 8,
+      alignSelf: "center",
+    }
   });
 
   return (
@@ -100,7 +107,10 @@ export function AttendanceCertificatePDF({
           </Text>
         </View>
 
-        <Text style={styles.footer}>Atentamente:</Text>
+        <View style={styles.footer}>
+          <View style={styles.footerLine} />
+          <Text>Atentamente</Text>
+        </View>
       </Page>
     </Document>
   );

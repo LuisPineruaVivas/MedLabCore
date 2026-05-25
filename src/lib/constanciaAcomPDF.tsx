@@ -41,31 +41,22 @@ export function CompanionAttendanceCertificatePDF({
 
   const styles = StyleSheet.create({
     page: {
-      paddingTop: 32,
-      paddingHorizontal: 48,
-      paddingBottom: 64,
+      paddingTop: 56,
+      paddingHorizontal: 56,
+      paddingBottom: 72,
       fontSize: 12,
       color: "#111827",
       position: "relative",
     },
     header: {
       alignItems: "center",
-      marginBottom: 26,
-    },
-    infoHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 26,
-        position: "absolute",
-        top: 120,
-        left: 190,
-        right: 48,
-        width: 350
+      marginBottom: 32,
     },
     logo: {
-      width: 600,
-      height: 110,
+      width: 350,
+      height: 75,
       objectFit: "contain",
+      marginBottom: 8,
     },
     labInfo: {
       flex: 1,
@@ -135,27 +126,18 @@ export function CompanionAttendanceCertificatePDF({
           {labData?.logo ? <Image src={labData.logo} style={styles.logo} /> : null}
         </View>
 
-        <View style={styles.infoHeader}>
-          <View style={styles.labInfo}>
-            {labData?.rif ? <Text style={styles.labrif}>RIF: {labData.rif}</Text> : null}
-            {labData?.address ? <Text style={styles.labDetail}>{labData.address.slice(0, 78)}</Text> : null}
-            {labData?.phone ? <Text style={styles.labPhone}><PhoneIcon /> TELF: {labData.phone}</Text> : null}
-          </View>
-        </View>
-
         <Text style={styles.title}>CONSTANCIA</Text>
 
         <View style={styles.body}>
           <Text style={styles.paragraph} hyphenationCallback={noHyphenation}>
-            Quien suscribe, Lcda. <Text style={styles.bold}>{labData?.lab_admin}</Text>, jefe del "<Text style={styles.bold}>{labName}</Text>", hace 
-            constar que el/la ciudadano <Text style={styles.bold}>{certificateName}</Text>; titular de la cedula de 
+            {"     "}Mediante la presente se hace constar, que el/la ciudadano <Text style={styles.bold}>{certificateName}</Text>; titular de la cedula de 
             identidad <Text style={styles.bold}>V-{documentId}</Text>, asistió al laboratorio como acompañante 
-            del ciudadano <Text style={styles.bold}>{patientName}</Text> a las {format(issueDate, "hh:mm aa")}.
+            de el/la ciudadano <Text style={styles.bold}>{patientName}</Text> a las {format(issueDate, "hh:mm aa")}.
           </Text>
 
           <Text style={styles.paragraph} hyphenationCallback={noHyphenation}>
-            Constancia que se expide en la ciudad de <Text style={styles.bold}>{labData?.ciudad}</Text> el 
-            dia <Text style={styles.bold}> {issueDayName.toUpperCase()} {issueDay}</Text> de <Text style={styles.bold}>{issueMonth.toUpperCase()}</Text> del <Text style={styles.bold}>{issueYear}</Text>.
+            {"     "}Constancia que se expide a peticion de parte interesada, de lo antes mencionado se firma en la <Text style={{ fontWeight: "bold" }}>{labAddress}</Text>
+            {" "}A los {issueDay} dias del mes de {issueMonth} de {issueYear}.
           </Text>
         </View>
 
