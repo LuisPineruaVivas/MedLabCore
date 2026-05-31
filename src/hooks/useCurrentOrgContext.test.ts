@@ -34,13 +34,27 @@ describe("buildPermissions", () => {
     expect(buildPermissions("secretary")).toEqual({
       canViewTests: false,
       canEditTests: false,
-      canEnterResults: false,
+      canEnterResults: true,
       canViewBilling: true,
       canViewPrices: true,
       canCreateOrders: true,
       canViewSettings: false,
       canManageTeam: false,
       canViewVisits: true,
+    });
+  });
+
+  it("keeps lab affiliates restricted to patients and orders", () => {
+    expect(buildPermissions("lab_affiliate")).toEqual({
+      canViewTests: false,
+      canEditTests: false,
+      canEnterResults: false,
+      canViewBilling: false,
+      canViewPrices: false,
+      canCreateOrders: true,
+      canViewSettings: false,
+      canManageTeam: false,
+      canViewVisits: false,
     });
   });
 });

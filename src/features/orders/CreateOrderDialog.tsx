@@ -79,7 +79,7 @@ function isMobileReceiptFlow() {
 }
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: CreateOrderDialogProps) {
-  const { orgId } = useCurrentOrgContext();
+  const { orgId, user, role } = useCurrentOrgContext();
   const createOrder = useCreateOrder();
   const queryClient = useQueryClient();
   const { data: exchangeRateData } = useExchangeRate(orgId);
@@ -151,7 +151,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   });
 
   async function handleCreateOrder() {
-    if (!selectedPatient || !orgId || cart.length === 0) {
+    if (!selectedPatient || !orgId || !user?.id || cart.length === 0) {
       return;
     }
 
@@ -159,6 +159,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       const order = await createOrder.mutateAsync({
         orgId,
         patientId: selectedPatient.id,
+        createdBy: user.id,
         items: cart.map((item) => ({
           template_id: item.template_id,
           test_name: item.test_name,
@@ -186,6 +187,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         exchangeRate: currentRate,
         totalBs: effectiveTotals.totalBs,
       });
+
+      if (role === "lab_affiliate") {
+        resetDialog();
+        onOpenChange(false);
+        onSuccess?.();
+        return;
+      }
 
       if (isMobileReceiptFlow()) {
         const receiptBlob = await pdf(

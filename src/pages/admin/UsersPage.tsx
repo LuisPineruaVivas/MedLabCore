@@ -25,6 +25,7 @@ export default function UsersPage() {
     lab_admin: "default",
     bioanalyst: "secondary",
     secretary: "outline",
+    lab_affiliate: "secondary",
   };
 
   return (
@@ -109,6 +110,7 @@ export default function UsersPage() {
                   <SelectItem value="lab_admin">Lab Admin</SelectItem>
                   <SelectItem value="bioanalyst">Bioanalyst</SelectItem>
                   <SelectItem value="secretary">Secretary</SelectItem>
+                  <SelectItem value="lab_affiliate">Lab Affiliate</SelectItem>
                 </SelectContent>
               </Select>
             </div>

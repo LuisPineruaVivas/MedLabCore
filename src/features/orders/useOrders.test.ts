@@ -7,6 +7,7 @@ describe("order mutation helpers", () => {
       buildCreateLabOrderPayload({
         orgId: "org-1",
         patientId: "patient-1",
+        createdBy: "user-1",
         notes: "Ayunas",
         exchangeRate: 40,
         totalBs: 600,
@@ -27,6 +28,7 @@ describe("order mutation helpers", () => {
       p_exchange_rate: 40,
       p_total_bs: 600,
       p_is_exempted: true,
+      p_created_by: "user-1",
       p_items: [
         {
           template_id: "tpl-1",
