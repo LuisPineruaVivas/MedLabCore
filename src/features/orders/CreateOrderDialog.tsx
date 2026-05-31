@@ -99,6 +99,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const { data: patients = [], isFetching: searchingPatients } = usePatientSearch(debouncedSearch);
   const { data: templates = [] } = useOrderTemplates();
   const { data: examProfiles = [] } = useOrderProfiles();
+  const canExemptOrder = role !== "lab_affiliate";
 
   const allSearchItems = useMemo(
     () => buildSearchItems(templates, examProfiles),
@@ -561,19 +562,21 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                         </table>
                       </div>
                       <div className="px-3 py-2.5 bg-muted/20 border-t border-border space-y-1 mt-auto">
-                        <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-background/80 px-3 py-2">
-                          <div className="space-y-1">
-                            <Label htmlFor="order-exempt-switch" className="text-sm font-semibold cursor-pointer">
-                              Exonerar Orden
-                            </Label>
+                        {canExemptOrder && (
+                          <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-background/80 px-3 py-2">
+                            <div className="space-y-1">
+                              <Label htmlFor="order-exempt-switch" className="text-sm font-semibold cursor-pointer">
+                                Exonerar Orden
+                              </Label>
+                            </div>
+                            <Switch
+                              id="order-exempt-switch"
+                              checked={isExempted}
+                              onCheckedChange={setIsExempted}
+                              aria-label="Exonerar orden"
+                            />
                           </div>
-                          <Switch
-                            id="order-exempt-switch"
-                            checked={isExempted}
-                            onCheckedChange={setIsExempted}
-                            aria-label="Exonerar orden"
-                          />
-                        </div>
+                        )}
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">Total USD</span>
