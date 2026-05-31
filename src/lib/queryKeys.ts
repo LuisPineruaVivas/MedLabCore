@@ -63,4 +63,16 @@ export const queryKeys = {
     manualExchangeRate: (orgId: string | null | undefined) =>
       ["manual-exchange-rate", orgId ?? "none"] as const,
   },
+  affiliateAccounts: {
+    affiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
+      ["affiliate-accounts", "affiliates", orgId ?? "none", role ?? "none"] as const,
+    hasAffiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
+      ["affiliate-accounts", "has-affiliates", orgId ?? "none", role ?? "none"] as const,
+    orders: (
+      affiliateId: string | null | undefined,
+      filters: Record<string, string | number | null | undefined>
+    ) => ["affiliate-accounts", "orders", affiliateId ?? "none", filters] as const,
+    pendingBalance: (affiliateId: string | null | undefined) =>
+      ["affiliate-accounts", "pending-balance", affiliateId ?? "none"] as const,
+  },
 } as const;

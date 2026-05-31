@@ -47,7 +47,7 @@ export function useCreateTeamMember(orgId: string) {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(response.error.error);
       }
 
       if (response.data?.error) {

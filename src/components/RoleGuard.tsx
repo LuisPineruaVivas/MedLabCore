@@ -18,7 +18,7 @@ export function RoleGuard({ permission }: RoleGuardProps) {
   }
 
   if (!permissions[permission]) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={permissions.role === "lab_affiliate" ? "/orders" : "/dashboard"} replace />;
   }
 
   return <Outlet />;

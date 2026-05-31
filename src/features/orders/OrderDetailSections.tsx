@@ -77,6 +77,8 @@ interface OrderSidebarProps {
   onGenerateCertificate: () => void;
   onGenerateCompanionCertificate: () => void;
   onGenerateLetterHead: () => void;
+  showDocumentActions?: boolean;
+  showSharePortalAction?: boolean;
 }
 
 export const OrderSidebar = memo(function OrderSidebar({
@@ -86,6 +88,8 @@ export const OrderSidebar = memo(function OrderSidebar({
   onGenerateCertificate,
   onGenerateCompanionCertificate,
   onGenerateLetterHead,
+  showDocumentActions = true,
+  showSharePortalAction = true,
 }: OrderSidebarProps) {
   return (
     <div className="w-[100%] shrink-0 space-y-6  lg:w-[30%]">
@@ -132,7 +136,7 @@ export const OrderSidebar = memo(function OrderSidebar({
               />
             )}
             </div>
-            {order.access_pin && (
+            {order.access_pin && showSharePortalAction && (
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <div>
                   <p className="text-xs text-muted-foreground">PIN de Acceso</p>
@@ -147,6 +151,7 @@ export const OrderSidebar = memo(function OrderSidebar({
         </CardContent>
       </Card>
 
+      {showDocumentActions && (
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Constancias</CardTitle>
@@ -168,6 +173,7 @@ export const OrderSidebar = memo(function OrderSidebar({
           </Button>
         </CardContent>
       </Card>
+      )}
 
     </div>
   );

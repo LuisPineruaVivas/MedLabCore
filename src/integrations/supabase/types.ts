@@ -147,6 +147,7 @@ export type Database = {
           access_pin: string | null
           completed_at: string | null
           created_at: string
+          created_by: string
           exchange_rate: number | null
           firma_url: string | null
           id: string
@@ -166,6 +167,7 @@ export type Database = {
           access_pin?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string
           exchange_rate?: number | null
           firma_url?: string | null
           id?: string
@@ -185,6 +187,7 @@ export type Database = {
           access_pin?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string
           exchange_rate?: number | null
           firma_url?: string | null
           id?: string
@@ -201,6 +204,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_org_id_fkey"
             columns: ["org_id"]
@@ -359,6 +369,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          created_by: string
           date_of_birth: string
           email: string | null
           first_name: string
@@ -373,6 +384,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          created_by?: string
           date_of_birth: string
           email?: string | null
           first_name: string
@@ -387,6 +399,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          created_by?: string
           date_of_birth?: string
           email?: string | null
           first_name?: string
@@ -399,6 +412,13 @@ export type Database = {
           phone?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "patients_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patients_org_id_fkey"
             columns: ["org_id"]
@@ -614,6 +634,7 @@ export type Database = {
     Functions: {
       create_lab_order: {
         Args: {
+          p_created_by: string
           p_exchange_rate: number
           p_is_exempted: boolean
           p_items: Json
@@ -701,8 +722,8 @@ export type Database = {
         | "por_aprobar"
         | "completada"
         | "cancelada"
-      payment_status: "unpaid" | "partial" | "paid"
-      user_role: "super_admin" | "lab_admin" | "bioanalyst" | "secretary"
+      payment_status: "unpaid" | "partial" | "paid" | "pending"
+      user_role: "super_admin" | "lab_admin" | "bioanalyst" | "secretary" | "lab_affiliate"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -837,8 +858,8 @@ export const Constants = {
         "completada",
         "cancelada",
       ],
-      payment_status: ["unpaid", "partial", "paid"],
-      user_role: ["super_admin", "lab_admin", "bioanalyst", "secretary"],
+      payment_status: ["unpaid", "partial", "paid", "pending"],
+      user_role: ["super_admin", "lab_admin", "bioanalyst", "secretary", "lab_affiliate"],
     },
   },
 } as const

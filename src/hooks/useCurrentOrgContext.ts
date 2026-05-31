@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/queryKeys";
 
-export type UserRole = "super_admin" | "lab_admin" | "bioanalyst" | "secretary";
+export type UserRole = "super_admin" | "lab_admin" | "bioanalyst" | "secretary" | "lab_affiliate";
 
 export interface Permissions {
   canViewTests: boolean;

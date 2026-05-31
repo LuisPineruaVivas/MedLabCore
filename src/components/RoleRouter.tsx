@@ -16,5 +16,9 @@ export function RoleRouter() {
     return <Navigate to="/admin/organizations" replace />;
   }
 
+  if (role === "lab_affiliate") {
+    return <Navigate to="/orders" replace />;
+  }
+
   return <Navigate to="/dashboard" replace />;
 }

@@ -29,6 +29,7 @@ interface CreateLabOrderResponse {
 export function buildCreateLabOrderPayload({
   orgId,
   patientId,
+  createdBy,
   items,
   notes,
   exchangeRate,
@@ -37,6 +38,7 @@ export function buildCreateLabOrderPayload({
 }: {
   orgId: string;
   patientId: string;
+  createdBy: string;
   items: CreateOrderItemInput[];
   notes?: string | null;
   exchangeRate?: number | null;
@@ -51,6 +53,7 @@ export function buildCreateLabOrderPayload({
     p_total_bs: totalBs ?? null,
     p_is_exempted: isExempted ?? false,
     p_items: items as unknown as Json,
+    p_created_by: createdBy,
   };
 }
 
@@ -271,6 +274,7 @@ export function useCreateOrder() {
     mutationFn: async ({
       orgId,
       patientId,
+      createdBy,
       items,
       notes,
       exchangeRate,
@@ -279,6 +283,7 @@ export function useCreateOrder() {
     }: {
       orgId: string;
       patientId: string;
+      createdBy: string;
       items: CreateOrderItemInput[];
       notes?: string | null;
       exchangeRate?: number | null;
@@ -288,6 +293,7 @@ export function useCreateOrder() {
       const { data, error } = await supabase.rpc("create_lab_order", buildCreateLabOrderPayload({
         orgId,
         patientId,
+        createdBy,
         items,
         notes,
         exchangeRate,

@@ -17,13 +17,6 @@ COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
-
-
-
-
-
-
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
@@ -55,6 +48,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 CREATE TYPE "public"."order_status" AS ENUM (
     'pendiente',
     'procesando',
+    'por_aprobar',
     'completada',
     'cancelada'
 );
@@ -84,6 +78,146 @@ CREATE TYPE "public"."user_role" AS ENUM (
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."create_lab_order"("p_org_id" "uuid", "p_patient_id" "uuid", "p_notes" "text", "p_exchange_rate" numeric, "p_total_bs" numeric, "p_is_exempted" boolean, "p_items" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_order public.orders%rowtype;
+  v_item jsonb;
+  v_header_row_id uuid;
+  v_total_amount numeric := 0;
+  v_effective_total_amount numeric := 0;
+  v_effective_total_bs numeric := null;
+  v_profile_header_ids jsonb := '{}'::jsonb;
+begin
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    raise exception 'ORDER_ITEMS_REQUIRED';
+  end if;
+
+  select coalesce(sum(coalesce((item->>'price')::numeric, 0)), 0)
+  into v_total_amount
+  from jsonb_array_elements(p_items) item;
+
+  v_effective_total_amount := case when coalesce(p_is_exempted, false) then 0 else v_total_amount end;
+  v_effective_total_bs := case
+    when coalesce(p_is_exempted, false) and p_total_bs is not null then 0
+    when coalesce(p_is_exempted, false) then null
+    else p_total_bs
+  end;
+
+  insert into public.orders (
+    org_id,
+    patient_id,
+    total_amount,
+    notes,
+    exchange_rate,
+    total_bs,
+    is_exempted
+  )
+  values (
+    p_org_id,
+    p_patient_id,
+    v_effective_total_amount,
+    nullif(trim(coalesce(p_notes, '')), ''),
+    p_exchange_rate,
+    v_effective_total_bs,
+    coalesce(p_is_exempted, false)
+  )
+  returning * into v_order;
+
+  for v_item in
+    select item
+    from jsonb_array_elements(p_items) as item
+    where coalesce((item->>'isProfileHeader')::boolean, false) = true
+  loop
+    insert into public.order_items (
+      order_id,
+      template_id,
+      test_name,
+      price_at_order,
+      results_data,
+      is_profile_header
+    )
+    values (
+      v_order.id,
+      null,
+      v_item->>'test_name',
+      coalesce((v_item->>'price')::numeric, 0),
+      null,
+      true
+    )
+    returning id into v_header_row_id;
+
+    if coalesce(v_item->>'profileId', '') <> '' then
+      v_profile_header_ids := jsonb_set(
+        v_profile_header_ids,
+        array[v_item->>'profileId'],
+        to_jsonb(v_header_row_id::text),
+        true
+      );
+    end if;
+  end loop;
+
+  for v_item in
+    select item
+    from jsonb_array_elements(p_items) as item
+    where coalesce((item->>'parentProfileId')::text, '') <> ''
+  loop
+    insert into public.order_items (
+      order_id,
+      template_id,
+      test_name,
+      price_at_order,
+      results_data,
+      parent_profile_id,
+      is_profile_header
+    )
+    values (
+      v_order.id,
+      nullif(v_item->>'template_id', '')::uuid,
+      v_item->>'test_name',
+      0,
+      coalesce(v_item->'schema', '{"sections":[]}'::jsonb),
+      nullif(v_profile_header_ids ->> (v_item->>'parentProfileId'), '')::uuid,
+      false
+    );
+  end loop;
+
+  insert into public.order_items (
+    order_id,
+    template_id,
+    test_name,
+    price_at_order,
+    results_data,
+    is_profile_header
+  )
+  select
+    v_order.id,
+    nullif(item->>'template_id', '')::uuid,
+    item->>'test_name',
+    coalesce((item->>'price')::numeric, 0),
+    coalesce(item->'schema', '{"sections":[]}'::jsonb),
+    false
+  from jsonb_array_elements(p_items) as item
+  where coalesce((item->>'isProfileHeader')::boolean, false) = false
+    and coalesce((item->>'parentProfileId')::text, '') = '';
+
+  return jsonb_build_object(
+    'success', true,
+    'orderId', v_order.id,
+    'access_pin', v_order.access_pin,
+    'order_seq', v_order.order_seq,
+    'userSafeMessage', 'Orden creada correctamente',
+    'technicalCode', 'ORDER_CREATED'
+  );
+end;
+$$;
+
+
+ALTER FUNCTION "public"."create_lab_order"("p_org_id" "uuid", "p_patient_id" "uuid", "p_notes" "text", "p_exchange_rate" numeric, "p_total_bs" numeric, "p_is_exempted" boolean, "p_items" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."generate_order_access_pin"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -95,6 +229,78 @@ $$;
 
 
 ALTER FUNCTION "public"."generate_order_access_pin"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_dashboard_summary"("p_org_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$WITH bounds AS (
+    SELECT
+      (date_trunc('day', now() AT TIME ZONE 'America/Caracas') AT TIME ZONE 'America/Caracas') AS today_start,
+      (date_trunc('day', (now() AT TIME ZONE 'America/Caracas') - interval '1 day') AT TIME ZONE 'America/Caracas') AS yesterday_start,
+      (date_trunc('month', now() AT TIME ZONE 'America/Caracas') AT TIME ZONE 'America/Caracas') AS month_start
+  )
+  select jsonb_build_object(
+    'totalPatients', (select count(*) from public.patients p where p.org_id = p_org_id),
+    'thisMonthPatients', (
+      select count(*)
+      from public.patients p, bounds b
+      where p.org_id = p_org_id and p.created_at >= b.month_start
+    ),
+    'ordersToday', (
+      select count(*)
+      from public.orders o, bounds b
+      where o.org_id = p_org_id and o.created_at >= b.today_start
+    ),
+    'ordersYesterday', (
+      select count(*)
+      from public.orders o, bounds b
+      where o.org_id = p_org_id and o.created_at >= b.yesterday_start and o.created_at < b.today_start
+    ),
+    'pendingOrders', (
+      select count(*)
+      from public.orders o
+      where o.org_id = p_org_id and o.status = 'pendiente'
+    ),
+    'todayRevenue', (
+      select coalesce(sum(o.total_amount), 0)
+      from public.orders o, bounds b
+      where o.org_id = p_org_id and o.created_at >= b.today_start
+    )
+  );$$;
+
+
+ALTER FUNCTION "public"."get_dashboard_summary"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_dashboard_top_tests"("p_org_id" "uuid", "p_limit" integer DEFAULT 5) RETURNS TABLE("name" "text", "count" bigint, "pct" integer)
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  with counted as (
+    select oi.test_name, count(*)::bigint as usage_count
+    from public.order_items oi
+    inner join public.orders o on o.id = oi.order_id
+    where o.org_id = p_org_id
+      and oi.is_profile_header = false
+    group by oi.test_name
+    order by usage_count desc, oi.test_name asc
+    limit p_limit
+  ),
+  max_count as (
+    select greatest(coalesce(max(usage_count), 1), 1) as top_count
+    from counted
+  )
+  select
+    counted.test_name as name,
+    counted.usage_count as count,
+    round((counted.usage_count::numeric / max_count.top_count::numeric) * 100)::integer as pct
+  from counted
+  cross join max_count;
+$$;
+
+
+ALTER FUNCTION "public"."get_dashboard_top_tests"("p_org_id" "uuid", "p_limit" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_my_org_id"() RETURNS "uuid"
@@ -128,15 +334,16 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$BEGIN
-  INSERT INTO public.profiles (id, full_name, org_id, email)
+  INSERT INTO public.profiles (id, full_name, org_id, email, role)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data ->> 'full_name', ''),
     (NEW.raw_user_meta_data ->> 'org_id')::uuid,
-    new.email
+    new.email,
+    'lab_admin'
   );
   INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'secretary');
+  VALUES (NEW.id, 'lab_admin');
   RETURN NEW;
 END;$$;
 
@@ -194,57 +401,127 @@ $$;
 ALTER FUNCTION "public"."portal_authenticate"("p_dni" "text", "p_pin" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid") RETURNS TABLE("id" "uuid", "created_at" timestamp with time zone, "status" "text", "total_amount" numeric, "access_pin" "text", "order_seq" integer, "org_name" "text", "org_logo_url" "text", "items" "jsonb")
-    LANGUAGE "plpgsql"
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    o.id, 
-    o.created_at, 
-    o.status::text, 
-    o.total_amount, 
-    o.access_pin,
-    o.order_seq,            -- Columna 6 (Integer)
-    org.name::text,         -- Columna 7
-    org.logo_url::text,     -- Columna 8
-    COALESCE(
-      jsonb_agg(
-        jsonb_build_object(
-          'id', oi.id, 
-          'test_name', oi.test_name, 
-          'price_at_order', oi.price_at_order,
-          'results_data', oi.results_data, 
-          'created_at', oi.created_at, 
-          'category', tt.category
-        ) ORDER BY oi.created_at
-      ) FILTER (WHERE oi.id IS NOT NULL),
-      '[]'::jsonb
-    ) AS items               -- Columna 9 (JSONB)
-  FROM public.orders o
-  INNER JOIN public.organizations org ON org.id = o.org_id
-  LEFT JOIN public.order_items oi ON oi.order_id = o.id
-  LEFT JOIN public.test_templates tt ON tt.id = oi.template_id
-  WHERE o.patient_id = p_patient_id AND o.status = 'completada'
-  GROUP BY o.id, o.created_at, o.status, o.total_amount, o.access_pin, o.order_seq, org.name, org.logo_url
-  ORDER BY o.created_at DESC;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."prevent_role_self_update"() RETURNS "trigger"
+CREATE OR REPLACE FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid", "p_pin" "text") RETURNS TABLE("order_id" "uuid", "created_at" timestamp with time zone, "status" "text", "total_amount" numeric, "access_pin" "text", "order_seq" integer, "org_name" "text", "org_logo_url" "text", "firma_url" "text", "sello_url" "text", "department_order" "jsonb", "items" "jsonb")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
+declare
+  v_reference_date timestamptz;
+begin
+  select o.created_at
+  into v_reference_date
+  from public.orders o
+  where o.patient_id = p_patient_id
+    and upper(trim(o.access_pin)) = upper(trim(p_pin))
+  limit 1;
+
+  if v_reference_date is null then
+    return;
+  end if;
+
+  return query
+  select
+    o.id as order_id,
+    o.created_at,
+    o.status::text,
+    o.total_amount,
+    o.access_pin,
+    o.order_seq,
+    org.name::text as org_name,
+    org.logo_url::text as org_logo_url,
+    o.firma_url::text,
+    o.sello_url::text,
+    coalesce(
+      (
+        select jsonb_agg(category_settings.department_name order by category_settings.custom_sort_order, category_settings.department_name)
+        from public.organization_test_category_settings category_settings
+        where category_settings.org_id = o.org_id
+      ),
+      '[]'::jsonb
+    ) as department_order,
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'id', oi.id,
+            'order_id', oi.order_id,
+            'template_id', oi.template_id,
+            'test_name', oi.test_name,
+            'price_at_order', oi.price_at_order,
+            'results_data', oi.results_data,
+            'created_at', oi.created_at,
+            'parent_profile_id', oi.parent_profile_id,
+            'is_profile_header', oi.is_profile_header,
+            'category', coalesce(tt.category, 'General'),
+            'resolved_sort_order', coalesce(exam_settings.custom_sort_order, tt.sort_order, 9999)
+          )
+          order by
+            coalesce(category_settings.custom_sort_order, 2147483647),
+            coalesce(tt.category, 'General'),
+            coalesce(exam_settings.custom_sort_order, tt.sort_order, 9999),
+            oi.created_at,
+            oi.test_name
+        )
+        from public.order_items oi
+        left join public.test_templates tt on tt.id = oi.template_id
+        left join public.organization_exam_settings exam_settings
+          on exam_settings.org_id = o.org_id
+         and exam_settings.template_id = oi.template_id
+        left join public.organization_test_category_settings category_settings
+          on category_settings.org_id = o.org_id
+         and category_settings.department_name = coalesce(tt.category, 'General')
+        where oi.order_id = o.id
+      ),
+      '[]'::jsonb
+    ) as items
+  from public.orders o
+  inner join public.organizations org on org.id = o.org_id
+  where o.patient_id = p_patient_id
+    and o.created_at <= v_reference_date
+    and lower(o.status::text) = 'completada'
+  order by o.created_at desc;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid", "p_pin" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."prevent_role_self_update"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+  current_user_id UUID := auth.uid();
+  is_super_admin BOOLEAN;
 BEGIN
+  -- 1. Si la query viene del sistema/editor SQL (sin usuario logueado), permitir todo
+  IF current_user_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- 2. Verificamos si el que ejecuta es super_admin
+  is_super_admin := public.has_role(current_user_id, 'super_admin');
+
+  -- 3. Lógica de restricción
   IF OLD.role IS DISTINCT FROM NEW.role THEN
-    IF NOT public.has_role(auth.uid(), 'super_admin') THEN
-      RAISE EXCEPTION 'Permission denied: you cannot modify your own role.';
+    
+    -- Si NO es super_admin...
+    IF NOT is_super_admin THEN
+      
+      -- REGLA A: Nadie puede editar su propio rol (excepto super_admins)
+      IF OLD.id = current_user_id THEN
+        RAISE EXCEPTION 'Permission denied: you cannot modify your own role.';
+      END IF;
+
+      -- REGLA B: Solo el admin del laboratorio puede editar a OTROS (pero no a sí mismo)
+      -- Aquí verificamos si el que edita es admin_laboratorio
+      IF NOT public.has_role(current_user_id, 'lab_admin') THEN
+        RAISE EXCEPTION 'Permission denied: you do not have permission to change roles.';
+      END IF;
+      
     END IF;
   END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -283,6 +560,58 @@ $$;
 
 
 ALTER FUNCTION "public"."rls_auto_enable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."upsert_exam_profile"("p_profile_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_description" "text", "p_total_price" numeric, "p_template_ids" "uuid"[]) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_profile_id uuid;
+begin
+  if p_profile_id is null then
+    insert into public.exam_profiles (
+      org_id,
+      name,
+      description,
+      total_price
+    )
+    values (
+      p_org_id,
+      p_name,
+      nullif(trim(coalesce(p_description, '')), ''),
+      p_total_price
+    )
+    returning id into v_profile_id;
+  else
+    update public.exam_profiles
+    set
+      name = p_name,
+      description = nullif(trim(coalesce(p_description, '')), ''),
+      total_price = p_total_price
+    where id = p_profile_id
+    returning id into v_profile_id;
+
+    delete from public.profile_templates_junction
+    where profile_id = v_profile_id;
+  end if;
+
+  if array_length(p_template_ids, 1) is not null then
+    insert into public.profile_templates_junction (profile_id, template_id)
+    select v_profile_id, unnest(p_template_ids);
+  end if;
+
+  return jsonb_build_object(
+    'success', true,
+    'profileId', v_profile_id,
+    'userSafeMessage', 'Perfil guardado correctamente',
+    'technicalCode', 'PROFILE_SAVED'
+  );
+end;
+$$;
+
+
+ALTER FUNCTION "public"."upsert_exam_profile"("p_profile_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_description" "text", "p_total_price" numeric, "p_template_ids" "uuid"[]) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."upsert_test_template"("p_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_category" "text", "p_base_price" numeric, "p_schema" "jsonb") RETURNS "void"
@@ -422,11 +751,40 @@ CREATE TABLE IF NOT EXISTS "public"."orders" (
     "exchange_rate" numeric,
     "total_bs" numeric,
     "completed_at" timestamp with time zone,
-    "order_seq" integer
+    "order_seq" integer,
+    "firma_url" "text",
+    "sello_url" "text",
+    "is_exempted" boolean DEFAULT false NOT NULL
 );
 
 
 ALTER TABLE "public"."orders" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."organization_exam_settings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "template_id" "uuid",
+    "custom_sort_order" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."organization_exam_settings" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."organization_test_category_settings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "department_name" "text" NOT NULL,
+    "custom_sort_order" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."organization_test_category_settings" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."organizations" (
@@ -487,7 +845,9 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "role" "public"."user_role" DEFAULT 'secretary'::"public"."user_role" NOT NULL,
     "full_name" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "email" "text" DEFAULT ''::"text"
+    "email" "text" DEFAULT ''::"text",
+    "firma_url" "text",
+    "sello_url" "text"
 );
 
 
@@ -504,11 +864,30 @@ CREATE TABLE IF NOT EXISTS "public"."test_templates" (
     "is_active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "id_global_ref" "uuid"
+    "id_global_ref" "uuid",
+    "sort_order" integer DEFAULT 0
 );
 
 
 ALTER TABLE "public"."test_templates" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."test_templates_backup" (
+    "id" "uuid",
+    "org_id" "uuid",
+    "name" "text",
+    "category" "text",
+    "base_price" numeric,
+    "schema" "jsonb",
+    "is_active" boolean,
+    "created_at" timestamp with time zone,
+    "updated_at" timestamp with time zone,
+    "id_global_ref" "uuid",
+    "sort_order" integer
+);
+
+
+ALTER TABLE "public"."test_templates_backup" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_roles" (
@@ -522,18 +901,25 @@ ALTER TABLE "public"."user_roles" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."v_test_templates_filtered" AS
+ WITH "user_context" AS (
+         SELECT "profiles"."org_id"
+           FROM "public"."profiles"
+          WHERE ("profiles"."id" = "auth"."uid"())
+        )
  SELECT DISTINCT ON (COALESCE("id_global_ref", "id")) "id",
-    "org_id",
     "name",
     "category",
     "base_price",
-    "schema",
     "is_active",
-    "created_at",
-    "updated_at",
-    "id_global_ref"
+    "org_id",
+    "id_global_ref",
+    "sort_order",
+    "schema",
+    "created_at"
    FROM "public"."test_templates"
-  ORDER BY COALESCE("id_global_ref", "id"), "org_id";
+  WHERE (("is_active" = true) AND (("org_id" IS NULL) OR ("org_id" = ( SELECT "user_context"."org_id"
+           FROM "user_context"))))
+  ORDER BY COALESCE("id_global_ref", "id"), "org_id" DESC NULLS LAST;
 
 
 ALTER VIEW "public"."v_test_templates_filtered" OWNER TO "postgres";
@@ -561,6 +947,26 @@ ALTER TABLE ONLY "public"."order_items"
 
 ALTER TABLE ONLY "public"."orders"
     ADD CONSTRAINT "orders_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organization_exam_settings"
+    ADD CONSTRAINT "organization_exam_settings_org_id_template_id_key" UNIQUE ("org_id", "template_id");
+
+
+
+ALTER TABLE ONLY "public"."organization_exam_settings"
+    ADD CONSTRAINT "organization_exam_settings_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organization_test_category_settings"
+    ADD CONSTRAINT "organization_test_category_settings_org_id_department_name_key" UNIQUE ("org_id", "department_name");
+
+
+
+ALTER TABLE ONLY "public"."organization_test_category_settings"
+    ADD CONSTRAINT "organization_test_category_settings_pkey" PRIMARY KEY ("id");
 
 
 
@@ -609,6 +1015,18 @@ ALTER TABLE ONLY "public"."user_roles"
 
 
 
+CREATE INDEX "idx_org_exam_settings_lookup" ON "public"."organization_exam_settings" USING "btree" ("org_id", "template_id");
+
+
+
+CREATE INDEX "idx_org_test_category_settings_org_id" ON "public"."organization_test_category_settings" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_org_test_category_settings_sort_order" ON "public"."organization_test_category_settings" USING "btree" ("org_id", "custom_sort_order");
+
+
+
 CREATE INDEX "idx_test_templates_category" ON "public"."test_templates" USING "btree" ("category");
 
 
@@ -618,6 +1036,10 @@ CREATE INDEX "idx_test_templates_org_id" ON "public"."test_templates" USING "btr
 
 
 CREATE OR REPLACE TRIGGER "trg_generate_access_pin" BEFORE INSERT ON "public"."orders" FOR EACH ROW EXECUTE FUNCTION "public"."generate_order_access_pin"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_organization_test_category_settings_updated_at" BEFORE UPDATE ON "public"."organization_test_category_settings" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
 
 
@@ -654,7 +1076,7 @@ ALTER TABLE ONLY "public"."order_items"
 
 
 ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."test_templates"("id");
+    ADD CONSTRAINT "order_items_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."test_templates"("id") ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 
@@ -665,6 +1087,21 @@ ALTER TABLE ONLY "public"."orders"
 
 ALTER TABLE ONLY "public"."orders"
     ADD CONSTRAINT "orders_patient_id_fkey" FOREIGN KEY ("patient_id") REFERENCES "public"."patients"("id");
+
+
+
+ALTER TABLE ONLY "public"."organization_exam_settings"
+    ADD CONSTRAINT "organization_exam_settings_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_exam_settings"
+    ADD CONSTRAINT "organization_exam_settings_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."test_templates"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_test_category_settings"
+    ADD CONSTRAINT "organization_test_category_settings_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
 
 
@@ -689,7 +1126,7 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+    ADD CONSTRAINT "profiles_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
@@ -704,7 +1141,7 @@ ALTER TABLE ONLY "public"."test_templates"
 
 
 ALTER TABLE ONLY "public"."user_roles"
-    ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
@@ -712,19 +1149,11 @@ CREATE POLICY "Admins can manage organizations" ON "public"."organizations" TO "
 
 
 
-CREATE POLICY "Authenticated users can read organizations" ON "public"."organizations" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Lab admins can delete org templates" ON "public"."test_templates" FOR DELETE TO "authenticated" USING ((("org_id" = ( SELECT "p"."org_id"
+CREATE POLICY "Lab admins can manage department order" ON "public"."organization_test_category_settings" TO "authenticated" USING ((("org_id" = ( SELECT "p"."org_id"
    FROM "public"."profiles" "p"
-  WHERE ("p"."id" = "auth"."uid"()))) AND "public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role")));
-
-
-
-CREATE POLICY "Lab admins can insert org templates" ON "public"."test_templates" FOR INSERT TO "authenticated" WITH CHECK ((("org_id" = ( SELECT "p"."org_id"
+  WHERE ("p"."id" = "auth"."uid"()))) AND ("public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role") OR "public"."has_role"("auth"."uid"(), 'super_admin'::"public"."user_role")))) WITH CHECK ((("org_id" = ( SELECT "p"."org_id"
    FROM "public"."profiles" "p"
-  WHERE ("p"."id" = "auth"."uid"()))) AND "public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role")));
+  WHERE ("p"."id" = "auth"."uid"()))) AND ("public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role") OR "public"."has_role"("auth"."uid"(), 'super_admin'::"public"."user_role"))));
 
 
 
@@ -748,14 +1177,6 @@ CREATE POLICY "Lab admins can manage profile_templates_junction" ON "public"."pr
 
 
 
-CREATE POLICY "Lab admins can update org templates" ON "public"."test_templates" FOR UPDATE TO "authenticated" USING ((("org_id" = ( SELECT "p"."org_id"
-   FROM "public"."profiles" "p"
-  WHERE ("p"."id" = "auth"."uid"()))) AND "public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role"))) WITH CHECK ((("org_id" = ( SELECT "p"."org_id"
-   FROM "public"."profiles" "p"
-  WHERE ("p"."id" = "auth"."uid"()))) AND "public"."has_role"("auth"."uid"(), 'lab_admin'::"public"."user_role")));
-
-
-
 CREATE POLICY "Lab admins can update their own organization" ON "public"."organizations" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."org_id" = "organizations"."id") AND ("profiles"."role" = ANY (ARRAY['lab_admin'::"public"."user_role", 'super_admin'::"public"."user_role"])))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -769,6 +1190,10 @@ CREATE POLICY "Members of the same org can view each other" ON "public"."profile
 
 
 CREATE POLICY "Public can read exchange rates" ON "public"."exchange_rates" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Public organization branding is viewable by anyone" ON "public"."organizations" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
 
@@ -823,6 +1248,22 @@ CREATE POLICY "Users can insert orders in their org" ON "public"."orders" FOR IN
 
 
 CREATE POLICY "Users can insert patients in their org" ON "public"."patients" FOR INSERT WITH CHECK (("org_id" = ( SELECT "p"."org_id"
+   FROM "public"."profiles" "p"
+  WHERE ("p"."id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Users can insert templates for their own organization" ON "public"."test_templates" FOR INSERT TO "authenticated" WITH CHECK (((("org_id" IS NULL) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'super_admin'::"public"."user_role")) OR (("org_id" = ( SELECT "profiles"."org_id"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"()))) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'lab_admin'::"public"."user_role"))));
+
+
+
+CREATE POLICY "Users can read department order in their org" ON "public"."organization_test_category_settings" FOR SELECT TO "authenticated" USING (("org_id" = ( SELECT "p"."org_id"
    FROM "public"."profiles" "p"
   WHERE ("p"."id" = "auth"."uid"()))));
 
@@ -918,6 +1359,34 @@ CREATE POLICY "Users can update patients in their org" ON "public"."patients" FO
 
 
 
+CREATE POLICY "Users can update their own organization's templates" ON "public"."test_templates" FOR UPDATE TO "authenticated" USING (((("org_id" IS NULL) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'super_admin'::"public"."user_role")) OR (("org_id" = ( SELECT "profiles"."org_id"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"()))) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'lab_admin'::"public"."user_role")))) WITH CHECK (((("org_id" IS NULL) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'super_admin'::"public"."user_role")) OR (("org_id" = ( SELECT "profiles"."org_id"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"()))) AND (( SELECT "profiles"."role"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())) = 'lab_admin'::"public"."user_role"))));
+
+
+
+CREATE POLICY "Users can view relevant templates" ON "public"."test_templates" FOR SELECT TO "authenticated" USING ((("org_id" IS NULL) OR ("org_id" = ( SELECT "profiles"."org_id"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Users can view their own organization" ON "public"."organizations" FOR SELECT TO "authenticated" USING (("id" = ( SELECT "profiles"."org_id"
+   FROM "public"."profiles"
+  WHERE ("profiles"."id" = "auth"."uid"()))));
+
+
+
 ALTER TABLE "public"."exam_profiles" ENABLE ROW LEVEL SECURITY;
 
 
@@ -928,6 +1397,20 @@ ALTER TABLE "public"."order_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organization_exam_settings" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "organization_exam_settings_full_access" ON "public"."organization_exam_settings" TO "authenticated" USING (("org_id" IN ( SELECT "p"."org_id"
+   FROM "public"."profiles" "p"
+  WHERE ("p"."id" = "auth"."uid"())))) WITH CHECK (("org_id" IN ( SELECT "p"."org_id"
+   FROM "public"."profiles" "p"
+  WHERE ("p"."id" = "auth"."uid"()))));
+
+
+
+ALTER TABLE "public"."organization_test_category_settings" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."organizations" ENABLE ROW LEVEL SECURITY;
@@ -943,6 +1426,9 @@ ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."test_templates" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."test_templates_backup" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
@@ -1107,12 +1593,27 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."create_lab_order"("p_org_id" "uuid", "p_patient_id" "uuid", "p_notes" "text", "p_exchange_rate" numeric, "p_total_bs" numeric, "p_is_exempted" boolean, "p_items" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."create_lab_order"("p_org_id" "uuid", "p_patient_id" "uuid", "p_notes" "text", "p_exchange_rate" numeric, "p_total_bs" numeric, "p_is_exempted" boolean, "p_items" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."create_lab_order"("p_org_id" "uuid", "p_patient_id" "uuid", "p_notes" "text", "p_exchange_rate" numeric, "p_total_bs" numeric, "p_is_exempted" boolean, "p_items" "jsonb") TO "service_role";
 
 
 
 GRANT ALL ON FUNCTION "public"."generate_order_access_pin"() TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_order_access_pin"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_order_access_pin"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_dashboard_summary"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_dashboard_summary"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_dashboard_summary"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_dashboard_top_tests"("p_org_id" "uuid", "p_limit" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_dashboard_top_tests"("p_org_id" "uuid", "p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_dashboard_top_tests"("p_org_id" "uuid", "p_limit" integer) TO "service_role";
 
 
 
@@ -1152,9 +1653,9 @@ GRANT ALL ON FUNCTION "public"."portal_authenticate"("p_dni" "text", "p_pin" "te
 
 
 
-GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid", "p_pin" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid", "p_pin" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."portal_get_patient_orders"("p_patient_id" "uuid", "p_pin" "text") TO "service_role";
 
 
 
@@ -1167,6 +1668,12 @@ GRANT ALL ON FUNCTION "public"."prevent_role_self_update"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "anon";
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."upsert_exam_profile"("p_profile_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_description" "text", "p_total_price" numeric, "p_template_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_exam_profile"("p_profile_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_description" "text", "p_total_price" numeric, "p_template_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_exam_profile"("p_profile_id" "uuid", "p_org_id" "uuid", "p_name" "text", "p_description" "text", "p_total_price" numeric, "p_template_ids" "uuid"[]) TO "service_role";
 
 
 
@@ -1215,6 +1722,18 @@ GRANT ALL ON TABLE "public"."orders" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."organization_exam_settings" TO "anon";
+GRANT ALL ON TABLE "public"."organization_exam_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_exam_settings" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_test_category_settings" TO "anon";
+GRANT ALL ON TABLE "public"."organization_test_category_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_test_category_settings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."organizations" TO "anon";
 GRANT ALL ON TABLE "public"."organizations" TO "authenticated";
 GRANT ALL ON TABLE "public"."organizations" TO "service_role";
@@ -1242,6 +1761,12 @@ GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 GRANT ALL ON TABLE "public"."test_templates" TO "anon";
 GRANT ALL ON TABLE "public"."test_templates" TO "authenticated";
 GRANT ALL ON TABLE "public"."test_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."test_templates_backup" TO "anon";
+GRANT ALL ON TABLE "public"."test_templates_backup" TO "authenticated";
+GRANT ALL ON TABLE "public"."test_templates_backup" TO "service_role";
 
 
 
@@ -1319,38 +1844,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
-
-
-
-drop extension if exists "pg_net";
-
-CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
-
-  create policy "Usuarios autenticados pueden subir logos 1peuqw_0"
-  on "storage"."objects"
-  as permissive
-  for insert
-  to authenticated
-with check ((bucket_id = 'logos'::text));
-
-
-
-  create policy "Usuarios autenticados pueden subir logos 1peuqw_1"
-  on "storage"."objects"
-  as permissive
-  for select
-  to authenticated
-using ((bucket_id = 'logos'::text));
-
-
-
-  create policy "Usuarios autenticados pueden subir logos 1peuqw_2"
-  on "storage"."objects"
-  as permissive
-  for update
-  to authenticated
-using ((bucket_id = 'logos'::text));
 
 
 

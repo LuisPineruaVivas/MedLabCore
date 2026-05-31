@@ -69,6 +69,7 @@ export default function OrderDetailPage() {
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
   const canEnterResults = permissions.canEnterResults;
+  const canViewOrderDocuments = role !== "lab_affiliate";
   const orderItemsTyped = useMemo(
     () => orderItems as Array<{ id: string | number; test_name?: string; name?: string }>,
     [orderItems]
@@ -424,14 +425,18 @@ export default function OrderDetailPage() {
                 {primaryStatusAction.label}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
-              <FileText className="mr-2 h-4 w-4" />
-              {reportLoading ? "Generando..." : "Ver Informe"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
-              <Receipt className="mr-2 h-4 w-4" />
-              {receiptLoading ? "Generando..." : "Ver Nota"}
-            </Button>
+            {canViewOrderDocuments && (
+              <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
+                <FileText className="mr-2 h-4 w-4" />
+                {reportLoading ? "Generando..." : "Ver Informe"}
+              </Button>
+            )}
+            {canViewOrderDocuments && (
+              <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
+                <Receipt className="mr-2 h-4 w-4" />
+                {receiptLoading ? "Generando..." : "Ver Nota"}
+              </Button>
+            )}
 
             {canEnterResults && order.status !== "completada" && (
               <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
@@ -451,6 +456,8 @@ export default function OrderDetailPage() {
           onGenerateCertificate={handleViewAttendanceCertificate}
           onGenerateCompanionCertificate={handleOpenCompanionCertificateForm}
           onGenerateLetterHead={handleViewLetterhead}
+          showDocumentActions={canViewOrderDocuments}
+          showSharePortalAction={canViewOrderDocuments}
         />
 
         <div className="w-full space-y-6 lg:w-[70%]">

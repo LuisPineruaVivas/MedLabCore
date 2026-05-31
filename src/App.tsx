@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
+import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -19,6 +20,7 @@ const PatientDetailPage = lazy(() => import("@/pages/PatientDetailPage"));
 const TestsPage = lazy(() => import("@/pages/TestsPage"));
 const VisitsPage = lazy(() => import("@/pages/VisitsPage"));
 const BillingPage = lazy(() => import("@/pages/BillingPage"));
+const AffiliateAccountsPage = lazy(() => import("@/pages/AffiliateAccountsPage"));
 const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
 const OrderDetailPage = lazy(() => import("@/pages/OrderDetailPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
@@ -68,11 +70,14 @@ const App = () => (
 
               <Route element={<ProtectedRoute><BrandProvider><AppLayout /></BrandProvider></ProtectedRoute>}>
                 <Route path="/" element={<RoleRouter />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/patients/:id" element={<PatientDetailPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/orders/:id" element={<OrderDetailPage />} />
+
+                <Route element={<AllowedRolesGuard roles={["super_admin", "lab_admin", "bioanalyst", "secretary"]} />}>
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                </Route>
 
                 <Route element={<RoleGuard permission="canViewTests" />}>
                   <Route path="/tests" element={<TestsPage />} />
@@ -80,10 +85,16 @@ const App = () => (
                   <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
                 </Route>
 
-                <Route path="/visits" element={<VisitsPage />} />
+                <Route element={<RoleGuard permission="canViewVisits" />}>
+                  <Route path="/visits" element={<VisitsPage />} />
+                </Route>
 
                 <Route element={<RoleGuard permission="canViewBilling" />}>
                   <Route path="/billing" element={<BillingPage />} />
+                </Route>
+
+                <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                  <Route path="/affiliate-accounts" element={<AffiliateAccountsPage />} />
                 </Route>
 
                 <Route element={<RoleGuard permission="canViewSettings" />}>
