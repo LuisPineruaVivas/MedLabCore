@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Plus, X, UserPlus, ShoppingCart, Printer, Package, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
@@ -90,6 +90,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
   const [showQuickRegister, setShowQuickRegister] = useState(false);
   const [testSearch, setTestSearch] = useState("");
+  const testSearchInputRef = useRef<HTMLInputElement | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [isExempted, setIsExempted] = useState(false);
@@ -424,6 +425,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    ref={testSearchInputRef}
                     className="pl-9"
                     placeholder="Buscar examen..."
                     value={testSearch}
@@ -454,6 +456,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                             if (!inCart) {
                               addToCart(item);
                               setTestSearch("");
+                              testSearchInputRef.current?.focus();
                             }
                           }}
                           disabled={inCart}
