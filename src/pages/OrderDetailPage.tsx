@@ -396,15 +396,27 @@ export default function OrderDetailPage() {
       setThermalPrinting(false);
     }
   }
+    function handleSharePortalLink() {
+    // 1. Obtener la cédula/DNI del paciente desde los datos de la orden
+    const patientDni = order.patients?.id_number || order.patients?.id_number || "";
+    
+    if (!patientDni) {
+      toast.error("El paciente no tiene un documento de identidad registrado.");
+      return;
+    }
 
-  function handleSharePortalLink() {
-    const portalUrl = `${window.location.origin}/portal-paciente?org=${order.org_id}&pin=${order.access_pin}`;
+    // 2. Construir la URL del portal incluyendo el parámetro 'dni' para el auto-login
+    const portalUrl = `${window.location.origin}/portal-paciente?org=${order.org_id}&pin=${order.access_pin}&dni=${encodeURIComponent(patientDni)}`;
+    
+    // 3. Obtener y limpiar el número telefónico
     const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
     if (!phoneDigits) {
       toast.error("El paciente no tiene un número de teléfono registrado.");
       return;
     }
-    const text = encodeURIComponent(`Tus resultados están listos, los puedes ver en ${portalUrl}`);
+    
+    // 4. Crear el mensaje y abrir WhatsApp
+    const text = encodeURIComponent(`Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`);
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }
 
