@@ -45,6 +45,29 @@ describe("order detail utils", () => {
     ).toEqual(["Glucosa", "Leucocitos", "Comentario"]);
   });
 
+  it("collects OCR labels only from empty supported editable fields", () => {
+    expect(
+      collectOcrFieldLabels(
+        [{ id: "item-1", results_data: undefined }],
+        {
+          "item-1": {
+            sections: [
+              {
+                name: "General",
+                fields: [
+                  { label: "Glucosa", type: "number", value: "95" },
+                  { label: "Leucocitos", type: "range", value: "" },
+                  { label: "Comentario", type: "text", value: "   " },
+                  { label: "Plaquetas", type: "number" },
+                ],
+              },
+            ],
+          },
+        }
+      )
+    ).toEqual(["Leucocitos", "Comentario", "Plaquetas"]);
+  });
+
   it("applies OCR results to matching fields", () => {
     const updateFieldValue = vi.fn();
 

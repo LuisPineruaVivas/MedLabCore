@@ -321,11 +321,25 @@ export function getCategoryStats(
   modifiedIds: Set<string>
 ) {
   const hasAnyValue = (itemId: string) =>
-    resultsState[itemId]?.sections?.some((section) => section.fields?.some((field) => field.value && field.value !== ""));
+    resultsState[itemId]?.sections?.some((section) => section.fields?.some((field) => field.value !== undefined && field.value !== null && String(field.value).trim() !== ""));
+
+  const hasAllValues = (itemId: string) => {
+    const sections = resultsState[itemId]?.sections;
+    if (!sections || sections.length === 0) return false;
+
+    let hasFields = false;
+    const allFilled = sections.every((section) => {
+      const fields = section.fields;
+      if (!fields || fields.length === 0) return true;
+      hasFields = true;
+      return fields.every((field) => field.value !== undefined && field.value !== null && String(field.value).trim() !== "");
+    });
+    return hasFields && allFilled;
+  };
 
   return {
     isCategoryModified: itemsInCategory.some((item) => modifiedIds.has(item.id)),
-    allResultsEntered: itemsInCategory.every((item) => hasAnyValue(item.id)),
+    allResultsEntered: itemsInCategory.every((item) => hasAllValues(item.id)),
     anyResultsEntered: itemsInCategory.some((item) => hasAnyValue(item.id)),
   };
 }
