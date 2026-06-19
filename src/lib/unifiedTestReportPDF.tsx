@@ -73,8 +73,18 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   const patientGender = patientData?.gender;
   const primaryColor = labData?.primary_color || "#0ea5e9";
 
+  console.log("Order Items:", orderItems);
+
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 11, fontFamily: "Inter", color: "#333" },
+    page: {
+      paddingTop: 40,
+      paddingLeft: 40,
+      paddingRight: 40,
+      paddingBottom: 60,
+      fontSize: 11,
+      fontFamily: "Inter",
+      color: "#333",
+    },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
     labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
     labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
@@ -126,10 +136,12 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
-    signatureSection: { position: "absolute",
-      bottom: 30,
-      left: 40,
-      right: 40, marginTop: 24, paddingTop: 12, borderTop: 1, borderTopColor: "#e2e8f0" },
+    signatureSection: {
+      marginTop: 24,
+      paddingTop: 12,
+      borderTop: 1,
+      borderTopColor: "#e2e8f0",
+    },
     signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
     signatureImage: { width: 150, height: 70, objectFit: "contain" },
     footer: {
@@ -267,62 +279,87 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           </View>
         </View>
 
-        {categoryOrder.map((category) => (
-          <View key={category}>
-            <View style={styles.categoryHeader} minPresenceAhead={24}>
-              <Text style={styles.categoryHeaderText}>{category}</Text>
-            </View>
+        {categoryOrder.map((category, catIdx) => {
+          const isLastCategory = catIdx === categoryOrder.length - 1;
+          const showSignature = shouldRenderSignatureBlock(orden);
 
-            <View style={styles.tableHeader}>
-              <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
-              <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
-              <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
-              <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
-            </View>
+          const categoryContent = (
+            <View key={category}>
+              <View style={styles.categoryHeader} minPresenceAhead={24}>
+                <Text style={styles.categoryHeaderText}>{category}</Text>
+              </View>
 
-            {grouped[category].map((row, index) => {
-              if (row.isSectionHeader) {
-                return (
-                  <View key={`${category}-${index}`} style={styles.tableRow}>
-                    <View style={styles.sectionHeader}>
-                      <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
+                <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
+                <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
+                <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
+              </View>
+
+              {grouped[category].map((row, index) => {
+                if (row.isSectionHeader) {
+                  return (
+                    <View key={`${category}-${index}`} style={styles.tableRow}>
+                      <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
+                      </View>
                     </View>
-                  </View>
-                );
-              }
+                  );
+                }
 
-              if (row.value === "........" || row.value === "") return null;
+                if (row.value === "........" || row.value === "") return null;
 
-              if (row.fieldType === "text" || row.fieldType === "select") {
+                if (row.fieldType === "text" || row.fieldType === "select") {
+                  return (
+                    <View key={`${category}-${index}`} style={styles.tableRow}>
+                      <Text style={styles.colExam}>{row.fieldLabel}</Text>
+                      <Text style={styles.colResultText}>{row.value}</Text>
+                    </View>
+                  );
+                }
+
                 return (
                   <View key={`${category}-${index}`} style={styles.tableRow}>
                     <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                    <Text style={styles.colResultText}>{row.value}</Text>
+                    <Text
+                      style={[
+                        styles.colResult,
+                        { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
+                      ]}
+                    >
+                      {row.value}
+                    </Text>
+                    <Text style={styles.colUnit}>{row.unit || ""}</Text>
+                    <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
                   </View>
                 );
-              }
+              })}
+            </View>
+          );
 
-              return (
-                <View key={`${category}-${index}`} style={styles.tableRow}>
-                  <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                  <Text
-                    style={[
-                      styles.colResult,
-                      { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
-                    ]}
-                  >
-                    {row.value}
-                  </Text>
-                  <Text style={styles.colUnit}>{row.unit || ""}</Text>
-                  <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
+          if (isLastCategory && showSignature) {
+            return (
+              <View key={category} wrap={false}>
+                {categoryContent}
+                <View style={styles.signatureSection}>
+                  <View style={styles.signatureRow}>
+                    <View>
+                      {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
+                    </View>
+                    <View>
+                      {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
+                    </View>
+                  </View>
                 </View>
-              );
-            })}
-          </View>
-        ))}
+              </View>
+            );
+          }
 
-        {shouldRenderSignatureBlock(orden) && (
-          <View style={styles.signatureSection}>
+          return categoryContent;
+        })}
+
+        {categoryOrder.length === 0 && shouldRenderSignatureBlock(orden) && (
+          <View style={styles.signatureSection} wrap={false}>
             <View style={styles.signatureRow}>
               <View>
                 {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
