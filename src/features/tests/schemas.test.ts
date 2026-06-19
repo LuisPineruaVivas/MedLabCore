@@ -50,7 +50,7 @@ describe("test schemas", () => {
       ],
     });
 
-    expect(meta.rangeDisplay).toBe("0 - 1");
+    expect(meta.rangeDisplay).toBe("0.0 - 1.0");
     expect(meta.isOutOfRange).toBe(true);
   });
 

@@ -85,7 +85,10 @@ export function collectOcrFieldLabels(
   categoryItems.forEach((item) => {
     resultsState[item.id]?.sections?.forEach((section) => {
       section.fields?.forEach((field) => {
-        if (field.type === "number" || field.type === "text" || field.type === "range") {
+        if (
+          (field.type === "number" || field.type === "text" || field.type === "range") &&
+          (!field.value || String(field.value).trim() === "")
+        ) {
           fieldsToExtract.push(field.label);
         }
       });

@@ -11,6 +11,9 @@ describe("Order detail helpers", () => {
       logo: null,
       primary_color: "#0ea5e9",
       secondary_color: "#0ea5e9",
+      ciudad: "",
+      rif: "",
+      lab_admin: "",
     });
   });
 
@@ -30,6 +33,29 @@ describe("Order detail helpers", () => {
     expect(getCategoryStats(items, resultsState, new Set(["item-1"]))).toEqual({
       isCategoryModified: true,
       allResultsEntered: true,
+      anyResultsEntered: true,
+    });
+  });
+
+  it("computes category status as not fully entered when some fields are empty", () => {
+    const items = [{ id: "item-1", test_name: "Hematologia", price_at_order: 15 }];
+    const resultsState = {
+      "item-1": {
+        sections: [
+          {
+            name: "General",
+            fields: [
+              { label: "Glóbulos Blancos", type: "number" as const, value: "" },
+              { label: "Neutrofilo", type: "number" as const, value: "62" },
+            ],
+          },
+        ],
+      },
+    };
+
+    expect(getCategoryStats(items, resultsState, new Set())).toEqual({
+      isCategoryModified: false,
+      allResultsEntered: false,
       anyResultsEntered: true,
     });
   });
