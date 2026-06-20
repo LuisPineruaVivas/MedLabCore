@@ -73,8 +73,18 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   const patientGender = patientData?.gender;
   const primaryColor = labData?.primary_color || "#0ea5e9";
 
+  console.log("Order Items:", orderItems);
+
   const styles = StyleSheet.create({
-    page: { padding: 40, fontSize: 11, fontFamily: "Inter", color: "#333" },
+    page: {
+      paddingTop: 40,
+      paddingLeft: 40,
+      paddingRight: 40,
+      paddingBottom: 145,
+      fontSize: 11,
+      fontFamily: "Inter",
+      color: "#333",
+    },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
     labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
     labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
@@ -126,20 +136,25 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
-    signatureSection: { position: "absolute",
-      bottom: 30,
+    signatureSection: {
+      position: "absolute",
+      bottom: 50,
       left: 40,
-      right: 40, marginTop: 24, paddingTop: 12, borderTop: 1, borderTopColor: "#e2e8f0" },
+      right: 40,
+      paddingTop: 8,
+      borderTop: 1,
+      borderTopColor: "#e2e8f0",
+    },
     signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
     signatureImage: { width: 150, height: 70, objectFit: "contain" },
     footer: {
       position: "absolute",
-      bottom: 30,
+      bottom: 25,
       left: 40,
       right: 40,
       borderTop: 1,
       borderTopColor: "#EEE",
-      paddingTop: 10,
+      paddingTop: 8,
       textAlign: "center",
       fontSize: 8,
       color: "#94a3b8",
@@ -267,13 +282,16 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           </View>
         </View>
 
-        {categoryOrder.map((category) => (
+        {categoryOrder.map((category) => {
+          const rows = grouped[category] || [];
+          if (rows.length === 0) return null;
+          return (
           <View key={category}>
-            <View style={styles.categoryHeader} minPresenceAhead={24}>
+            <View style={styles.categoryHeader} wrap={false} minPresenceAhead={80}>
               <Text style={styles.categoryHeaderText}>{category}</Text>
             </View>
 
-            <View style={styles.tableHeader}>
+            <View style={styles.tableHeader} wrap={false}>
               <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
               <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
               <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
@@ -283,7 +301,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
             {grouped[category].map((row, index) => {
               if (row.isSectionHeader) {
                 return (
-                  <View key={`${category}-${index}`} style={styles.tableRow}>
+                  <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
                     <View style={styles.sectionHeader}>
                       <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
                     </View>
@@ -295,7 +313,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
               if (row.fieldType === "text" || row.fieldType === "select") {
                 return (
-                  <View key={`${category}-${index}`} style={styles.tableRow}>
+                  <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
                     <Text style={styles.colExam}>{row.fieldLabel}</Text>
                     <Text style={styles.colResultText}>{row.value}</Text>
                   </View>
@@ -303,7 +321,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
               }
 
               return (
-                <View key={`${category}-${index}`} style={styles.tableRow}>
+                <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
                   <Text style={styles.colExam}>{row.fieldLabel}</Text>
                   <Text
                     style={[
@@ -319,10 +337,11 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
               );
             })}
           </View>
-        ))}
+          )
+})}
 
         {shouldRenderSignatureBlock(orden) && (
-          <View style={styles.signatureSection}>
+          <View style={styles.signatureSection} fixed>
             <View style={styles.signatureRow}>
               <View>
                 {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
