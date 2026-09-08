@@ -17,6 +17,40 @@ export function buildProfileAssetPath(userId: string, assetType: "firma" | "sell
   return `${userId}/${assetType}-${timestamp}.${extension}`;
 }
 
+export function extractStoragePathFromUrl(url: string, bucketName: string): string | null {
+  if (!url) return null;
+
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return url;
+  }
+
+  try {
+    const parsed = new URL(url);
+
+    const publicPrefix = `/storage/v1/object/public/${bucketName}/`;
+    const publicIndex = parsed.pathname.indexOf(publicPrefix);
+    if (publicIndex !== -1) {
+      return decodeURIComponent(parsed.pathname.slice(publicIndex + publicPrefix.length));
+    }
+
+    const signPrefix = `/storage/v1/object/sign/${bucketName}/`;
+    const signIndex = parsed.pathname.indexOf(signPrefix);
+    if (signIndex !== -1) {
+      return decodeURIComponent(parsed.pathname.slice(signIndex + signPrefix.length));
+    }
+
+    const bucketPrefix = `/${bucketName}/`;
+    const bucketIndex = parsed.pathname.indexOf(bucketPrefix);
+    if (bucketIndex !== -1) {
+      return decodeURIComponent(parsed.pathname.slice(bucketIndex + bucketPrefix.length));
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function useProfileSettings(userId: string | null | undefined) {
   return useQuery({
     queryKey: queryKeys.settings.profile(userId),
@@ -31,6 +65,55 @@ export function useProfileSettings(userId: string | null | undefined) {
       return data as ProfileSignatureSettings;
     },
     enabled: !!userId,
+  });
+}
+
+export function useDeleteProfileAsset(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      assetType,
+      currentUrl,
+    }: {
+      assetType: "firma" | "sello";
+      currentUrl?: string | null;
+    }) => {
+      if (currentUrl) {
+        const path = extractStoragePathFromUrl(currentUrl, "firms_stamps");
+        if (path) {
+          const { error: storageError } = await supabase.storage
+            .from("firms_stamps")
+            .remove([path]);
+
+          if (storageError) {
+            console.warn(`[useDeleteProfileAsset] Error eliminando ${path} de storage:`, storageError);
+          }
+        }
+      }
+
+      const field = assetType === "firma" ? "firma_url" : "sello_url";
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .update({ [field]: null })
+        .eq("id", userId);
+
+      if (dbError) throw dbError;
+
+      return { assetType };
+    },
+    onSuccess: ({ assetType }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.profile(userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
+      toast.success(
+        assetType === "firma"
+          ? "Firma eliminada exitosamente"
+          : "Sello eliminado exitosamente"
+      );
+    },
+    onError: (error) => {
+      toast.error(getUserFacingErrorMessage(error, "No se pudo eliminar la imagen"));
+    },
   });
 }
 
@@ -53,6 +136,13 @@ export function useSaveProfileSettings(userId: string) {
       let sello_url = currentSelloUrl ?? null;
 
       if (firmaFile) {
+        if (currentFirmaUrl) {
+          const oldPath = extractStoragePathFromUrl(currentFirmaUrl, "firms_stamps");
+          if (oldPath) {
+            await supabase.storage.from("firms_stamps").remove([oldPath]);
+          }
+        }
+
         const firmaPath = buildProfileAssetPath(userId, "firma", firmaFile.name, Date.now());
         const { error: uploadError } = await supabase.storage
           .from("firms_stamps")
@@ -64,6 +154,13 @@ export function useSaveProfileSettings(userId: string) {
       }
 
       if (selloFile) {
+        if (currentSelloUrl) {
+          const oldPath = extractStoragePathFromUrl(currentSelloUrl, "firms_stamps");
+          if (oldPath) {
+            await supabase.storage.from("firms_stamps").remove([oldPath]);
+          }
+        }
+
         const selloPath = buildProfileAssetPath(userId, "sello", selloFile.name, Date.now());
         const { error: uploadError } = await supabase.storage
           .from("firms_stamps")
