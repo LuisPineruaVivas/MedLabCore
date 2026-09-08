@@ -17,7 +17,7 @@ import { useOrderResultsEditor } from "@/features/orders/useOrderResultsEditor";
 import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@/features/orders/useOrders";
 import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
 import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
-import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
+import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, canApproveAndSignOrder, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
@@ -146,8 +146,8 @@ export default function OrderDetailPage() {
   }
 
   function handleApproveAndSign() {
-    if (!profile?.firma_url || !profile?.sello_url) {
-      toast.error("Primero debes cargar tu firma y sello en Configuracion de Perfil.");
+    if (!canApproveAndSignOrder(profile)) {
+      toast.error("Primero debes cargar tu firma o sello en Configuracion de Perfil.");
       navigate("/settings");
       return;
     }
@@ -157,8 +157,8 @@ export default function OrderDetailPage() {
       orgId: order.org_id,
       status: "completada",
       completed_at: new Date().toISOString(),
-      firma_url: profile.firma_url,
-      sello_url: profile.sello_url,
+      firma_url: profile?.firma_url || null,
+      sello_url: profile?.sello_url || null,
     });
   }
 

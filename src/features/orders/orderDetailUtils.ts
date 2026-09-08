@@ -114,7 +114,21 @@ export function applyOcrResultsToState(
       section.fields?.forEach((field, fieldIdx) => {
         const aiValue = extractedResults[field.label];
         if (aiValue !== undefined && aiValue !== null) {
-          updateFieldValue(item.id, sectionIdx, fieldIdx, aiValue.toString());
+          let valueToSet = aiValue.toString().trim();
+
+          if (field.type === "number") {
+            const match = valueToSet.match(/^[-+]?\d+(?:[.,]\d+)?/);
+            if (match) {
+              valueToSet = match[0].replace(",", ".");
+            }
+          } else if (field.type === "range") {
+            const match = valueToSet.match(/^([<>]=?)?\s*\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?/);
+            if (match) {
+              valueToSet = match[0].replace(",", ".").replace(/\s+/g, "");
+            }
+          }
+
+          updateFieldValue(item.id, sectionIdx, fieldIdx, valueToSet);
           fieldsUpdated += 1;
         }
       });
@@ -123,3 +137,10 @@ export function applyOcrResultsToState(
 
   return fieldsUpdated;
 }
+
+export function canApproveAndSignOrder(
+  profile?: { firma_url?: string | null; sello_url?: string | null } | null
+): boolean {
+  return Boolean(profile?.firma_url || profile?.sello_url);
+}
+

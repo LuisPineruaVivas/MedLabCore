@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, collectOcrFieldLabels } from "./orderDetailUtils";
+import {
+  applyOcrResultsToState,
+  buildOrderPatientInfo,
+  buildThermalReceiptData,
+  canApproveAndSignOrder,
+  collectOcrFieldLabels,
+} from "./orderDetailUtils";
 
 describe("order detail utils", () => {
   it("builds patient info from an order", () => {
@@ -68,7 +74,7 @@ describe("order detail utils", () => {
     ).toEqual(["Leucocitos", "Comentario", "Plaquetas"]);
   });
 
-  it("applies OCR results to matching fields", () => {
+  it("applies OCR results to matching fields and cleans them", () => {
     const updateFieldValue = vi.fn();
 
     const updated = applyOcrResultsToState(
@@ -80,18 +86,28 @@ describe("order detail utils", () => {
               name: "General",
               fields: [
                 { label: "Glucosa", type: "number" },
+                { label: "Linfocitos", type: "number" },
+                { label: "RangoPrueba", type: "range" },
                 { label: "Comentario", type: "text" },
               ],
             },
           ],
         },
       },
-      { Glucosa: 95, Comentario: "Normal" },
+      {
+        Glucosa: "95.5 mg/dL",
+        Linfocitos: "2.9 x 10^3/uL",
+        RangoPrueba: "2-4 x 10^3/uL",
+        Comentario: "Normal",
+      },
       updateFieldValue
     );
 
-    expect(updated).toBe(2);
-    expect(updateFieldValue).toHaveBeenCalledTimes(2);
+    expect(updated).toBe(4);
+    expect(updateFieldValue).toHaveBeenNthCalledWith(1, "item-1", 0, 0, "95.5");
+    expect(updateFieldValue).toHaveBeenNthCalledWith(2, "item-1", 0, 1, "2.9");
+    expect(updateFieldValue).toHaveBeenNthCalledWith(3, "item-1", 0, 2, "2-4");
+    expect(updateFieldValue).toHaveBeenNthCalledWith(4, "item-1", 0, 3, "Normal");
   });
 
   it("builds thermal receipt data from order and priced items", () => {
@@ -116,12 +132,41 @@ describe("order detail utils", () => {
         { id: "1", test_name: "Glucosa", price_at_order: 20 },
         { id: "2", test_name: "Comentario", price_at_order: 0 },
       ],
-      { name: "ANA PEREZ", id: "V123" },
+      { name: "ANA PEREZ", id: "V123", age: "36 Años", gender: "femenino" },
       { name: "Lab", primary_color: "#000" },
       "https://app.test"
     );
 
     expect(receipt.items).toEqual([{ test_name: "Glucosa", price: 20 }]);
     expect(receipt.portalUrl).toBe("https://app.test/portal-paciente");
+  });
+
+  describe("canApproveAndSignOrder", () => {
+    it("returns false if profile is null or undefined", () => {
+      expect(canApproveAndSignOrder(null)).toBe(false);
+      expect(canApproveAndSignOrder(undefined)).toBe(false);
+    });
+
+    it("returns false if neither firma nor sello is set", () => {
+      expect(canApproveAndSignOrder({ firma_url: null, sello_url: null })).toBe(false);
+      expect(canApproveAndSignOrder({ firma_url: "", sello_url: "" })).toBe(false);
+    });
+
+    it("returns true if only firma is set", () => {
+      expect(canApproveAndSignOrder({ firma_url: "https://example.com/firma.png", sello_url: null })).toBe(true);
+    });
+
+    it("returns true if only sello is set", () => {
+      expect(canApproveAndSignOrder({ firma_url: null, sello_url: "https://example.com/sello.png" })).toBe(true);
+    });
+
+    it("returns true if both firma and sello are set", () => {
+      expect(
+        canApproveAndSignOrder({
+          firma_url: "https://example.com/firma.png",
+          sello_url: "https://example.com/sello.png",
+        })
+      ).toBe(true);
+    });
   });
 });
