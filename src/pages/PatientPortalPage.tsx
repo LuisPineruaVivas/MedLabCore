@@ -334,7 +334,7 @@ export default function PatientPortalPage() {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span>🧪 {order.items.length} exámen{order.items.length !== 1 ? 'es' : ''} realizado{order.items.length !== 1 ? 's' : ''}</span>
                             <span>·</span>
-                            <span>💰 ${order.total_amount.toFixed(2)}</span>
+                            {/*<span>💰 ${order.total_amount.toFixed(2)}</span>*/}
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
