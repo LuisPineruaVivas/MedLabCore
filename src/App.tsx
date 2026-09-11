@@ -13,6 +13,7 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { Analytics } from "@vercel/analytics/react";
+import ReportViewerPage from "./pages/ReportViewerPage";
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
@@ -67,6 +68,7 @@ const App = () => (
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/portal-paciente" element={<PatientPortalPage />} />
+              <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
               <Route element={<ProtectedRoute><BrandProvider><AppLayout /></BrandProvider></ProtectedRoute>}>
                 <Route path="/" element={<RoleRouter />} />

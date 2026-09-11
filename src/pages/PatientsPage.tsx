@@ -131,7 +131,7 @@ export default function PatientsPage() {
                         {patient.first_name} {patient.last_name}
                       </span>
                       <span className="text-[11px] text-muted-foreground mt-0.5 capitalize">
-                        {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth))} anos
+                        {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth))} años
                       </span>
                     </div>
                   </div>

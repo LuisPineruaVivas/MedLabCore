@@ -9,7 +9,7 @@ export function usePublicOrgBrand(orgId: string | null) {
       if (!orgId) return null;
       const { data, error } = await supabase
         .from("organizations")
-        .select("name, logo_url, primary_color, secondary_color, email, phone, address")
+        .select("name, logo_url, primary_color, secondary_color, email, phone, address, report_template")
         .eq("id", orgId)
         .single();
       

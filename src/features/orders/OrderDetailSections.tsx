@@ -74,6 +74,7 @@ interface OrderSidebarProps {
   order: OrderWithPatient;
   patientInfo: PatientInfo;
   onSharePortalLink: () => void;
+  onSharePdfDirectLink: () => void;
   onGenerateCertificate: () => void;
   onGenerateCompanionCertificate: () => void;
   onGenerateLetterHead: () => void;
@@ -85,6 +86,7 @@ export const OrderSidebar = memo(function OrderSidebar({
   order,
   patientInfo,
   onSharePortalLink,
+  onSharePdfDirectLink,
   onGenerateCertificate,
   onGenerateCompanionCertificate,
   onGenerateLetterHead,
@@ -138,12 +140,11 @@ export const OrderSidebar = memo(function OrderSidebar({
             </div>
             {order.access_pin && showSharePortalAction && (
               <div className="flex items-center justify-between border-t border-border pt-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">PIN de Acceso</p>
-                  <p className="mono text-sm font-medium tracking-widest">{order.access_pin}</p>
-                </div>
                 <Button variant="ghost" size="sm" onClick={onSharePortalLink}>
                   Compartir <LinkIcon className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={onSharePdfDirectLink}>
+                  Compartir pdf<LinkIcon className="h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -425,8 +426,8 @@ function OrderResultFieldRow({
     : "black";
 
   return (
-    <div className="grid grid-cols-12 items-center gap-3">
-      <Label className="col-span-12 text-xs sm:col-span-4 sm:text-sm">
+    <div className={`grid ${field.type !== 'text' ? 'grid-cols-12' : 'grid-cols-1'} items-center gap-3`}>
+      <Label className="col-span-12 text-xs sm:col-span-8 sm:text-sm">
         {field.label}
         {field.unit && <span className="ml-1 text-[10px] text-muted-foreground sm:text-xs">({field.unit})</span>}
       </Label>
@@ -443,9 +444,11 @@ function OrderResultFieldRow({
           appendTextOption={appendTextOption}
         />
       </div>
-      <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
-        {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
-      </div>
+      {field.type !== "text" && (
+        <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
+          {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -522,10 +525,25 @@ function OrderResultInput({
 
   if (field.type === "text") {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <Textarea
-          className="h-20 text-sm"
+          className="min-h-[110px] h-40  max-w-xl text-sm whitespace-pre-wrap font-sans"
           value={field.value || ""}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              e.preventDefault();
+              const textarea = e.currentTarget;
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const tabSpaces = "    ";
+              const val = textarea.value;
+              const nextVal = val.substring(0, start) + tabSpaces + val.substring(end);
+              updateFieldValue(itemId, sectionIdx, fieldIdx, nextVal);
+              requestAnimationFrame(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + tabSpaces.length;
+              });
+            }
+          }}
           onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
           disabled={readOnly}
           placeholder="Ingresar resultado"
@@ -534,32 +552,61 @@ function OrderResultInput({
         {field.options && field.options.length > 0 && (
           <Popover>
             <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="h-7" disabled={readOnly}>
-                Opciones
+              <Button type="button" variant="outline" size="sm" className="h-7 w-fit gap-1 text-xs" disabled={readOnly}>
+                <FileText className="h-3.5 w-3.5 text-primary" />
+                Plantillas / Opciones ({field.options.length})
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-2">
-              <p className="mb-2 text-xs text-muted-foreground">Selecciona una o varias opciones para añadir al texto</p>
-              <div className="flex max-h-48 flex-col gap-1 overflow-y-auto">
-                {field.options.map((option) => (
-                  <Tooltip key={option}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 w-full justify-start truncate text-left"
-                        onClick={() => appendTextOption(itemId, sectionIdx, fieldIdx, option)}
-                        disabled={readOnly}
-                      >
-                        {option}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{option}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+            <PopoverContent className="w-96 p-3" align="start">
+              <p className="mb-2 text-xs font-medium text-foreground">
+                Selecciona una plantilla o añade opciones al texto:
+              </p>
+              <div className="flex max-h-64 flex-col gap-2 overflow-y-auto pr-1">
+                {field.options.map((option, idx) => {
+                  const firstLine = option.split("\n")[0].trim();
+                  const isMultiline = option.includes("\n");
+
+                  return (
+                    <div key={idx} className="rounded-md border p-2 bg-muted/20 hover:bg-muted/40 transition-colors">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-xs font-semibold truncate flex-1" title={firstLine}>
+                          {firstLine || `Plantilla ${idx + 1}`}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            className="h-6 px-2 text-[11px]"
+                            onClick={() => updateFieldValue(itemId, sectionIdx, fieldIdx, option)}
+                            disabled={readOnly}
+                            title="Reemplaza todo el contenido del campo con esta plantilla"
+                          >
+                            Cargar
+                          </Button>
+                          {field.value && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => appendTextOption(itemId, sectionIdx, fieldIdx, option)}
+                              disabled={readOnly}
+                              title="Añade esta plantilla al final del texto actual"
+                            >
+                              + Añadir
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {isMultiline ? (
+                        <p className="line-clamp-3 text-[10px] text-muted-foreground whitespace-pre-wrap font-mono bg-background/80 p-1.5 rounded border border-border/50">
+                          {option}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </PopoverContent>
           </Popover>

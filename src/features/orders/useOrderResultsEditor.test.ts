@@ -51,5 +51,8 @@ describe("order results editor helpers", () => {
   it("appends text options without losing previous content", () => {
     expect(buildAppendedText("Paciente estable", "Normal")).toBe("Paciente estable Normal");
     expect(buildAppendedText("", "Normal")).toBe("Normal");
+    expect(buildAppendedText("Muestra: Suero", "Resultado: Negativo\nGen: No detectado")).toBe(
+      "Muestra: Suero\n\nResultado: Negativo\nGen: No detectado"
+    );
   });
 });

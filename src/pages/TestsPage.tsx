@@ -26,7 +26,7 @@ import {
   useToggleExamProfileActive,
   useToggleTestTemplateActive,
 } from "@/features/tests/useTestTemplates";
-import { TestReportPDF } from "@/lib/testReportGenerator";
+import { getTestTemplateReportComponent } from "@/lib/orderReportDispatcher";
 import { cn } from "@/lib/utils";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { TestTemplateRow } from "@/features/tests/schemas";
@@ -65,6 +65,7 @@ function getLabData(organization: ReturnType<typeof useCurrentOrgContext>["organ
 export default function TestsPage() {
   const { orgId, organization } = useCurrentOrgContext();
   const { role, isSuperAdmin } = useUserRole();
+  const PreviewReport = getTestTemplateReportComponent(organization?.report_template);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "order" | "departments">("exams");
   const [search, setSearch] = useState("");
@@ -95,7 +96,7 @@ export default function TestsPage() {
     if (isMobileDevice()) {
       setPreviewLoading(true);
       try {
-        const blob = await pdf(<TestReportPDF template={template} labData={getLabData(organization)} />).toBlob();
+        const blob = await pdf(<PreviewReport template={template} labData={getLabData(organization)} />).toBlob();
         if (!blob) {
           toast.error("No se pudo generar el PDF");
           return;
@@ -253,7 +254,7 @@ export default function TestsPage() {
           <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
             <DialogContent className="flex h-[90vh] w-[95vw] max-w-5xl flex-col overflow-hidden p-0">
               <DialogHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6"><DialogTitle className="flex items-center gap-2 text-sm sm:text-base"><FlaskConical className="h-4 w-4 text-primary sm:h-5 sm:w-5" />Vista Previa: {previewTpl?.name}</DialogTitle></DialogHeader>
-              {previewTpl && <div className="flex h-full flex-col"><div className="h-full w-full flex-1"><PDFViewer width="100%" height="100%" showToolbar className="border-none"><TestReportPDF template={previewTpl} labData={getLabData(organization)} /></PDFViewer></div></div>}
+              {previewTpl && <div className="flex h-full flex-col"><div className="h-full w-full flex-1"><PDFViewer width="100%" height="100%" showToolbar className="border-none"><PreviewReport template={previewTpl} labData={getLabData(organization)} /></PDFViewer></div></div>}
             </DialogContent>
           </Dialog>
         </>

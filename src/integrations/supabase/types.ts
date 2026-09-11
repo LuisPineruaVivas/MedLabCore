@@ -324,6 +324,7 @@ export type Database = {
           name: string
           phone: string | null
           primary_color: string | null
+          report_template: string | null
           rif: string | null
           secondary_color: string | null
           state: string | null
@@ -341,6 +342,7 @@ export type Database = {
           name: string
           phone?: string | null
           primary_color?: string | null
+          report_template?: string | null
           rif?: string | null
           secondary_color?: string | null
           state?: string | null
@@ -358,6 +360,7 @@ export type Database = {
           name?: string
           phone?: string | null
           primary_color?: string | null
+          report_template?: string | null
           rif?: string | null
           secondary_color?: string | null
           state?: string | null

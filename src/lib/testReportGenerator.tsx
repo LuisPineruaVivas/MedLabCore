@@ -28,11 +28,13 @@ interface PdfPatientData {
 
 type RenderField = TemplateField & { value?: string | number; type: FieldType };
 
-interface Props {
+export interface TestTemplateReportProps {
   template: TestTemplateRow;
   labData?: PdfLabData;
   patientData?: PdfPatientData;
 }
+
+export type Props = TestTemplateReportProps;
 
 export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const defaultPatient = {
@@ -103,6 +105,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
     colExam: { width: "35%", paddingLeft: 8 },
     colResult: { width: "20%", textAlign: "center" },
     colResultText: { width: "65%", paddingLeft: 4 },
+     compactTextResult: { lineHeight: 0.8, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
@@ -187,6 +190,20 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                 patientAge
               );
 
+              const hasExplicitValue = field.value !== undefined && field.value !== null && field.value !== '';
+              const sampleValue = hasExplicitValue
+                ? String(field.value)
+                : (field.options && field.options.length > 0 ? field.options[0] : '........');
+
+              if (field.type === 'text' || field.type === 'select') {
+                return (
+                  <View key={field.id} style={styles.tableRow} wrap={false}>
+                    <Text style={styles.colExam}>{field.label}</Text>
+                    <Text style={[styles.colResultText, styles.compactTextResult]}>{sampleValue}</Text>
+                  </View>
+                );
+              }
+
               return (
                 <View key={field.id} style={styles.tableRow}>
                   <Text style={styles.colExam}>{field.label}</Text>
@@ -195,7 +212,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                     { fontWeight: 'bold' },
                     isOutOfRange ? styles.alertResult : {},
                   ]}>
-                    {field.value && field.value !== '' ? field.value : '........'}
+                    {sampleValue}
                   </Text>
                   <Text style={styles.colUnit}>{field.unit || ''}</Text>
                   <Text style={styles.colRange}>{rangeDisplay || ''}</Text>
