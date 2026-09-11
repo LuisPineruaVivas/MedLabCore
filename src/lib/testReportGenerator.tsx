@@ -187,6 +187,22 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                 patientAge
               );
 
+              const hasExplicitValue = field.value !== undefined && field.value !== null && field.value !== '';
+              const sampleValue = hasExplicitValue
+                ? String(field.value)
+                : (field.options && field.options.length > 0 ? field.options[0] : '........');
+
+              if (field.type === 'text' || field.type === 'select') {
+                return (
+                  <View key={field.id} style={styles.tableRow} wrap={false}>
+                    <Text style={styles.colExam}>{field.label}</Text>
+                    <Text style={[styles.colResultText, { lineHeight: 1.3 }]}>
+                      {sampleValue}
+                    </Text>
+                  </View>
+                );
+              }
+
               return (
                 <View key={field.id} style={styles.tableRow}>
                   <Text style={styles.colExam}>{field.label}</Text>
@@ -195,7 +211,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                     { fontWeight: 'bold' },
                     isOutOfRange ? styles.alertResult : {},
                   ]}>
-                    {field.value && field.value !== '' ? field.value : '........'}
+                    {sampleValue}
                   </Text>
                   <Text style={styles.colUnit}>{field.unit || ''}</Text>
                   <Text style={styles.colRange}>{rangeDisplay || ''}</Text>

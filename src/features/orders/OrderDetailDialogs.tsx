@@ -1,7 +1,7 @@
 import { PDFViewer } from "@react-pdf/renderer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
+import { DynamicTestReportPDF } from "@/lib/orderReportDispatcher";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ interface ReportPreviewDialogProps {
   order: unknown;
   orderItems: unknown[];
   departmentOrder?: string[];
+  reportTemplate?: string | null;
   patientData: {
     name: string;
     id: string;
@@ -39,6 +40,7 @@ export function ReportPreviewDialog({
   order,
   orderItems,
   departmentOrder = [],
+  reportTemplate,
   patientData,
   labData,
 }: ReportPreviewDialogProps) {
@@ -52,7 +54,8 @@ export function ReportPreviewDialog({
         <div className="h-full flex-1 overflow-hidden rounded-md border bg-muted">
           {orderItems.length > 0 ? (
             <PDFViewer width="100%" height="100%" className="border-none">
-              <UnifiedTestReportPDF
+              <DynamicTestReportPDF
+                reportTemplate={reportTemplate}
                 orden={order as never}
                 orderItems={orderItems as never}
                 departmentOrder={departmentOrder}

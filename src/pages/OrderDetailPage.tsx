@@ -19,7 +19,7 @@ import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } fro
 import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
 import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, canApproveAndSignOrder, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
-import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
+import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
@@ -202,8 +202,9 @@ export default function OrderDetailPage() {
     if (isMobileDevice()) {
       setReportLoading(true);
       try {
+        const ReportComponent = getReportComponent(organization?.report_template);
         const reportBlob = await pdf(
-          <UnifiedTestReportPDF
+          <ReportComponent
             orden={order}
             orderItems={selectedReportItems as never}
             departmentOrder={departmentOrder}
@@ -420,6 +421,18 @@ export default function OrderDetailPage() {
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }
 
+  function handleSharePdfDirectLink() {
+      const patientDni = order.patients?.id_number || order.patients?.id_number || "";
+      
+      // Apunta directamente a la nueva ruta /informe-pdf
+      const pdfUrl = `${window.location.origin}/informe-pdf?org=${order.org_id}&pin=${order.access_pin}&dni=${encodeURIComponent(patientDni)}`;
+      
+      const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
+      const text = encodeURIComponent(`Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`);
+
+      window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
+    }
+
   return (
     <div className="relative space-y-6 animate-fade-in pb-20">
       <PageHeader
@@ -465,6 +478,7 @@ export default function OrderDetailPage() {
           order={order}
           patientInfo={patientInfo}
           onSharePortalLink={handleSharePortalLink}
+          onSharePdfDirectLink={handleSharePdfDirectLink}
           onGenerateCertificate={handleViewAttendanceCertificate}
           onGenerateCompanionCertificate={handleOpenCompanionCertificateForm}
           onGenerateLetterHead={handleViewLetterhead}
@@ -610,6 +624,7 @@ export default function OrderDetailPage() {
         order={order}
         orderItems={previewReportItems}
         departmentOrder={departmentOrder}
+        reportTemplate={organization?.report_template}
         patientData={patientInfo}
         labData={labData}
       />

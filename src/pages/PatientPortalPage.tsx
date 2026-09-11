@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
-import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
+import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { format, differenceInYears } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import { usePatientSession, usePatientOrders } from "@/features/patients/usePati
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
 
 export default function PatientPortalPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
   const [dni, setDni] = useState(searchParams.get("dni") || "");
   const [pin, setPin] = useState(searchParams.get("pin") || "");
@@ -100,6 +100,12 @@ export default function PatientPortalPage() {
   }
 
   function handleLogout() {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("dni");
+    newParams.delete("pin");
+    newParams.delete("pdf");
+
+    setSearchParams(newParams, { replace: true });
     logout();
     setDni("");
     setPin("");
@@ -114,8 +120,9 @@ export default function PatientPortalPage() {
     if (isMobile) {
       setReportLoading(true);
       try {
+        const ReportComponent = getReportComponent(order.report_template || (brand as any)?.report_template);
         const reportBlob = await pdf(
-          <UnifiedTestReportPDF
+          <ReportComponent
             orden={order}
             orderItems={order.items}
             departmentOrder={order.departmentOrder}
@@ -372,24 +379,31 @@ export default function PatientPortalPage() {
           </DialogHeader>
           <div className="flex-1 w-full overflow-hidden rounded-md border bg-muted">
             {selectedOrder && patientInfo ? (
-              <PDFViewer width="100%" height="100%" className="border-none">
-                <UnifiedTestReportPDF
-                  orden={selectedOrder}
-                  orderItems={selectedOrder.items}
-                  departmentOrder={selectedOrder.departmentOrder}
-                  patientData={{
-                    ...patientInfo
-                  }}
-                  labData={{
-                    name: selectedOrder.org_name,
-                    address: brand?.address || "",
-                    phone: brand?.phone || "",
-                    email: brand?.email || "",
-                    logo: selectedOrder.org_logo_url || null,
-                    primary_color: brand?.primary_color
-                  }}
-                />
-              </PDFViewer>
+              (() => {
+                const ReportComponent = getReportComponent(
+                  selectedOrder.report_template || (brand as any)?.report_template
+                );
+                return (
+                  <PDFViewer width="100%" height="100%" className="border-none">
+                    <ReportComponent
+                      orden={selectedOrder}
+                      orderItems={selectedOrder.items}
+                      departmentOrder={selectedOrder.departmentOrder}
+                      patientData={{
+                        ...patientInfo,
+                      }}
+                      labData={{
+                        name: selectedOrder.org_name,
+                        address: brand?.address || "",
+                        phone: brand?.phone || "",
+                        email: brand?.email || "",
+                        logo: selectedOrder.org_logo_url || null,
+                        primary_color: brand?.primary_color,
+                      }}
+                    />
+                  </PDFViewer>
+                );
+              })()
             ) : (
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground">Cargando datos del reporte...</p>

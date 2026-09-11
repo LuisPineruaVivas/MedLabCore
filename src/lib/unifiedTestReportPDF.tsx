@@ -132,7 +132,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     },
     colExam: { width: "35%", paddingLeft: 8 },
     colResult: { width: "20%", textAlign: "left" },
-    colResultText: { width: "65%" },
+    colResultText: { width: "65%", lineHeight: 1.3 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
@@ -353,9 +353,9 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           </View>
         )}
 
-        <Text style={styles.footer} fixed>
+        {/*<Text style={styles.footer} fixed>
           Este reporte contiene los resultados de todos los examenes solicitados en la orden.
-        </Text>
+        </Text>*/}
       </Page>
     </Document>
   );

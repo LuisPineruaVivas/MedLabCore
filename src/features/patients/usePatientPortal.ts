@@ -32,6 +32,7 @@ interface OrderWithItems {
   order_seq: number;
   firma_url: string | null;
   sello_url: string | null;
+  report_template?: string | null;
   departmentOrder: string[];
   items: PatientPortalOrderItem[];
 }
@@ -109,6 +110,7 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
         order_seq: number;
         firma_url: string | null;
         sello_url: string | null;
+        report_template?: string | null;
         department_order: unknown;
         items: PatientPortalOrderItem[];
       }) => ({
@@ -122,6 +124,7 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
         order_seq:    row.order_seq,
         firma_url:    row.firma_url ?? null,
         sello_url:    row.sello_url ?? null,
+        report_template: row.report_template ?? "default",
         departmentOrder: Array.isArray(row.department_order)
           ? row.department_order.filter((item): item is string => typeof item === "string")
           : [],

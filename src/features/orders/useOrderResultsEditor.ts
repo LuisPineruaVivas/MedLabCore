@@ -85,7 +85,9 @@ export function updateResultsField(
 
 export function buildAppendedText(existingValue: string | undefined, option: string) {
   const trimmed = String(existingValue || "").trim();
-  const separator = trimmed === "" ? "" : " ";
+  if (trimmed === "") return option.trim();
+  const isMultiline = option.includes("\n") || trimmed.includes("\n");
+  const separator = isMultiline ? "\n\n" : " ";
   return `${trimmed}${separator}${option}`.trim();
 }
 
