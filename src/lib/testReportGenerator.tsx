@@ -28,11 +28,13 @@ interface PdfPatientData {
 
 type RenderField = TemplateField & { value?: string | number; type: FieldType };
 
-interface Props {
+export interface TestTemplateReportProps {
   template: TestTemplateRow;
   labData?: PdfLabData;
   patientData?: PdfPatientData;
 }
+
+export type Props = TestTemplateReportProps;
 
 export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const defaultPatient = {
@@ -103,6 +105,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
     colExam: { width: "35%", paddingLeft: 8 },
     colResult: { width: "20%", textAlign: "center" },
     colResultText: { width: "65%", paddingLeft: 4 },
+     compactTextResult: { lineHeight: 0.8, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
@@ -196,9 +199,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                 return (
                   <View key={field.id} style={styles.tableRow} wrap={false}>
                     <Text style={styles.colExam}>{field.label}</Text>
-                    <Text style={[styles.colResultText, { lineHeight: 1.3 }]}>
-                      {sampleValue}
-                    </Text>
+                    <Text style={[styles.colResultText, styles.compactTextResult]}>{sampleValue}</Text>
                   </View>
                 );
               }

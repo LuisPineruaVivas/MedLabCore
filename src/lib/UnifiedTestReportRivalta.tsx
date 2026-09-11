@@ -94,11 +94,8 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     patientBox: {
       backgroundColor: "#f8fafc",
       padding: 5,
-      borderRadius: 4,
       flexDirection: "row",
       flexWrap: "wrap",
-      borderWidth: 1,
-      borderColor: primaryColor,
     },
     patientItemName: { width: "100%", marginBottom: 2 },
     patientItemData: { width: "60%", marginBottom: 2 },
@@ -107,7 +104,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     categoryHeader: { backgroundColor: "#f8fafc", padding: 6, marginTop: 5, marginBottom: 0, borderColor: primaryColor, borderWidth: 1 },
     categoryHeaderText: {
       fontSize: 10,
-      fontWeight: "bold",
+      fontWeight: "heavy",
       color: primaryColor,
       textTransform: "uppercase",
       letterSpacing: 1,
@@ -132,7 +129,8 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     },
     colExam: { width: "35%", paddingLeft: 8 },
     colResult: { width: "20%", textAlign: "left" },
-    colResultText: { width: "65%", lineHeight: 1.3 },
+    colResultText: { width: "65%", lineHeight: 1.1 },
+    compactTextResult: { lineHeight: 0.8, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
@@ -315,7 +313,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                   return (
                     <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
                       <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                      <Text style={styles.colResultText}>{row.value}</Text>
+                      <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}</Text>
                     </View>
                   );
                 }

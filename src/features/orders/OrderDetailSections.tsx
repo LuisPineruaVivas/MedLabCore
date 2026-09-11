@@ -140,15 +140,11 @@ export const OrderSidebar = memo(function OrderSidebar({
             </div>
             {order.access_pin && showSharePortalAction && (
               <div className="flex items-center justify-between border-t border-border pt-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">PIN de Acceso</p>
-                  <p className="mono text-sm font-medium tracking-widest">{order.access_pin}</p>
-                </div>
                 <Button variant="ghost" size="sm" onClick={onSharePortalLink}>
                   Compartir <LinkIcon className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={onSharePdfDirectLink}>
-                  Compartir solo pdf<LinkIcon className="h-4 w-4" />
+                  Compartir pdf<LinkIcon className="h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -430,8 +426,8 @@ function OrderResultFieldRow({
     : "black";
 
   return (
-    <div className="grid grid-cols-12 items-center gap-3">
-      <Label className="col-span-12 text-xs sm:col-span-4 sm:text-sm">
+    <div className={`grid ${field.type !== 'text' ? 'grid-cols-12' : 'grid-cols-1'} items-center gap-3`}>
+      <Label className="col-span-12 text-xs sm:col-span-8 sm:text-sm">
         {field.label}
         {field.unit && <span className="ml-1 text-[10px] text-muted-foreground sm:text-xs">({field.unit})</span>}
       </Label>
@@ -448,9 +444,11 @@ function OrderResultFieldRow({
           appendTextOption={appendTextOption}
         />
       </div>
-      <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
-        {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
-      </div>
+      {field.type !== "text" && (
+        <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
+          {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -529,7 +527,7 @@ function OrderResultInput({
     return (
       <div className="flex flex-col gap-1.5">
         <Textarea
-          className="min-h-[90px] text-sm whitespace-pre-wrap font-sans"
+          className="min-h-[110px] h-40  max-w-xl text-sm whitespace-pre-wrap font-sans"
           value={field.value || ""}
           onKeyDown={(e) => {
             if (e.key === "Tab") {

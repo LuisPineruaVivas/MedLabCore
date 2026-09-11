@@ -47,8 +47,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { PDFViewer, pdf } from "@react-pdf/renderer";
-import { TestReportPDF } from "@/lib/testReportGenerator";
+import { PDFViewer } from "@react-pdf/renderer";
+import { getTestTemplateReportComponent } from "@/lib/orderReportDispatcher";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,7 @@ export default function TemplateBuilderPage() {
   const isFork = searchParams.get("fork") === "1";
   const { orgId, organization } = useCurrentOrgContext();
   const { isSuperAdmin } = useUserRole();
+  const PreviewReport = getTestTemplateReportComponent(organization?.report_template);
 
   // ── Fetch existing template if editing ──────────────────────
   const { data: existingTemplate, isLoading: isLoadingTemplate } = useTemplateById(id);
@@ -534,7 +535,7 @@ export default function TemplateBuilderPage() {
             </div>
             <div className="flex-1 bg-white">
               <PDFViewer width="100%" height="100%" showToolbar={true}>
-                <TestReportPDF
+                <PreviewReport
                   template={{
                     id: existingTemplate?.id || "preview",
                     name: currentFormData.name,
@@ -750,7 +751,7 @@ function OptionsEditor({
         </Button>
       </div>
 
-      {/* Chips preview */}
+      {/* Chips preview 
       <div className="flex flex-wrap gap-1.5 items-center">
         {options.map((opt, i) => {
           const firstLine = opt.split("\n")[0].trim();
@@ -786,8 +787,7 @@ function OptionsEditor({
           );
         })}
       </div>
-
-      {/* Dialog for editing options / multiline templates */}
+      */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-6">
           <DialogHeader>

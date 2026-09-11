@@ -1,6 +1,10 @@
 import React from "react";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { UnifiedTestReportRivalta } from "@/lib/UnifiedTestReportRivalta";
+import { TestReportPDF, type TestTemplateReportProps } from "@/lib/testReportGenerator";
+import { TestReportRivaltaPDF } from "@/lib/testReportRivaltaGenerator";
+
+export type { TestTemplateReportProps };
 
 export interface UnifiedReportProps {
   orden: any;
@@ -59,3 +63,24 @@ export const DynamicTestReportPDF: React.FC<DynamicTestReportPDFProps> = ({
   const Component = getReportComponent(reportTemplate);
   return <Component {...restProps} />;
 };
+
+export const TEST_TEMPLATE_REPORT_TEMPLATES: Record<string, React.ComponentType<TestTemplateReportProps>> = {
+  default: TestReportPDF as unknown as React.ComponentType<TestTemplateReportProps>,
+  rivalta: TestReportRivaltaPDF as unknown as React.ComponentType<TestTemplateReportProps>,
+};
+
+/**
+ * Normalizes template key and returns the registered single-test preview PDF component.
+ * Fallback to 'default' if key is not found or null.
+ */
+export function getTestTemplateReportComponent(
+  templateKey?: string | null
+): React.ComponentType<TestTemplateReportProps> {
+  if (!templateKey) {
+    return TEST_TEMPLATE_REPORT_TEMPLATES.default;
+  }
+
+  const normalized = templateKey.trim().toLowerCase();
+  return TEST_TEMPLATE_REPORT_TEMPLATES[normalized] || TEST_TEMPLATE_REPORT_TEMPLATES.default;
+}
+
