@@ -245,7 +245,7 @@ export function buildSelectedPatientSummary(patient: SelectedPatient) {
   const parts = [`ID: ${patient.id_number}`];
 
   if (patient.date_of_birth) {
-    parts.push(`${differenceInYears(new Date(), new Date(patient.date_of_birth))} anos`);
+    parts.push(`${differenceInYears(new Date(), new Date(patient.date_of_birth))} años`);
   }
 
   if (patient.gender) {

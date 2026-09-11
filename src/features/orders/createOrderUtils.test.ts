@@ -166,7 +166,7 @@ describe("createOrderUtils", () => {
     });
 
     expect(summary).toContain("ID: V123");
-    expect(summary).toContain("anos");
+    expect(summary).toContain("años");
     expect(summary).toContain("F");
   });
 });
