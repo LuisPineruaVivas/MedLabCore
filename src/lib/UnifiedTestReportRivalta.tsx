@@ -465,7 +465,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                 <View style={{ alignItems: "center", marginHorizontal: 15 }}>
                   <Image src={orden.sello_url} style={styles.signatureImage} />
                   <View style={{ width: 180, borderTopWidth: 1, borderTopColor: "#000", marginTop: 4, paddingTop: 4, alignItems: "center" }}>
-                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}>{orden.firma_name}</Text>}
+                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}> Lic. {orden.firma_name}</Text>}
                   </View>
                 </View>
               ) : null}
