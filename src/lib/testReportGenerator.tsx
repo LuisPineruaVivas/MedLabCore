@@ -39,7 +39,7 @@ export type Props = TestTemplateReportProps;
 export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const defaultPatient = {
     name: "PACIENTE DE PRUEBA",
-    age: 30,
+    age: '30 Años',
     gender: "Masculino",
     date: new Date().toLocaleDateString(),
     id: "14822455"
@@ -154,7 +154,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
           <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patient.name}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patient.id}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{patient.date}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age}` : patient.age} / {patient.gender}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Orden: </Text>00001</Text></View>
         </View>
 

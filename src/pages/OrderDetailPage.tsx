@@ -215,7 +215,7 @@ export default function OrderDetailPage() {
             orden={order}
             orderItems={selectedReportItems as never}
             departmentOrder={departmentOrder}
-            patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }}
+            patientData={{ ...patientInfo, age: `${patientInfo.age}` }}
             labData={labData}
           />
         ).toBlob();
@@ -263,7 +263,7 @@ export default function OrderDetailPage() {
   async function handleViewLetterhead() {
     if (isMobileDevice()) {
       try {
-        const blob = await pdf(<LetterHeadPDF orden={order as never} patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }} />).toBlob();
+        const blob = await pdf(<LetterHeadPDF orden={order as never} patientData={{ ...patientInfo, age: `${patientInfo.age}` }} />).toBlob();
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } catch (error) {

@@ -188,7 +188,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
           <View style={styles.patientItemData}>
             <Text>
               <Text style={styles.label}>Edad/Sexo: </Text>
-              {typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}
+              {typeof patient.age === 'number' ? `${patient.age}` : patient.age} / {patient.gender}
             </Text>
           </View>
           <View style={styles.patientItem}>
