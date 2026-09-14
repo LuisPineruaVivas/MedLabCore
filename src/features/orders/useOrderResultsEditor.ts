@@ -26,10 +26,14 @@ export interface EditableOrderItem {
   id: string;
   category?: string | null;
   is_profile_header?: boolean | null;
+  test_method_id?: string | null;
+  method_name?: string | null;
   results_data?: OrderItemResultsState | string | null;
 }
 
 type ResultsMap = Record<string, OrderItemResultsState>;
+export type SelectedMethod = { id: string; name: string } | null;
+type MethodsMap = Record<string, SelectedMethod>;
 
 export function cloneResultsValue<T>(value: T): T {
   if (typeof structuredClone === "function") {
@@ -93,16 +97,22 @@ export function buildAppendedText(existingValue: string | undefined, option: str
 
 export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
   const [resultsState, setResultsState] = useState<ResultsMap>({});
+  const [methodsState, setMethodsState] = useState<MethodsMap>({});
   const [modifiedIds, setModifiedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (orderItems.length === 0) {
       setResultsState((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setMethodsState((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setModifiedIds((prev) => (prev.size === 0 ? prev : new Set()));
       return;
     }
 
     setResultsState(initializeResultsState(orderItems));
+    setMethodsState(Object.fromEntries(orderItems.map((item) => [
+      item.id,
+      item.test_method_id && item.method_name ? { id: item.test_method_id, name: item.method_name } : null,
+    ])));
     setModifiedIds(new Set());
   }, [orderItems]);
 
@@ -122,6 +132,11 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     updateFieldValue(itemId, sectionIdx, fieldIdx, newValue);
   }, [resultsState, updateFieldValue]);
 
+  const updateMethod = useCallback((itemId: string, method: SelectedMethod) => {
+    setMethodsState((previous) => ({ ...previous, [itemId]: method }));
+    setModifiedIds((previous) => new Set(previous).add(itemId));
+  }, []);
+
   const groupedItems = useMemo(() => groupEditableOrderItems(orderItems), [orderItems]);
 
   const resetModified = useCallback(() => {
@@ -130,10 +145,12 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
 
   return {
     resultsState,
+    methodsState,
     modifiedIds,
     groupedItems,
     updateFieldValue,
     appendTextOption,
+    updateMethod,
     resetModified,
   };
 }

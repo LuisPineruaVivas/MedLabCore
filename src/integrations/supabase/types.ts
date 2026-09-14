@@ -89,10 +89,12 @@ export type Database = {
           created_at: string
           id: string
           is_profile_header: boolean
+          method_name: string | null
           order_id: string
           parent_profile_id: string | null
           price_at_order: number
           results_data: Json | null
+          test_method_id: string | null
           template_id: string | null
           test_name: string
         }
@@ -100,10 +102,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_profile_header?: boolean
+          method_name?: string | null
           order_id: string
           parent_profile_id?: string | null
           price_at_order?: number
           results_data?: Json | null
+          test_method_id?: string | null
           template_id?: string | null
           test_name: string
         }
@@ -111,10 +115,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_profile_header?: boolean
+          method_name?: string | null
           order_id?: string
           parent_profile_id?: string | null
           price_at_order?: number
           results_data?: Json | null
+          test_method_id?: string | null
           template_id?: string | null
           test_name?: string
         }
@@ -140,6 +146,13 @@ export type Database = {
             referencedRelation: "v_test_templates_filtered"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_test_method_id_fkey"
+            columns: ["test_method_id"]
+            isOneToOne: false
+            referencedRelation: "test_methods"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
@@ -150,6 +163,7 @@ export type Database = {
           created_by: string
           exchange_rate: number | null
           firma_url: string | null
+          firma_name: string | null
           id: string
           is_exempted: boolean
           notes: string | null
@@ -170,6 +184,7 @@ export type Database = {
           created_by?: string
           exchange_rate?: number | null
           firma_url?: string | null
+          firma_name?: string | null
           id?: string
           is_exempted?: boolean
           notes?: string | null
@@ -190,6 +205,7 @@ export type Database = {
           created_by?: string
           exchange_rate?: number | null
           firma_url?: string | null
+          firma_name?: string | null
           id?: string
           is_exempted?: boolean
           notes?: string | null
@@ -476,6 +492,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           firma_url: string | null
+          firma_name: string | null
           full_name: string | null
           id: string
           org_id: string | null
@@ -486,6 +503,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           firma_url?: string | null
+          firma_name?: string | null
           full_name?: string | null
           id: string
           org_id?: string | null
@@ -496,6 +514,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           firma_url?: string | null
+          firma_name?: string | null
           full_name?: string | null
           id?: string
           org_id?: string | null
@@ -505,6 +524,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_methods: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          id_global_ref: string | null
+          is_active: boolean
+          name: string
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          id_global_ref?: string | null
+          is_active?: boolean
+          name: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          id_global_ref?: string | null
+          is_active?: boolean
+          name?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_methods_id_global_ref_fkey"
+            columns: ["id_global_ref"]
+            isOneToOne: false
+            referencedRelation: "test_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_methods_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { getReportComponent } from "@/lib/orderReportDispatcher";
@@ -6,7 +6,7 @@ import { usePatientSession, usePatientOrders } from "@/features/patients/usePati
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { differenceInYears } from "date-fns";
+import { differenceInYears, differenceInMonths } from "date-fns";
 
 export default function ReportViewerPage() {
   const [searchParams] = useSearchParams();
@@ -44,7 +44,9 @@ export default function ReportViewerPage() {
     name: `${session.patient_info.first_name} ${session.patient_info.last_name}`.toUpperCase(),
     id: session.patient_info.id_number,
     age: session.patient_info.date_of_birth
-      ? `${differenceInYears(new Date(), new Date(session.patient_info.date_of_birth))} Años`
+      ? differenceInYears(new Date(), new Date(session.patient_info.date_of_birth)) > 0
+        ? `${differenceInYears(new Date(), new Date(session.patient_info.date_of_birth))} Años`
+        : `${differenceInMonths(new Date(), new Date(session.patient_info.date_of_birth))} Meses`
       : "N/A",
     gender: session.patient_info.gender || "N/A",
   } : null;

@@ -1,4 +1,4 @@
-import { differenceInYears, format } from "date-fns";
+import { differenceInYears, differenceInMonths, format } from "date-fns";
 
 export interface OrderTemplateSearchRecord {
   id: string;
@@ -229,7 +229,9 @@ export function buildOrderReceiptData(params: {
     orderDate: format(now ?? new Date(), "dd/MM/yyyy HH:mm"),
     patientName: `${selectedPatient.first_name} ${selectedPatient.last_name}`.toUpperCase(),
     patientId: selectedPatient.id_number,
-    age: differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? "")),
+    age: differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? "")) > 0 
+      ? `${differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Años`
+      : `${differenceInMonths(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Meses`,
     gender: selectedPatient.gender,
     items: cart
       .filter((item) => item.price > 0)
@@ -245,7 +247,9 @@ export function buildSelectedPatientSummary(patient: SelectedPatient) {
   const parts = [`ID: ${patient.id_number}`];
 
   if (patient.date_of_birth) {
-    parts.push(`${differenceInYears(new Date(), new Date(patient.date_of_birth))} años`);
+    parts.push( differenceInYears(new Date(), new Date(patient.date_of_birth)) > 0 
+      ? `${differenceInYears(new Date(), new Date(patient.date_of_birth))} años`
+      : `${differenceInMonths(new Date(), new Date(patient.date_of_birth))} meses`)
   }
 
   if (patient.gender) {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Calendar, ChevronRight, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { differenceInYears, format } from "date-fns";
+import { differenceInMonths, differenceInYears, format } from "date-fns";
 import { NewPatientDialog } from "@/features/patients/NewPatientDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatCard } from "@/components/ui/StatCard";
@@ -131,7 +131,9 @@ export default function PatientsPage() {
                         {patient.first_name} {patient.last_name}
                       </span>
                       <span className="text-[11px] text-muted-foreground mt-0.5 capitalize">
-                        {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth))} años
+                        {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth)) > 0 
+                                              ? `${differenceInYears(new Date(), new Date(patient.date_of_birth))} Años` 
+                                              : `${differenceInMonths(new Date(), new Date(patient.date_of_birth))} Meses`}
                       </span>
                     </div>
                   </div>

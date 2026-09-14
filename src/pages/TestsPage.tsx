@@ -17,6 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileBuilderDialog } from "@/features/tests/ProfileBuilderDialog";
 import { ExamOrderView } from "@/features/tests/ExamOrderView";
 import { DepartmentOrderView } from "@/features/tests/DepartmentOrderView";
+import { TestMethodsManager } from "@/features/tests/TestMethodsManager";
 import {
   useDeleteExamProfile,
   useExamProfiles,
@@ -67,7 +68,7 @@ export default function TestsPage() {
   const { role, isSuperAdmin } = useUserRole();
   const PreviewReport = getTestTemplateReportComponent(organization?.report_template);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "order" | "departments">("exams");
+  const [activeTab, setActiveTab] = useState<"exams" | "profiles" | "methods" | "order" | "departments">("exams");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [previewTpl, setPreviewTpl] = useState<TestTemplateRow | null>(null);
@@ -162,6 +163,7 @@ export default function TestsPage() {
       <div className="w-fit items-center gap-1 rounded-lg bg-muted/50 p-1 md:inline-flex">
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Examenes</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "profiles" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("profiles")}><Package className="mr-1.5 inline-block h-4 w-4" />Perfiles</button>
+        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "methods" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("methods")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Métodos</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "order" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("order")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Impresion</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "departments" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("departments")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Departamentos</button>
       </div>
@@ -311,6 +313,8 @@ export default function TestsPage() {
 
           {orgId && <ProfileBuilderDialog open={profileDialogOpen} onOpenChange={(open) => { setProfileDialogOpen(open); if (!open) setEditingProfile(null); }} onSave={(data) => { profileSaveMutation.mutate(data, { onSuccess: () => { toast.success("Perfil guardado correctamente"); setProfileDialogOpen(false); setEditingProfile(null); }, onError: (error) => toast.error(getUserFacingErrorMessage(error, "No se pudo guardar el perfil")) }); }} initialData={editingProfile ?? undefined} isSaving={profileSaveMutation.isPending} orgId={orgId} />}
         </>
+      ) : activeTab === "methods" ? (
+        <TestMethodsManager canManage={canManageTests} isSuperAdmin={isSuperAdmin} />
       ) : activeTab === "order" ? (
         <ExamOrderView />
       ) : (

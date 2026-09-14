@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -407,6 +408,23 @@ export default function TemplateBuilderPage() {
                       {errors.base_price.message}
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-1.5 flex flex-col justify-end">
+                  <div className="flex items-center space-x-2 h-10">
+                    <Controller
+                      control={control}
+                      name="schema.hide_table_header"
+                      render={({ field }) => (
+                        <Switch
+                          id="tpl-hide-header"
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="tpl-hide-header" className="cursor-pointer">Ocultar Encabezado de Tabla</Label>
+                  </div>
                 </div>
               </div>
             </CardContent>

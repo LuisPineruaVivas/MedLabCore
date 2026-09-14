@@ -164,12 +164,14 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         </View>
 
         {/* Single table header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
-          <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
-          <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
-          <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
-        </View>
+        {!template.schema?.hide_table_header && (
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
+            <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
+            <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
+            <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
+          </View>
+        )}
 
         {/* Secciones con encabezado + campos */}
         {sections.map((section: TemplateSection) => (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, differenceInYears, parse } from "date-fns";
+import { format, differenceInYears, differenceInMonths, parse } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { patientSchema, type PatientFormData } from "./schemas";
@@ -90,7 +90,10 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
   }, [patient, open, form]);
 
   const dobValue = form.watch("date_of_birth");
-  const age = dobValue ? differenceInYears(new Date(), normalizeDateOfBirth(dobValue)) : null;
+  const age = dobValue ? differenceInYears(new Date(), normalizeDateOfBirth(dobValue)) > 0
+    ? `${differenceInYears(new Date(), normalizeDateOfBirth(dobValue))} años`
+    : `${differenceInMonths(new Date(), normalizeDateOfBirth(dobValue))} meses`
+    : null;
 
   async function handleSubmit(data: PatientFormData) {
     setLoading(true);
@@ -204,7 +207,7 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
                 <Label>Edad</Label>
                 <Input
                   readOnly
-                  value={age !== null ? `${age} años` : "—"}
+                  value={age !== null ? `${age}` : "—"}
                   className="bg-muted"
                 />
               </div>
