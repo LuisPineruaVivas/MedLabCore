@@ -11,6 +11,7 @@ export interface OrderRow {
   is_exempted: boolean;
   exchange_rate: number | null;
   firma_url: string | null;
+  firma_name: string | null;
   total_bs: number | null;
   notes: string | null;
   access_pin: string | null;
@@ -32,6 +33,8 @@ export interface OrderItemRow {
   created_at: string;
   parent_profile_id: string | null;
   is_profile_header: boolean;
+  test_method_id: string | null;
+  method_name: string | null;
 }
 
 export interface OrderWithPatient extends OrderRow {

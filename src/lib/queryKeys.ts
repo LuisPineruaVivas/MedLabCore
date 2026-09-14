@@ -63,6 +63,9 @@ export const queryKeys = {
     manualExchangeRate: (orgId: string | null | undefined) =>
       ["manual-exchange-rate", orgId ?? "none"] as const,
   },
+  testMethods: {
+    list: (orgId: string | null | undefined, activeOnly = false) => ["test-methods", orgId ?? "none", activeOnly ? "active" : "all"] as const,
+  },
   affiliateAccounts: {
     affiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
       ["affiliate-accounts", "affiliates", orgId ?? "none", role ?? "none"] as const,

@@ -124,7 +124,7 @@ export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patien
                     </View>
                     <View style={thermalStyles.infoRow}>
                         <Text style={thermalStyles.label}>EDAD/SEXO</Text>
-                        <Text style={thermalStyles.value}>{age} años/{gender}</Text>
+                        <Text style={thermalStyles.value}>{age} / {gender}</Text>
                     </View>
                 </View>
 

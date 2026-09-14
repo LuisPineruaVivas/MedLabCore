@@ -1,4 +1,4 @@
-import { differenceInYears, format } from "date-fns";
+import { differenceInYears, differenceInMonths, format } from "date-fns";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import type { EditableOrderItem, OrderItemResultsState } from "./useOrderResultsEditor";
 
@@ -37,8 +37,10 @@ export function buildOrderPatientInfo(order: OrderLike) {
     id: order.patients.id_number,
     date: format(new Date(order.created_at), "dd/MM/yyyy"),
     age: order.patients.date_of_birth
-      ? differenceInYears(new Date(), new Date(order.patients.date_of_birth))
-      : "N/A",
+      ? differenceInYears(new Date(), new Date(order.patients.date_of_birth)) > 0 
+        ? `${differenceInYears(new Date(), new Date(order.patients.date_of_birth))} Años`
+        : `${differenceInMonths(new Date(), new Date(order.patients.date_of_birth))} Meses`
+        : "N/A",
     gender: order.patients.gender || "N/A",
   };
 }

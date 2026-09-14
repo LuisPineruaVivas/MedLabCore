@@ -50,8 +50,28 @@ describe("test schemas", () => {
       ],
     });
 
-    expect(meta.rangeDisplay).toBe("0.0 - 1.0");
+    expect(meta.rangeDisplay).toBe("0 - 1");
     expect(meta.isOutOfRange).toBe(true);
+  });
+
+  it("keeps one decimal for non-whole reference values", () => {
+    const meta = getFieldResultMeta({
+      type: "number",
+      value: "1.2",
+      reference_ranges: [
+        {
+          id: "ref-1",
+          gender: "ambos",
+          age_min: null,
+          age_max: null,
+          min_value: 0.5,
+          max_value: 1.25,
+          description: "",
+        },
+      ],
+    });
+
+    expect(meta.rangeDisplay).toBe("0.5 - 1.3");
   });
 
   it("evaluates comparison expressions and descriptive text against the numeric reference", () => {

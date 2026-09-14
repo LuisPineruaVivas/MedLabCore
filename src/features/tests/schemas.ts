@@ -48,6 +48,7 @@ export const templateSectionSchema = z.object({
 
 export const templateJsonSchema = z.object({
   sections: z.array(templateSectionSchema).default([]),
+  hide_table_header: z.boolean().optional(),
 });
 
 // ── Full template form ──────────────────────────────────────────
@@ -187,6 +188,13 @@ export function sanitizeRangeInput(value: string) {
   return value.replace(/[^\d\s.,<>-]/g, "");
 }
 
+function formatReferenceNumber(value: number | null | undefined) {
+  if (value == null) return "";
+
+  const formatted = value.toFixed(1);
+  return formatted.endsWith(".0") ? formatted.slice(0, -2) : formatted;
+}
+
 export function getReferenceRangeDisplay(
   matchedRange?: ReferenceRange,
   legacyRange?: string | null
@@ -197,7 +205,7 @@ export function getReferenceRangeDisplay(
       return customDisplay;
     }
 
-    return `${matchedRange.min_value?.toFixed(1) ?? ''} - ${matchedRange.max_value?.toFixed(1) ?? ''}`;
+    return `${formatReferenceNumber(matchedRange.min_value)} - ${formatReferenceNumber(matchedRange.max_value)}`;
   }
 
   return legacyRange || "";

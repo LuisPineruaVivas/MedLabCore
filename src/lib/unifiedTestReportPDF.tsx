@@ -38,6 +38,8 @@ interface FlatRow {
   resultColor?: string;
   isSectionHeader?: boolean;
   fieldType?: string;
+  hideTableHeader?: boolean;
+  methodName?: string;
 }
 
 const shouldRenderSignatureBlock = (order: OrderRow) =>
@@ -62,14 +64,22 @@ function sortCategoriesByDepartmentOrder(categories: string[], departmentOrder: 
   });
 }
 
+function parsePatientAge(age: string | number | undefined): number | undefined {
+  if (typeof age === "number") return Number.isFinite(age) ? age : undefined;
+  if (typeof age !== "string") return undefined;
+
+  const match = age.trim().match(/^(\d+(?:[.,]\d+)?)\s*(mes(?:es)?|a(?:ñ|n)o(?:s)?)?/i);
+  if (!match) return undefined;
+
+  const value = Number(match[1].replace(",", "."));
+  if (!Number.isFinite(value)) return undefined;
+
+  return match[2]?.toLowerCase().startsWith("mes") ? value / 12 : value;
+}
+
 export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], patientData, labData }: UnifiedProps) => {
   const lab = labData || { name: "LABORATORIO CLINICO", address: "Av. Principal 123", phone: "555-0123", email: "" };
-  const patientAge =
-    typeof patientData?.age === "number"
-      ? patientData.age
-      : typeof patientData?.age === "string"
-        ? parseInt(patientData.age, 10) || undefined
-        : undefined;
+  const patientAge = parsePatientAge(patientData?.age);
   const patientGender = patientData?.gender;
   const primaryColor = labData?.primary_color || "#0ea5e9";
 
@@ -133,7 +143,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     colExam: { width: "35%", paddingLeft: 8 },
     colResult: { width: "20%", textAlign: "left" },
     colResultText: { width: "65%", lineHeight: 1.1 },
-    compactTextResult: { lineHeight: 1.1, paddingTop: 0, paddingBottom: 0 },
+    compactTextResult: { lineHeight: 0.75, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
     alertResult: { color: "#dc2626", fontWeight: "bold" },
@@ -183,12 +193,18 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const category = item.category || item.results_data?.category || "Pruebas Especiales";
+    const resultsData = typeof item.results_data === "string" ? JSON.parse(item.results_data || "{}") : (item.results_data || {});
+    const templateSchema = typeof item.test_templates?.schema === "string" ? JSON.parse(item.test_templates.schema || "{}") : (item.test_templates?.schema || {});
+
+    const category = item.category || resultsData?.category || "Pruebas Especiales";
     if (!grouped[category]) grouped[category] = [];
 
-    const sections = item.results_data?.sections || [];
+    const sections = resultsData?.sections || [];
     const allFields: Array<{ label: string }> = sections.flatMap((section: any) => section.fields || []);
     const isMultiField = allFields.length > 1;
+    const hideTableHeader = Boolean(resultsData?.hide_table_header ?? templateSchema?.hide_table_header);
+    const methodName = typeof item.method_name === "string" ? item.method_name.trim() : "";
+    let methodRendered = false;
 
     for (const section of sections) {
       const sectionRows: FlatRow[] = [];
@@ -201,6 +217,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           rangeDisplay: "",
           isOutOfRange: false,
           isSectionHeader: true,
+          hideTableHeader,
         });
       }
 
@@ -219,7 +236,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           isOutOfRange,
           resultColor,
           fieldType: field.type,
+          hideTableHeader,
+          methodName: methodRendered ? undefined : methodName || undefined,
         });
+        methodRendered = true;
       }
 
       // Verificar si hay al menos un campo no vacío en la sección
@@ -286,18 +306,22 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
         {categoryOrder.map((category) => {
           const rows = grouped[category] || [];
           if (rows.length === 0) return null;
+          const hideTableHeader = rows.length > 0 && rows.every(r => r.hideTableHeader);
+
           return (
           <View key={category}>
             <View style={styles.categoryHeader} wrap={false} minPresenceAhead={80}>
               <Text style={styles.categoryHeaderText}>{category}</Text>
             </View>
 
-            <View style={styles.tableHeader} wrap={false}>
-              <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
-              <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
-              <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
-              <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
-            </View>
+            {!hideTableHeader && (
+              <View style={styles.tableHeader} wrap={false}>
+                <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
+                <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
+                <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
+                <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
+              </View>
+            )}
 
             {grouped[category].map((row, index) => {
               if (row.isSectionHeader) {
@@ -316,7 +340,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
                 return (
                   <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
                     <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                    <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}</Text>
+                    <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}</Text>
                   </View>
                 );
               }
@@ -330,7 +354,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
                       { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
                     ]}
                   >
-                    {row.value}
+                    {row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}
                   </Text>
                   <Text style={styles.colUnit}>{row.unit || ""}</Text>
                   <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>

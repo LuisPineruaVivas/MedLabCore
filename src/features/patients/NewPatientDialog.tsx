@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { differenceInYears } from "date-fns";
+import { differenceInMonths, differenceInYears } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { patientSchema, type PatientFormData } from "./schemas";
@@ -61,6 +61,9 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
   const dobValue = form.watch("date_of_birth");
   const age = dobValue
     ? differenceInYears(new Date(), new Date(dobValue))
+    : null;
+  const ageInMonths = dobValue
+    ? differenceInMonths(new Date(), new Date(dobValue))
     : null;
 
   async function handleSubmit(data: PatientFormData) {
@@ -169,7 +172,13 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
                 <Label>Edad</Label>
                 <Input
                   readOnly
-                  value={age !== null ? `${age} años` : "—"}
+                  value={
+                    age !== null
+                      ? age > 0
+                        ? `${age} años`
+                        : `${ageInMonths} meses`
+                      : "—"
+                  }
                   className="bg-muted"
                 />
               </div>

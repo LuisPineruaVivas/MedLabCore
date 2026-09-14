@@ -19,6 +19,7 @@ import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } fro
 import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
 import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, canApproveAndSignOrder, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
+import { useTestMethods } from "@/features/tests/useTestMethods";
 import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
@@ -36,6 +37,7 @@ export default function OrderDetailPage() {
   const { data: order, isLoading: orderLoading } = useOrder(id || null);
   const { data: orderItemsData, isLoading: itemsLoading } = useOrderItems(id || null);
   const { data: departmentOrder = [] } = useDepartmentOrder();
+  const { data: testMethods = [] } = useTestMethods({ activeOnly: true });
   const updateStatus = useUpdateOrderStatus();
   const saveResults = useSaveResults();
   const orderItems = useMemo(() => orderItemsData ?? [], [orderItemsData]);
@@ -43,8 +45,10 @@ export default function OrderDetailPage() {
     resultsState,
     modifiedIds,
     groupedItems,
+    methodsState,
     updateFieldValue,
     appendTextOption,
+    updateMethod,
     resetModified,
   } = useOrderResultsEditor(orderItems);
 
@@ -125,6 +129,8 @@ export default function OrderDetailPage() {
             orderId: order.id,
             orgId: order.org_id,
             resultsData: resultsState[itemId] as unknown as Json,
+            testMethodId: methodsState[itemId]?.id ?? null,
+            methodName: methodsState[itemId]?.name ?? null,
           })
         )
       );
@@ -158,6 +164,7 @@ export default function OrderDetailPage() {
       status: "completada",
       completed_at: new Date().toISOString(),
       firma_url: profile?.firma_url || null,
+      firma_name: profile?.full_name || null,
       sello_url: profile?.sello_url || null,
     });
   }
@@ -208,7 +215,7 @@ export default function OrderDetailPage() {
             orden={order}
             orderItems={selectedReportItems as never}
             departmentOrder={departmentOrder}
-            patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }}
+            patientData={{ ...patientInfo, age: `${patientInfo.age}` }}
             labData={labData}
           />
         ).toBlob();
@@ -256,7 +263,7 @@ export default function OrderDetailPage() {
   async function handleViewLetterhead() {
     if (isMobileDevice()) {
       try {
-        const blob = await pdf(<LetterHeadPDF orden={order as never} patientData={{ ...patientInfo, age: `${patientInfo.age} Años` }} />).toBlob();
+        const blob = await pdf(<LetterHeadPDF orden={order as never} patientData={{ ...patientInfo, age: `${patientInfo.age}` }} />).toBlob();
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } catch (error) {
@@ -516,8 +523,11 @@ export default function OrderDetailPage() {
               }
               orderStatus={order.status}
               ocrLoading={ocrLoading}
+              testMethods={testMethods}
+              selectedMethods={methodsState}
               updateFieldValue={updateFieldValue}
               appendTextOption={appendTextOption}
+              updateMethod={updateMethod}
               handleFileUploadForOCR={handleFileUploadForOCR}
             />
           )}

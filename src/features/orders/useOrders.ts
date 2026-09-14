@@ -99,7 +99,7 @@ export function useOrders(statusFilter?: OrderStatus) {
       const query = supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("org_id", orgId!)
         .order("created_at", { ascending: false });
@@ -212,7 +212,7 @@ export function useOrder(orderId: string | null) {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("id", orderId!)
         .single();
@@ -239,12 +239,15 @@ export function useOrderItems(orderId: string | null) {
           test_name,
           price_at_order,
           results_data,
+          test_method_id,
+          method_name,
           created_at,
           parent_profile_id,
           is_profile_header,
           test_templates(
             category,
             sort_order,
+            schema,
             organization_exam_settings!template_id(custom_sort_order)
           )
         `)
@@ -322,15 +325,19 @@ export function useSaveResults() {
       orderId,
       orgId,
       resultsData,
+      testMethodId,
+      methodName,
     }: {
       itemId: string;
       orderId: string;
       orgId: string | null | undefined;
       resultsData: Json;
+      testMethodId?: string | null;
+      methodName?: string | null;
     }) => {
       const { error } = await supabase
         .from("order_items")
-        .update({ results_data: resultsData })
+        .update({ results_data: resultsData, test_method_id: testMethodId ?? null, method_name: methodName ?? null })
         .eq("id", itemId);
       if (error) throw error;
     },
@@ -352,6 +359,7 @@ export function useUpdateOrderStatus() {
       status,
       completed_at,
       firma_url,
+      firma_name,
       sello_url,
     }: {
       orderId: string;
@@ -359,17 +367,20 @@ export function useUpdateOrderStatus() {
       status: OrderStatus;
       completed_at?: string | null;
       firma_url?: string | null;
+      firma_name?: string | null;
       sello_url?: string | null;
     }) => {
       const updatePayload: {
         status: OrderStatus;
         completed_at?: string | null;
         firma_url?: string | null;
+        firma_name?: string | null;
         sello_url?: string | null;
       } = { status };
 
       if (completed_at !== undefined) updatePayload.completed_at = completed_at;
       if (firma_url !== undefined) updatePayload.firma_url = firma_url;
+      if (firma_name !== undefined) updatePayload.firma_name = firma_name;
       if (sello_url !== undefined) updatePayload.sello_url = sello_url;
 
       const { error } = await supabase
@@ -386,6 +397,7 @@ export function useUpdateOrderStatus() {
           status: variables.status,
           ...(variables.completed_at !== undefined ? { completed_at: variables.completed_at } : {}),
           ...(variables.firma_url !== undefined ? { firma_url: variables.firma_url } : {}),
+          ...(variables.firma_name !== undefined ? { firma_name: variables.firma_name } : {}),
           ...(variables.sello_url !== undefined ? { sello_url: variables.sello_url } : {}),
         };
       });

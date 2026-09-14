@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { getReportComponent } from "@/lib/orderReportDispatcher";
-import { format, differenceInYears } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
@@ -159,8 +159,10 @@ export default function PatientPortalPage() {
     name: `${session.patient_info.first_name} ${session.patient_info.last_name}`.toUpperCase(),
     id: session.patient_info.id_number,
     age: session.patient_info.date_of_birth
-      ? `${differenceInYears(new Date(), new Date(session.patient_info.date_of_birth))} Años`
-      : "N/A",
+      ? differenceInYears(new Date(), new Date(session.patient_info.date_of_birth)) 
+        > 0 ? `${differenceInYears(new Date(), new Date(session.patient_info.date_of_birth))} Años`
+        : `${differenceInMonths(new Date(), new Date(session.patient_info.date_of_birth))} Meses`
+        : "N/A",
     gender: session.patient_info.gender || "N/A",
   } : null;
 

@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
+import type { TestMethod } from "@/features/tests/useTestMethods";
 import type { EditableOrderItem, OrderItemResultsState, OrderResultFieldState, OrderResultSectionState } from "./useOrderResultsEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -188,8 +189,11 @@ interface OrderResultsPanelProps {
   canEnterResults: boolean;
   orderStatus: OrderWithPatient["status"];
   ocrLoading: string | null;
+  testMethods: TestMethod[];
+  selectedMethods: Record<string, { id: string; name: string } | null>;
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
+  updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
   handleFileUploadForOCR: (e: React.ChangeEvent<HTMLInputElement>, categoryItems: OrderItem[], categoryName: string) => void;
 }
 
@@ -201,8 +205,11 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
   canEnterResults,
   orderStatus,
   ocrLoading,
+  testMethods,
+  selectedMethods,
   updateFieldValue,
   appendTextOption,
+  updateMethod,
   handleFileUploadForOCR,
 }: OrderResultsPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -274,8 +281,11 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     itemResultsData={resultsState[item.id]}
                     patientInfo={patientInfo}
                     readOnly={orderStatus === "completada" || !canEnterResults}
+                    testMethods={testMethods}
+                    selectedMethod={selectedMethods[item.id]}
                     updateFieldValue={updateFieldValue}
                     appendTextOption={appendTextOption}
+                    updateMethod={updateMethod}
                   />
                 ))}
               </CardContent>
@@ -350,15 +360,21 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   itemResultsData,
   patientInfo,
   readOnly,
+  testMethods,
+  selectedMethod,
   updateFieldValue,
   appendTextOption,
+  updateMethod,
 }: {
   item: OrderItem;
   itemResultsData?: ItemResultsData;
   patientInfo: PatientInfo;
   readOnly: boolean;
+  testMethods: TestMethod[];
+  selectedMethod: { id: string; name: string } | null | undefined;
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
+  updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
 }) {
   if (!itemResultsData) {
     return <div className="py-4 text-center text-sm text-muted-foreground">Estructura de resultados no disponible.</div>;
@@ -367,7 +383,29 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   return (
     <div className="p-4">
       <div className="space-y-6">
-        <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+          {!readOnly || selectedMethod ? (
+            <Select
+              value={selectedMethod?.id ?? "__none__"}
+              onValueChange={(methodId) => {
+                if (methodId === "__none__") {
+                  updateMethod(item.id, null);
+                  return;
+                }
+                const method = testMethods.find((candidate) => candidate.id === methodId);
+                if (method) updateMethod(item.id, { id: method.id, name: method.name });
+              }}
+              disabled={readOnly}
+            >
+              <SelectTrigger className="h-8 w-[210px] text-xs"><SelectValue placeholder="Agregar método" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sin método</SelectItem>
+                {testMethods.map((method) => <SelectItem key={method.id} value={method.id}>{method.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
         {itemResultsData.sections?.map((section, sectionIdx) => (
           <div key={section.id || sectionIdx} className="space-y-3">
             {section.name && (

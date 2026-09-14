@@ -33,7 +33,7 @@ export function LetterHeadPreviewDialog({
             <PDFViewer width="100%" height="100%" className="border-none">
               <LetterHeadPDF
                 orden={order as never}
-                patientData={{ ...patientData, age: `${patientData.age} Años` }}
+                patientData={{ ...patientData, age: `${patientData.age}` }}
               />
             </PDFViewer>
         </div>

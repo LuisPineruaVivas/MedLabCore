@@ -38,6 +38,14 @@ interface FlatRow {
   resultColor?: string;
   isSectionHeader?: boolean;
   fieldType?: string;
+  hideTableHeader?: boolean;
+  methodName?: string;
+}
+
+interface ReportChunk {
+  category: string;
+  rows: FlatRow[];
+  startsNewPage: boolean;
 }
 
 const shouldRenderSignatureBlock = (order: OrderRow) =>
@@ -62,14 +70,98 @@ function sortCategoriesByDepartmentOrder(categories: string[], departmentOrder: 
   });
 }
 
+function parsePatientAge(age: string | number | undefined): number | undefined {
+  if (typeof age === "number") return Number.isFinite(age) ? age : undefined;
+  if (typeof age !== "string") return undefined;
+
+  const match = age.trim().match(/^(\d+(?:[.,]\d+)?)\s*(mes(?:es)?|a(?:ñ|n)o(?:s)?)?/i);
+  if (!match) return undefined;
+
+  const value = Number(match[1].replace(",", "."));
+  if (!Number.isFinite(value)) return undefined;
+
+  return match[2]?.toLowerCase().startsWith("mes") ? value / 12 : value;
+}
+
+function estimateRowHeight(row: FlatRow) {
+  if (row.isSectionHeader) return 12;
+
+  const labelLines = Math.ceil(row.fieldLabel.length / 28);
+  const valueLines = Math.ceil((row.value.length + (row.methodName?.length ?? 0)) / (row.fieldType === "text" || row.fieldType === "select" ? 42 : 20)) + (row.methodName ? 1 : 0);
+  const rangeLines = Math.ceil(row.rangeDisplay.length / 18);
+  const lineCount = Math.max(1, labelLines, valueLines, rangeLines);
+
+  return 10 * lineCount;
+}
+
+function paginateCategories(
+  categoryOrder: string[],
+  grouped: Record<string, FlatRow[]>,
+  availableHeight = 600,
+): ReportChunk[] {
+  const chunks: ReportChunk[] = [];
+  let remainingHeight = availableHeight;
+  let hasContentOnPage = false;
+
+  for (const category of categoryOrder) {
+    const rows = grouped[category] || [];
+    let rowIndex = 0;
+
+    const categoryHeight =
+      40 + rows.reduce((total, row) => total + estimateRowHeight(row), 0);
+
+    if (
+      hasContentOnPage &&
+      categoryHeight <= availableHeight &&
+      categoryHeight > remainingHeight
+    ) {
+      remainingHeight = availableHeight;
+      hasContentOnPage = false;
+    }
+
+    while (rowIndex < rows.length) {
+      const continuesCategory = rowIndex > 0;
+      const categoryHeaderHeight = 20;
+      const tableHeaderHeight = 20;
+      const categoryHeaderHeightTotal = categoryHeaderHeight + tableHeaderHeight;
+      const firstRowHeight = estimateRowHeight(rows[rowIndex]);
+
+      if (hasContentOnPage && remainingHeight < categoryHeaderHeightTotal + firstRowHeight) {
+        remainingHeight = availableHeight;
+        hasContentOnPage = false;
+      }
+
+      const chunkRows: FlatRow[] = [];
+      let chunkHeight = categoryHeaderHeightTotal;
+
+      while (rowIndex < rows.length) {
+        const rowHeight = estimateRowHeight(rows[rowIndex]);
+        if (chunkRows.length > 0 && chunkHeight + rowHeight > remainingHeight) {
+          break;
+        }
+
+        chunkRows.push(rows[rowIndex]);
+        chunkHeight += rowHeight;
+        rowIndex += 1;
+      }
+
+      chunks.push({
+        category,
+        rows: chunkRows,
+        startsNewPage: continuesCategory,
+      });
+
+      remainingHeight -= chunkHeight;
+      hasContentOnPage = true;
+    }
+  }
+
+  return chunks;
+}
+
 export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = [], patientData, labData }: UnifiedProps) => {
   const lab = labData || { name: "LABORATORIO CLINICO", address: "Av. Principal 123", phone: "555-0123", email: "" };
-  const patientAge =
-    typeof patientData?.age === "number"
-      ? patientData.age
-      : typeof patientData?.age === "string"
-        ? parseInt(patientData.age, 10) || undefined
-        : undefined;
+  const patientAge = parsePatientAge(patientData?.age);
   const patientGender = patientData?.gender;
   const primaryColor = labData?.primary_color || "#0ea5e9";
 
@@ -180,12 +272,18 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const category = item.category || item.results_data?.category || "Pruebas Especiales";
+    const resultsData = typeof item.results_data === "string" ? JSON.parse(item.results_data || "{}") : (item.results_data || {});
+    const templateSchema = typeof item.test_templates?.schema === "string" ? JSON.parse(item.test_templates.schema || "{}") : (item.test_templates?.schema || {});
+
+    const category = item.category || resultsData?.category || "Pruebas Especiales";
     if (!grouped[category]) grouped[category] = [];
 
-    const sections = item.results_data?.sections || [];
+    const sections = resultsData?.sections || [];
     const allFields: Array<{ label: string }> = sections.flatMap((section: any) => section.fields || []);
     const isMultiField = allFields.length > 1;
+    const hideTableHeader = Boolean(resultsData?.hide_table_header ?? templateSchema?.hide_table_header);
+    const methodName = typeof item.method_name === "string" ? item.method_name.trim() : "";
+    let methodRendered = false;
 
     for (const section of sections) {
       const sectionRows: FlatRow[] = [];
@@ -198,6 +296,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
           rangeDisplay: "",
           isOutOfRange: false,
           isSectionHeader: true,
+          hideTableHeader,
         });
       }
 
@@ -216,24 +315,32 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
           isOutOfRange,
           resultColor,
           fieldType: field.type,
+          hideTableHeader,
+          methodName: methodRendered ? undefined : methodName || undefined,
         });
+        methodRendered = true;
       }
 
       // Verificar si hay al menos un campo no vacío en la sección
       const hasValidField = sectionRows.some(row => !row.isSectionHeader && row.value !== "........" && row.value !== "");
 
       if (hasValidField) {
-        grouped[category].push(...sectionRows);
+        grouped[category].push(
+          ...sectionRows.filter(
+            row => row.isSectionHeader || (row.value !== "........" && row.value !== ""),
+          ),
+        );
       }
     }
   }
 
   const categoryOrder = sortCategoriesByDepartmentOrder(Object.keys(grouped), departmentOrder);
+  const reportChunks = paginateCategories(categoryOrder, grouped);
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
+        <View style={styles.header} fixed>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>
             <Text style={styles.labDetails}>{lab.address}</Text>
@@ -247,7 +354,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
           )}
         </View>
 
-        <View style={styles.patientBox}>
+        <View style={styles.patientBox} fixed>
           <View style={styles.patientItemName}>
             <Text>
               <Text style={styles.label}>Paciente: </Text>
@@ -280,26 +387,28 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
           </View>
         </View>
 
-        {categoryOrder.map((category) => {
-          const rows = grouped[category] || [];
-          if (rows.length === 0) return null;
+        {reportChunks.map((chunk, chunkIndex) => {
+          const hideTableHeader = chunk.rows.length > 0 && chunk.rows.every(r => r.hideTableHeader);
+
           return (
-            <View key={category}>
+            <View key={`${chunk.category}-${chunkIndex}`} break={chunk.startsNewPage} wrap={false}>
               <View style={styles.categoryHeader} wrap={false} minPresenceAhead={80}>
-                <Text style={styles.categoryHeaderText}>{category}</Text>
+                <Text style={styles.categoryHeaderText}>{chunk.category}</Text>
               </View>
 
-              <View style={styles.tableHeader} wrap={false}>
-                <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
-                <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
-                <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
-                <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
-              </View>
+              {!hideTableHeader && (
+                <View style={styles.tableHeader} wrap={false}>
+                  <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
+                  <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
+                  <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
+                  <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
+                </View>
+              )}
 
-              {grouped[category].map((row, index) => {
+              {chunk.rows.map((row, index) => {
                 if (row.isSectionHeader) {
                   return (
-                    <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
+                    <View key={`${chunk.category}-${chunkIndex}-${index}`} style={styles.tableRow} wrap={false}>
                       <View style={styles.sectionHeader}>
                         <Text style={styles.sectionHeaderText}>{row.fieldLabel}</Text>
                       </View>
@@ -311,15 +420,15 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
                 if (row.fieldType === "text" || row.fieldType === "select") {
                   return (
-                    <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
+                    <View key={`${chunk.category}-${chunkIndex}-${index}`} style={styles.tableRow} wrap={false}>
                       <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                      <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}</Text>
+                      <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}</Text>
                     </View>
                   );
                 }
 
                 return (
-                  <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
+                  <View key={`${chunk.category}-${chunkIndex}-${index}`} style={styles.tableRow} wrap={false}>
                     <Text style={styles.colExam}>{row.fieldLabel}</Text>
                     <Text
                       style={[
@@ -330,7 +439,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                         },
                       ]}
                     >
-                      {row.value}
+                      {row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}
                     </Text>
                     <Text style={styles.colUnit}>{row.unit || ""}</Text>
                     <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
@@ -344,12 +453,22 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
         {shouldRenderSignatureBlock(orden) && (
           <View style={styles.signatureSection} fixed>
             <View style={styles.signatureRow}>
-              <View>
-                {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
-              </View>
-              <View>
-                {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
-              </View>
+              {orden.firma_url ? (
+                <View style={{ alignItems: "center", marginHorizontal: 15 }}>
+                  <Image src={orden.firma_url} style={styles.signatureImage} />
+                  <View style={{ width: 180, borderTopWidth: 1, borderTopColor: "#000", marginTop: 4, paddingTop: 4, alignItems: "center" }}>
+                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}>{orden.firma_name}</Text>}
+                  </View>
+                </View>
+              ) : null}
+              {orden.sello_url ? (
+                <View style={{ alignItems: "center", marginHorizontal: 15 }}>
+                  <Image src={orden.sello_url} style={styles.signatureImage} />
+                  <View style={{ width: 180, borderTopWidth: 1, borderTopColor: "#000", marginTop: 4, paddingTop: 4, alignItems: "center" }}>
+                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}>{orden.firma_name}</Text>}
+                  </View>
+                </View>
+              ) : null}
             </View>
           </View>
         )}

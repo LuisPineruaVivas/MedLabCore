@@ -59,7 +59,7 @@ export function ReportPreviewDialog({
                 orden={order as never}
                 orderItems={orderItems as never}
                 departmentOrder={departmentOrder}
-                patientData={{ ...patientData, age: `${patientData.age} Años` }}
+                patientData={{ ...patientData, age: `${patientData.age}` }}
                 labData={labData}
               />
             </PDFViewer>

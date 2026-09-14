@@ -39,7 +39,7 @@ export type Props = TestTemplateReportProps;
 export const TestReportPDF = ({ template, labData, patientData }: Props) => {
   const defaultPatient = {
     name: "PACIENTE DE PRUEBA",
-    age: 30,
+    age: '30 Años',
     gender: "Masculino",
     date: new Date().toLocaleDateString(),
     id: "14822455"
@@ -154,7 +154,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
           <View style={styles.patientItem}><Text><Text style={styles.label}>Paciente: </Text>{patient.name}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>CI: </Text>{patient.id}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Fecha: </Text>{patient.date}</Text></View>
-          <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}</Text></View>
+          <View style={styles.patientItem}><Text><Text style={styles.label}>Edad/Sexo: </Text>{typeof patient.age === 'number' ? `${patient.age}` : patient.age} / {patient.gender}</Text></View>
           <View style={styles.patientItem}><Text><Text style={styles.label}>Orden: </Text>00001</Text></View>
         </View>
 
@@ -164,12 +164,14 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         </View>
 
         {/* Single table header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
-          <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
-          <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
-          <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
-        </View>
+        {!template.schema?.hide_table_header && (
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
+            <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
+            <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
+            <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
+          </View>
+        )}
 
         {/* Secciones con encabezado + campos */}
         {sections.map((section: TemplateSection) => (

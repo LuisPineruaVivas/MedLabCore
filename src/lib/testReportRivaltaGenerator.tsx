@@ -188,7 +188,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
           <View style={styles.patientItemData}>
             <Text>
               <Text style={styles.label}>Edad/Sexo: </Text>
-              {typeof patient.age === 'number' ? `${patient.age} Años` : patient.age} / {patient.gender}
+              {typeof patient.age === 'number' ? `${patient.age}` : patient.age} / {patient.gender}
             </Text>
           </View>
           <View style={styles.patientItem}>
@@ -205,12 +205,14 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
         </View>
 
         {/* Table header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
-          <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
-          <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
-          <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
-        </View>
+        {!template.schema?.hide_table_header && (
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
+            <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
+            <Text style={[styles.colUnit, { fontWeight: 'bold' }]}>UNIDADES</Text>
+            <Text style={[styles.colRange, { fontWeight: 'bold' }]}>VALORES DE REF.</Text>
+          </View>
+        )}
 
         {/* Sections & Fields */}
         {sections.map((section: TemplateSection) => (
