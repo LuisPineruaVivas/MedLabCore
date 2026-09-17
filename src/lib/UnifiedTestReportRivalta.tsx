@@ -537,7 +537,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
         )}
 
         <Text style={styles.footer} fixed>
-          Este reporte contiene los resultados de todos los examenes solicitados en la orden.
+          BIOANALISTA/BIOANALYST: LCDA. ROSWITA FUREK DE VILLASMIL COLG.N°18-0221-6825LCDA.ANGELA BEATO COLG N°18-0208-5523
         </Text>
       </Page>
     </Document>
