@@ -198,6 +198,19 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
                 : (field.options && field.options.length > 0 ? field.options[0] : '........');
 
               if (field.type === 'text' || field.type === 'select') {
+                if (template.schema?.hide_table_header) {
+                  return (
+                    <View key={field.id} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
+                      {field.label ? (
+                        <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>{field.label}</Text>
+                      ) : null}
+                      <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0 }]}>
+                        {sampleValue}
+                      </Text>
+                    </View>
+                  );
+                }
+
                 return (
                   <View key={field.id} style={styles.tableRow} wrap={false}>
                     <Text style={styles.colExam}>{field.label}</Text>

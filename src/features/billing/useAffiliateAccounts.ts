@@ -30,7 +30,7 @@ export function useAffiliateUsers() {
         .eq("role", "lab_affiliate")
         .order("full_name", { ascending: true });
 
-      if (role === "lab_admin" && orgId) {
+      if (role !== "super_admin" && orgId) {
         query = query.eq("org_id", orgId);
       }
 
@@ -38,7 +38,9 @@ export function useAffiliateUsers() {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: role === "lab_admin" || role === "super_admin",
+    // OrdersPage also uses this directory to label an order's origin. RLS and
+    // the org constraint keep the result scoped to the current laboratory.
+    enabled: !!orgId || role === "super_admin",
   });
 }
 

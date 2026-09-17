@@ -99,7 +99,7 @@ export function useOrders(statusFilter?: OrderStatus) {
       const query = supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, signature_footer_text, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("org_id", orgId!)
         .order("created_at", { ascending: false });
@@ -115,12 +115,26 @@ export function useOrders(statusFilter?: OrderStatus) {
   });
 }
 
-export function useOrdersList(page: number, search: string, statusFilter: string) {
+export function useOrdersList(
+  page: number,
+  search: string,
+  statusFilter: string,
+  affiliateOriginFilter: "all" | "affiliate" | "internal" = "all",
+  affiliateUserId = "all",
+  affiliateUserIds: string[] = [],
+) {
   const { orgId } = useCurrentOrgContext();
   const pageSize = 10;
 
   return useQuery({
-    queryKey: queryKeys.orders.list(orgId, { page, search, statusFilter }),
+    queryKey: queryKeys.orders.list(orgId, {
+      page,
+      search,
+      statusFilter,
+      affiliateOriginFilter,
+      affiliateUserId,
+      affiliateUserIds: affiliateUserIds.join(","),
+    }),
     queryFn: async () => {
       const offset = (page - 1) * pageSize;
       const searchTerm = search.trim();
@@ -130,6 +144,7 @@ export function useOrdersList(page: number, search: string, statusFilter: string
         .select(
           `
             id,
+            created_by,
             status,
             total_amount,
             is_exempted,
@@ -145,6 +160,14 @@ export function useOrdersList(page: number, search: string, statusFilter: string
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter as OrderStatus);
+      }
+
+      if (affiliateUserId !== "all") {
+        query = query.eq("created_by", affiliateUserId);
+      } else if (affiliateOriginFilter === "affiliate") {
+        query = query.in("created_by", affiliateUserIds);
+      } else if (affiliateOriginFilter === "internal" && affiliateUserIds.length > 0) {
+        query = query.not("created_by", "in", `(${affiliateUserIds.join(",")})`);
       }
 
       if (searchTerm) {
@@ -361,6 +384,7 @@ export function useUpdateOrderStatus() {
       firma_url,
       firma_name,
       sello_url,
+      signature_footer_text,
     }: {
       orderId: string;
       orgId?: string | null;
@@ -369,6 +393,7 @@ export function useUpdateOrderStatus() {
       firma_url?: string | null;
       firma_name?: string | null;
       sello_url?: string | null;
+      signature_footer_text?: string | null;
     }) => {
       const updatePayload: {
         status: OrderStatus;
@@ -376,12 +401,14 @@ export function useUpdateOrderStatus() {
         firma_url?: string | null;
         firma_name?: string | null;
         sello_url?: string | null;
+        signature_footer_text?: string | null;
       } = { status };
 
       if (completed_at !== undefined) updatePayload.completed_at = completed_at;
       if (firma_url !== undefined) updatePayload.firma_url = firma_url;
       if (firma_name !== undefined) updatePayload.firma_name = firma_name;
       if (sello_url !== undefined) updatePayload.sello_url = sello_url;
+      if (signature_footer_text !== undefined) updatePayload.signature_footer_text = signature_footer_text;
 
       const { error } = await supabase
         .from("orders")
@@ -399,6 +426,7 @@ export function useUpdateOrderStatus() {
           ...(variables.firma_url !== undefined ? { firma_url: variables.firma_url } : {}),
           ...(variables.firma_name !== undefined ? { firma_name: variables.firma_name } : {}),
           ...(variables.sello_url !== undefined ? { sello_url: variables.sello_url } : {}),
+          ...(variables.signature_footer_text !== undefined ? { signature_footer_text: variables.signature_footer_text } : {}),
         };
       });
       getOrderStatusInvalidationTargets(variables.orderId, variables.orgId).forEach((queryKey) => {

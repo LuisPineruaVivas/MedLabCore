@@ -21,6 +21,7 @@ export interface OrderRow {
   completed_at: string | null;
   order_seq: number;
   sello_url: string | null;
+  signature_footer_text: string | null;
 }
 
 export interface OrderItemRow {
