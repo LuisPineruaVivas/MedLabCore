@@ -248,7 +248,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
       alignItems: "flex-end",
       marginBottom: 3,
     },
-    signatureImage: { maxWidth: 140, height: 60, objectFit: "contain" },
+    signatureImage: { width: 220, height: 90, objectFit: "contain" },
     signatureLine: {
       width: 220,
       borderTopWidth: 1,
