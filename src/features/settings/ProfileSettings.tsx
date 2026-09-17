@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useDeleteProfileAsset,
   useProfileSettings,
@@ -186,11 +188,13 @@ export function ProfileSettings({ userId }: { userId: string }) {
   const [selloFile, setSelloFile] = useState<File | null>(null);
   const [firmaPreviewUrl, setFirmaPreviewUrl] = useState<string | null>(null);
   const [selloPreviewUrl, setSelloPreviewUrl] = useState<string | null>(null);
+  const [signatureFooterText, setSignatureFooterText] = useState<string>("");
   const [deletingAsset, setDeletingAsset] = useState<"firma" | "sello" | null>(null);
 
   useEffect(() => {
     setFirmaPreviewUrl(data?.firma_url ?? null);
     setSelloPreviewUrl(data?.sello_url ?? null);
+    setSignatureFooterText(data?.signature_footer_text ?? "");
   }, [data]);
 
   function handleAssetChange(
@@ -249,10 +253,16 @@ export function ProfileSettings({ userId }: { userId: string }) {
       selloFile,
       currentFirmaUrl: data?.firma_url,
       currentSelloUrl: data?.sello_url,
+      signatureFooterText,
     });
     setFirmaFile(null);
     setSelloFile(null);
   }
+
+  const isFormUnchanged =
+    !firmaFile &&
+    !selloFile &&
+    signatureFooterText === (data?.signature_footer_text ?? "");
 
   if (isLoading) {
     return (
@@ -271,7 +281,7 @@ export function ProfileSettings({ userId }: { userId: string }) {
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{data?.email || "Sin correo registrado"}</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Estas imágenes se usarán para firmar automáticamente el PDF cuando apruebes una orden.
+          Estas imágenes y texto se usarán para firmar automáticamente el PDF cuando apruebes una orden.
         </p>
       </div>
 
@@ -300,14 +310,73 @@ export function ProfileSettings({ userId }: { userId: string }) {
         />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="signature-footer-input" className="text-sm font-medium">
+          Información / Texto debajo de la firma
+        </Label>
+        <Textarea
+          id="signature-footer-input"
+          rows={3}
+          placeholder={`Lic. ${data?.full_name || "Nombre Apellido"}\nC.I. V-12.345.678\nM.P.P.S. 12345`}
+          value={signatureFooterText}
+          onChange={(e) => setSignatureFooterText(e.target.value)}
+          className="font-sans text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          Escribe la información textual que aparecerá centrada justo debajo de la línea de firma en los informes PDF (puedes incluir saltos de línea).
+        </p>
+      </div>
+
+      {/* Vista Previa de Firma en Tiempo Real */}
+      <Card className="border bg-slate-50/50 dark:bg-slate-900/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Vista Previa de Firma (Tiempo Real)</CardTitle>
+          <CardDescription>
+            Así lucirá el bloque de firma, sello y texto en los informes de laboratorio.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-6 shadow-sm min-h-[160px] dark:border-slate-800 dark:bg-slate-950">
+            {/* Signature & Stamp images container */}
+            <div className="flex items-end justify-center gap-6 mb-2 min-h-[70px]">
+              {firmaPreviewUrl ? (
+                <img src={firmaPreviewUrl} alt="Firma" className="max-h-20 max-w-[150px] object-contain" />
+              ) : (
+                <div className="flex h-16 w-28 items-center justify-center border border-dashed rounded text-xs text-muted-foreground">
+                  [Sin Firma]
+                </div>
+              )}
+
+              {selloPreviewUrl ? (
+                <img src={selloPreviewUrl} alt="Sello" className="max-h-20 max-w-[150px] object-contain" />
+              ) : (
+                <div className="flex h-16 w-28 items-center justify-center border border-dashed rounded text-xs text-muted-foreground">
+                  [Sin Sello]
+                </div>
+              )}
+            </div>
+
+            {/* Horizontal Line */}
+            <div className="w-60 border-t border-slate-700 dark:border-slate-300 my-2" />
+
+            {/* Multi-line footer text */}
+            <div className="text-center text-xs font-medium text-slate-800 dark:text-slate-200 leading-snug whitespace-pre-line">
+              {signatureFooterText.trim()
+                ? signatureFooterText
+                : `Lic. ${data?.full_name || "Nombre Apellido"}`}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={saveMutation.isPending || (!firmaFile && !selloFile)}
+          disabled={saveMutation.isPending || isFormUnchanged}
         >
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Guardar firma y sello
+          Guardar perfil de firma
         </Button>
       </div>
     </div>

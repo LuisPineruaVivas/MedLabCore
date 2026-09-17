@@ -9,6 +9,7 @@ export interface ProfileSignatureSettings {
   email: string | null;
   firma_url: string | null;
   sello_url: string | null;
+  signature_footer_text: string | null;
   role: string;
 }
 
@@ -57,7 +58,7 @@ export function useProfileSettings(userId: string | null | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, email, firma_url, sello_url, role")
+        .select("full_name, email, firma_url, sello_url, role, signature_footer_text")
         .eq("id", userId!)
         .single();
 
@@ -126,11 +127,13 @@ export function useSaveProfileSettings(userId: string) {
       selloFile,
       currentFirmaUrl,
       currentSelloUrl,
+      signatureFooterText,
     }: {
       firmaFile?: File | null;
       selloFile?: File | null;
       currentFirmaUrl?: string | null;
       currentSelloUrl?: string | null;
+      signatureFooterText?: string | null;
     }) => {
       let firma_url = currentFirmaUrl ?? null;
       let sello_url = currentSelloUrl ?? null;
@@ -171,7 +174,15 @@ export function useSaveProfileSettings(userId: string) {
         sello_url = supabase.storage.from("firms_stamps").getPublicUrl(selloPath).data.publicUrl;
       }
 
-      const payload = { firma_url, sello_url };
+      const payload: { firma_url: string | null; sello_url: string | null; signature_footer_text?: string | null } = {
+        firma_url,
+        sello_url,
+      };
+
+      if (signatureFooterText !== undefined) {
+        payload.signature_footer_text = signatureFooterText;
+      }
+
       const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
 
       if (error) throw error;

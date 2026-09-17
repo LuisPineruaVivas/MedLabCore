@@ -172,6 +172,7 @@ export type Database = {
           patient_id: string
           payment_status: Database["public"]["Enums"]["payment_status"]
           sello_url: string | null
+          signature_footer_text: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
           total_bs: number | null
@@ -193,6 +194,7 @@ export type Database = {
           patient_id: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
+          signature_footer_text?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -214,6 +216,7 @@ export type Database = {
           patient_id?: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
+          signature_footer_text?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -498,6 +501,7 @@ export type Database = {
           org_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           sello_url: string | null
+          signature_footer_text: string | null
         }
         Insert: {
           created_at?: string | null
@@ -509,6 +513,7 @@ export type Database = {
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
+          signature_footer_text?: string | null
         }
         Update: {
           created_at?: string | null
@@ -520,6 +525,7 @@ export type Database = {
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
+          signature_footer_text?: string | null
         }
         Relationships: [
           {

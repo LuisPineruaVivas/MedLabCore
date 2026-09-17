@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -15,18 +15,32 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { StatCard } from "@/components/ui/StatCard";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useOrderStats, useOrdersList } from "@/features/orders/useOrders";
+import { useAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
+import { Badge } from "@/components/ui/badge";
 
 export default function OrdersPage() {
   const { organization } = useCurrentOrgContext();
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [affiliateOriginFilter, setAffiliateOriginFilter] = useState<"all" | "affiliate" | "internal">("all");
+  const [affiliateUserId, setAffiliateUserId] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
   const navigate = useNavigate();
   const debouncedSearch = useDebounce(search, 500);
-  const { data: ordersData, isLoading } = useOrdersList(page, debouncedSearch, statusFilter);
+  const { data: affiliates = [] } = useAffiliateUsers();
+  const affiliateUserIds = useMemo(() => affiliates.map((affiliate) => affiliate.id), [affiliates]);
+  const affiliateById = useMemo(() => new Map(affiliates.map((affiliate) => [affiliate.id, affiliate])), [affiliates]);
+  const { data: ordersData, isLoading } = useOrdersList(
+    page,
+    debouncedSearch,
+    statusFilter,
+    affiliateOriginFilter,
+    affiliateUserId,
+    affiliateUserIds,
+  );
   const { data: stats, isLoading: statsLoading } = useOrderStats();
 
   const orders = ordersData?.items ?? [];
@@ -35,7 +49,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, affiliateOriginFilter, affiliateUserId]);
+
+  useEffect(() => {
+    if (affiliateOriginFilter === "internal") {
+      setAffiliateUserId("all");
+    }
+  }, [affiliateOriginFilter]);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
@@ -90,6 +110,33 @@ export default function OrdersPage() {
                 <SelectItem value="cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
+            {affiliates.length > 0 && (
+              <Select value={affiliateOriginFilter} onValueChange={(value) => setAffiliateOriginFilter(value as "all" | "affiliate" | "internal")}>
+                <SelectTrigger className="w-full sm:w-[190px]">
+                  <SelectValue placeholder="Origen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los orígenes</SelectItem>
+                  <SelectItem value="affiliate">Laboratorios afiliados</SelectItem>
+                  <SelectItem value="internal">Operación interna</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {affiliates.length > 0 && (
+              <Select value={affiliateUserId} onValueChange={setAffiliateUserId} disabled={affiliateOriginFilter === "internal"}>
+                <SelectTrigger className="w-full sm:w-[230px]">
+                  <SelectValue placeholder="Laboratorio afiliado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los afiliados</SelectItem>
+                  {affiliates.map((affiliate) => (
+                    <SelectItem key={affiliate.id} value={affiliate.id}>
+                      {affiliate.full_name || affiliate.email || "Afiliado sin nombre"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardHeader>
 
@@ -98,14 +145,16 @@ export default function OrdersPage() {
             <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
               <TableHead>Paciente</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Origen</TableHead>
               <TableHead>Monto</TableHead>
               <TableHead>Fecha</TableHead>
               <TableHead>Orden</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
-              <React.Fragment key={order.id}>
+            {orders.map((order) => {
+              const affiliate = affiliateById.get(order.created_by);
+              return <React.Fragment key={order.id}>
                 <TableRow className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
                   <TableCell>
                     <div>
@@ -114,6 +163,16 @@ export default function OrdersPage() {
                     </div>
                   </TableCell>
                   <TableCell><StatusBadge status={order.status} /></TableCell>
+                  <TableCell>
+                    {affiliate ? (
+                      <div className="space-y-1">
+                        <Badge variant="secondary" className="bg-sky-100 text-sky-700 hover:bg-sky-100">Afiliado</Badge>
+                        <p className="max-w-[190px] truncate text-xs font-medium" title={affiliate.full_name || affiliate.email || undefined}>
+                          {affiliate.full_name || affiliate.email || "Laboratorio afiliado"}
+                        </p>
+                      </div>
+                    ) : <span className="text-xs text-muted-foreground">Interna</span>}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-1">
@@ -134,8 +193,8 @@ export default function OrdersPage() {
                     </span>
                   </TableCell>
                 </TableRow>
-              </React.Fragment>
-            ))}
+              </React.Fragment>;
+            })}
           </TableBody>
         </Table>
 
@@ -156,8 +215,9 @@ export default function OrdersPage() {
         <div className="md:hidden space-y-2 mb-4">
           {isLoading && <div className="py-12 text-center text-sm text-muted-foreground">Cargando ordenes...</div>}
           {!isLoading && orders.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No se encontraron ordenes.</div>}
-          {orders.map((order) => (
-            <div
+          {orders.map((order) => {
+            const affiliate = affiliateById.get(order.created_by);
+            return <div
               key={order.id}
               className="bg-card rounded-xl border border-border overflow-hidden m-2"
               style={{ boxShadow: "var(--shadow-card)" }}
@@ -172,6 +232,9 @@ export default function OrdersPage() {
                     <p className="text-sm text-muted-foreground font-mono">{order.patients?.id_number}</p>
                   </div>
                   <StatusBadge status={order.status} />
+                </div>
+                <div className="mt-1">
+                  {affiliate ? <Badge variant="secondary" className="bg-sky-100 text-sky-700 hover:bg-sky-100">Afiliado: {affiliate.full_name || affiliate.email || "Sin nombre"}</Badge> : <span className="text-xs text-muted-foreground">Operación interna</span>}
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -188,8 +251,8 @@ export default function OrdersPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            </div>;
+          })}
         </div>
 
         <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">

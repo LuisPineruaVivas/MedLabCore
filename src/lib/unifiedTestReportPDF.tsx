@@ -149,15 +149,36 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     alertResult: { color: "#dc2626", fontWeight: "bold" },
     signatureSection: {
       position: "absolute",
-      bottom: 50,
+      bottom: 35,
       left: 40,
       right: 40,
-      paddingTop: 8,
-      borderTop: 1,
-      borderTopColor: "#e2e8f0",
+      alignItems: "center",
     },
-    signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
-    signatureImage: { width: 150, height: 70, objectFit: "contain" },
+    signatureImagesRow: {
+      flexDirection: "row",
+      gap: 15,
+      justifyContent: "center",
+      alignItems: "flex-end",
+      marginBottom: 3,
+    },
+    signatureImage: { maxWidth: 140, height: 60, objectFit: "contain" },
+    signatureLine: {
+      width: 220,
+      borderTopWidth: 1,
+      borderTopColor: "#334155",
+      marginTop: 2,
+      marginBottom: 4,
+    },
+    signatureTextContainer: {
+      alignItems: "center",
+    },
+    signatureFooterLine: {
+      fontSize: 8.5,
+      fontFamily: "Inter",
+      color: "#1e293b",
+      textAlign: "center",
+      lineHeight: 1.2,
+    },
     footer: {
       position: "absolute",
       bottom: 25,
@@ -337,24 +358,58 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
               if (row.value === "........" || row.value === "") return null;
 
               if (row.fieldType === "text" || row.fieldType === "select") {
+                if (row.hideTableHeader) {
+                  return (
+                    <View key={`${category}-${index}`} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
+                      {row.fieldLabel ? (
+                        <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>
+                          {row.fieldLabel}
+                        </Text>
+                      ) : null}
+                      <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0 }]}>
+                        {row.value}
+                      </Text>
+                      {row.methodName ? (
+                        <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0, paddingTop: 4 }]}>
+                          Método: {row.methodName}
+                        </Text>
+                      ) : null}
+                    </View>
+                  );
+                }
+
                 return (
                   <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
-                    <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                    <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}</Text>
+                    <View style={styles.colExam}>
+                      <Text>{row.fieldLabel}</Text>
+                      {row.methodName ? (
+                        <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                          Método: {row.methodName}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}</Text>
                   </View>
                 );
               }
 
               return (
                 <View key={`${category}-${index}`} style={styles.tableRow} wrap={false}>
-                  <Text style={styles.colExam}>{row.fieldLabel}</Text>
+                  <View style={styles.colExam}>
+                    <Text>{row.fieldLabel}</Text>
+                    {row.methodName ? (
+                      <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                        Método: {row.methodName}
+                      </Text>
+                    ) : null}
+                  </View>
                   <Text
                     style={[
                       styles.colResult,
                       { fontWeight: "bold", color: row.resultColor === "black" && row.isOutOfRange ? "#dc2626" : row.resultColor || "#000" },
                     ]}
                   >
-                    {row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}
+                    {row.value}
                   </Text>
                   <Text style={styles.colUnit}>{row.unit || ""}</Text>
                   <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
@@ -367,13 +422,24 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
         {shouldRenderSignatureBlock(orden) && (
           <View style={styles.signatureSection} fixed>
-            <View style={styles.signatureRow}>
-              <View>
-                {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
-              </View>
-              <View>
-                {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
-              </View>
+            <View style={styles.signatureImagesRow}>
+              {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
+              {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
+            </View>
+            <View style={styles.signatureLine} />
+            <View style={styles.signatureTextContainer}>
+              {(orden.signature_footer_text?.trim()
+                ? orden.signature_footer_text
+                : orden.firma_name
+                ? `Lic. ${orden.firma_name}`
+                : ""
+              )
+                .split("\n")
+                .map((line, idx) => (
+                  <Text key={idx} style={styles.signatureFooterLine}>
+                    {line}
+                  </Text>
+                ))}
             </View>
           </View>
         )}

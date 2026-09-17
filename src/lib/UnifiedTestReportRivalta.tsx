@@ -86,8 +86,16 @@ function parsePatientAge(age: string | number | undefined): number | undefined {
 function estimateRowHeight(row: FlatRow) {
   if (row.isSectionHeader) return 12;
 
+  if (row.hideTableHeader && (row.fieldType === "text" || row.fieldType === "select")) {
+    const labelLines = Math.ceil((row.fieldLabel?.length || 0) / 60);
+    const valueText = (row.value || "") + (row.methodName ? `\nMétodo: ${row.methodName}` : "");
+    const valueLines = valueText.split("\n").reduce((acc, line) => acc + Math.max(1, Math.ceil(line.length / 65)), 0);
+    return 10 * (labelLines + valueLines) + 4;
+  }
+
   const labelLines = Math.ceil(row.fieldLabel.length / 28);
-  const valueLines = Math.ceil((row.value.length + (row.methodName?.length ?? 0)) / (row.fieldType === "text" || row.fieldType === "select" ? 42 : 20)) + (row.methodName ? 1 : 0);
+  const valueText = (row.value || "") + (row.methodName ? `\nMétodo: ${row.methodName}` : "");
+  const valueLines = valueText.split("\n").reduce((acc, line) => acc + Math.max(1, Math.ceil(line.length / 42)), 0);
   const rangeLines = Math.ceil(row.rangeDisplay.length / 18);
   const lineCount = Math.max(1, labelLines, valueLines, rangeLines);
 
@@ -228,15 +236,36 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     alertResult: { color: "#dc2626", fontWeight: "bold" },
     signatureSection: {
       position: "absolute",
-      bottom: 50,
+      bottom: 35,
       left: 40,
       right: 40,
-      paddingTop: 8,
-      borderTop: 1,
-      borderTopColor: "#e2e8f0",
+      alignItems: "center",
     },
-    signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
-    signatureImage: { width: 150, height: 70, objectFit: "contain" },
+    signatureImagesRow: {
+      flexDirection: "row",
+      gap: 15,
+      justifyContent: "center",
+      alignItems: "flex-end",
+      marginBottom: 3,
+    },
+    signatureImage: { maxWidth: 140, height: 60, objectFit: "contain" },
+    signatureLine: {
+      width: 220,
+      borderTopWidth: 1,
+      borderTopColor: "#334155",
+      marginTop: 2,
+      marginBottom: 4,
+    },
+    signatureTextContainer: {
+      alignItems: "center",
+    },
+    signatureFooterLine: {
+      fontSize: 8.5,
+      fontFamily: "Inter",
+      color: "#1e293b",
+      textAlign: "center",
+      lineHeight: 1.2,
+    },
     footer: {
       position: "absolute",
       bottom: 25,
@@ -419,17 +448,50 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                 if (row.value === "........" || row.value === "") return null;
 
                 if (row.fieldType === "text" || row.fieldType === "select") {
+                  if (row.hideTableHeader) {
+                    return (
+                      <View key={`${chunk.category}-${chunkIndex}-${index}`} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
+                        {row.fieldLabel ? (
+                          <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>
+                            {row.fieldLabel}
+                          </Text>
+                        ) : null}
+                        <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0 }]}>
+                          {row.value}
+                        </Text>
+                        {row.methodName ? (
+                          <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0, paddingTop: 4 }]}>
+                            <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  }
                   return (
                     <View key={`${chunk.category}-${chunkIndex}-${index}`} style={styles.tableRow} wrap={false}>
-                      <Text style={styles.colExam}>{row.fieldLabel}</Text>
-                      <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}</Text>
+                      <View style={styles.colExam}>
+                        <Text>{row.fieldLabel}</Text>
+                        {row.methodName ? (
+                          <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                            <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text style={[styles.colResultText, styles.compactTextResult]}>{row.value}</Text>
                     </View>
                   );
                 }
 
                 return (
                   <View key={`${chunk.category}-${chunkIndex}-${index}`} style={styles.tableRow} wrap={false}>
-                    <Text style={styles.colExam}>{row.fieldLabel}</Text>
+                    <View style={styles.colExam}>
+                      <Text>{row.fieldLabel}</Text>
+                      {row.methodName ? (
+                        <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                          <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                        </Text>
+                      ) : null}
+                    </View>
                     <Text
                       style={[
                         styles.colResult,
@@ -439,7 +501,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                         },
                       ]}
                     >
-                      {row.value}{row.methodName ? `\nMétodo: ${row.methodName}` : ""}
+                      {row.value}
                     </Text>
                     <Text style={styles.colUnit}>{row.unit || ""}</Text>
                     <Text style={styles.colRange}>{row.rangeDisplay || ""}</Text>
@@ -452,26 +514,31 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
         {shouldRenderSignatureBlock(orden) && (
           <View style={styles.signatureSection} fixed>
-            <View style={styles.signatureRow}>
-              {orden.firma_url ? (
-                <View style={{ alignItems: "center", marginHorizontal: 15 }}>
-                  <Image src={orden.firma_url} style={styles.signatureImage} />
-                  <View style={{ width: 180, borderTopWidth: 1, borderTopColor: "#000", marginTop: 4, paddingTop: 4, alignItems: "center" }}>
-                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}>{orden.firma_name}</Text>}
-                  </View>
-                </View>
-              ) : null}
-              {orden.sello_url ? (
-                <View style={{ alignItems: "center", marginHorizontal: 15 }}>
-                  <Image src={orden.sello_url} style={styles.signatureImage} />
-                  <View style={{ width: 180, borderTopWidth: 1, borderTopColor: "#000", marginTop: 4, paddingTop: 4, alignItems: "center" }}>
-                    {orden.firma_name && <Text style={{ fontSize: 9, fontFamily: "Inter", fontWeight: "medium", color: "#334155" }}> Lic. {orden.firma_name}</Text>}
-                  </View>
-                </View>
-              ) : null}
+            <View style={styles.signatureImagesRow}>
+              {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
+              {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
+            </View>
+            <View style={styles.signatureLine} />
+            <View style={styles.signatureTextContainer}>
+              {(orden.signature_footer_text?.trim()
+                ? orden.signature_footer_text
+                : orden.firma_name
+                ? `Lic. ${orden.firma_name}`
+                : ""
+              )
+                .split("\n")
+                .map((line, idx) => (
+                  <Text key={idx} style={styles.signatureFooterLine}>
+                    {line}
+                  </Text>
+                ))}
             </View>
           </View>
         )}
+
+        <Text style={styles.footer} fixed>
+          Este reporte contiene los resultados de todos los examenes solicitados en la orden.
+        </Text>
       </Page>
     </Document>
   );

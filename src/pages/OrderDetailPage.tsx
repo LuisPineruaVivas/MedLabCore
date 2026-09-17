@@ -166,6 +166,7 @@ export default function OrderDetailPage() {
       firma_url: profile?.firma_url || null,
       firma_name: profile?.full_name || null,
       sello_url: profile?.sello_url || null,
+      signature_footer_text: profile?.signature_footer_text || null,
     });
   }
 
