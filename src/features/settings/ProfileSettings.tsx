@@ -339,19 +339,15 @@ export function ProfileSettings({ userId }: { userId: string }) {
           <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-6 shadow-sm min-h-[160px] dark:border-slate-800 dark:bg-slate-950">
             {/* Signature & Stamp images container */}
             <div className="flex items-end justify-center gap-6 mb-2 min-h-[70px]">
-              {firmaPreviewUrl ? (
+              {firmaPreviewUrl && (
                 <img src={firmaPreviewUrl} alt="Firma" className="max-h-20 max-w-[150px] object-contain" />
-              ) : (
-                <div className="flex h-16 w-28 items-center justify-center border border-dashed rounded text-xs text-muted-foreground">
-                  [Sin Firma]
-                </div>
               )}
-
-              {selloPreviewUrl ? (
+              {selloPreviewUrl && (
                 <img src={selloPreviewUrl} alt="Sello" className="max-h-20 max-w-[150px] object-contain" />
-              ) : (
-                <div className="flex h-16 w-28 items-center justify-center border border-dashed rounded text-xs text-muted-foreground">
-                  [Sin Sello]
+              )}
+              {!firmaPreviewUrl && !selloPreviewUrl && (
+                <div className="flex h-16 w-32 items-center justify-center border border-dashed rounded text-xs text-muted-foreground">
+                  [Sin Firma / Sello]
                 </div>
               )}
             </div>
@@ -363,7 +359,7 @@ export function ProfileSettings({ userId }: { userId: string }) {
             <div className="text-center text-xs font-medium text-slate-800 dark:text-slate-200 leading-snug whitespace-pre-line">
               {signatureFooterText.trim()
                 ? signatureFooterText
-                : `Lic. ${data?.full_name || "Nombre Apellido"}`}
+                : ""}
             </div>
           </div>
         </CardContent>

@@ -6,7 +6,10 @@ import type { OrderRow } from "@/features/orders/schemas";
 
 Font.register({
   family: "Inter",
-  fonts: [{ src: "/fonts/Inter/Inter-VariableFont_opsz,wght.ttf" }],
+  fonts: [
+    { src: "/fonts/Inter/static/Inter_18pt-Regular.ttf", fontWeight: "normal" },
+    { src: "/fonts/Inter/static/Inter_18pt-Bold.ttf", fontWeight: "bold" },
+  ],
 });
 
 interface UnifiedProps {
@@ -113,18 +116,17 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     patientItemName: { width: "100%", marginBottom: 2 },
     patientItemData: { width: "60%", marginBottom: 2 },
     patientItem: { width: "40%", marginBottom: 2 },
-    label: { fontWeight: "bold", color: "#475569" },
+    label: { color: "#475569" },
     categoryHeader: { backgroundColor: primaryColor, padding: 6, marginTop: 5, marginBottom: 0 },
     categoryHeaderText: {
       fontSize: 10,
-      fontWeight: "bold",
       color: "#ffffff",
       textTransform: "uppercase",
       letterSpacing: 1,
       textAlign: "center",
     },
     sectionHeader: { paddingVertical: 2, paddingHorizontal: 8, backgroundColor: "#e2e8f0" },
-    sectionHeaderText: { fontWeight: "bold", color: "#0f172a" },
+    sectionHeaderText: { color: "#0f172a" },
     tableHeader: {
       flexDirection: "row",
       borderBottom: 1.5,
@@ -141,12 +143,12 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
       paddingBottom: 1,
     },
     colExam: { width: "35%", paddingLeft: 8 },
-    colResult: { width: "20%", textAlign: "left" },
+    colResult: { width: "20%", textAlign: "center" },
     colResultText: { width: "65%", lineHeight: 1.1 },
     compactTextResult: { lineHeight: 0.75, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
     colRange: { width: "30%", textAlign: "center", paddingRight: 4 },
-    alertResult: { color: "#dc2626", fontWeight: "bold" },
+    alertResult: { color: "#dc2626" },
     signatureSection: {
       position: "absolute",
       bottom: 35,
@@ -337,10 +339,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
             {!hideTableHeader && (
               <View style={styles.tableHeader} wrap={false}>
-                <Text style={[styles.colExam, { fontWeight: "bold" }]}>EXAMEN</Text>
-                <Text style={[styles.colResult, { fontWeight: "bold" }]}>RESULTADO</Text>
-                <Text style={[styles.colUnit, { fontWeight: "bold" }]}>UNIDADES</Text>
-                <Text style={[styles.colRange, { fontWeight: "bold" }]}>VALORES DE REF.</Text>
+                <Text style={[styles.colExam]}>EXAMEN</Text>
+                <Text style={[styles.colResult]}>RESULTADO</Text>
+                <Text style={[styles.colUnit]}>UNIDADES</Text>
+                <Text style={[styles.colRange]}>VALORES DE REF.</Text>
               </View>
             )}
 
@@ -362,7 +364,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
                   return (
                     <View key={`${category}-${index}`} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
                       {row.fieldLabel ? (
-                        <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>
+                        <Text style={{ fontSize: 10, marginBottom: 2 }}>
                           {row.fieldLabel}
                         </Text>
                       ) : null}
