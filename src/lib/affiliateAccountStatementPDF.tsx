@@ -3,7 +3,10 @@ import { format } from "date-fns";
 
 Font.register({
   family: "Inter",
-  fonts: [{ src: "/fonts/Inter/Inter-VariableFont_opsz,wght.ttf" }],
+  fonts: [
+    { src: "/fonts/Inter/static/Inter_18pt-Regular.ttf", fontWeight: "normal" },
+    { src: "/fonts/Inter/static/Inter_18pt-Bold.ttf", fontWeight: "bold" },
+  ],
 });
 
 export interface AffiliateStatementOrderRow {

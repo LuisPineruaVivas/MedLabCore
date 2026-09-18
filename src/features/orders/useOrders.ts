@@ -235,7 +235,7 @@ export function useOrder(orderId: string | null) {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
+          "id, org_id, patient_id, status, payment_status, total_amount, is_exempted, exchange_rate, total_bs, notes, access_pin, created_at, updated_at, completed_at, order_seq, firma_url, firma_name, sello_url, signature_footer_text, patients(id, first_name, last_name, id_number, date_of_birth, gender, phone, email, address)"
         )
         .eq("id", orderId!)
         .single();

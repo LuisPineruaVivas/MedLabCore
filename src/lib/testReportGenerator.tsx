@@ -2,9 +2,10 @@ import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/
 import { TestTemplateRow, getFieldResultMeta, TemplateSection, TemplateField, FieldType } from '@/features/tests/schemas';
 
 Font.register({
-  family: 'Inter',
+  family: "Inter",
   fonts: [
-    { src: '/fonts/Inter/Inter-VariableFont_opsz,wght.ttf' }
+    { src: "/fonts/Inter/static/Inter_18pt-Regular.ttf", fontWeight: "normal" },
+    { src: "/fonts/Inter/static/Inter_18pt-Bold.ttf", fontWeight: "bold" },
   ],
 });
 
