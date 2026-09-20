@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { BrandProvider } from "@/contexts/BrandContext";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoleRouter } from "@/components/RoleRouter";
@@ -32,6 +33,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
+const AuditLogPage = lazy(() => import("@/pages/AuditLogPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,7 +72,7 @@ const App = () => (
               <Route path="/portal-paciente" element={<PatientPortalPage />} />
               <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
-              <Route element={<ProtectedRoute><BrandProvider><AppLayout /></BrandProvider></ProtectedRoute>}>
+              <Route element={<ProtectedRoute><ImpersonationProvider><BrandProvider><AppLayout /></BrandProvider></ImpersonationProvider></ProtectedRoute>}>
                 <Route path="/" element={<RoleRouter />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/patients/:id" element={<PatientDetailPage />} />
@@ -102,6 +104,11 @@ const App = () => (
                 <Route element={<RoleGuard permission="canViewSettings" />}>
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
+
+
+                {/*<Route element={<RoleGuard permission="canViewSettings" />}>
+                  <Route path="/audit-log" element={<AuditLogPage />} />
+                </Route>*/}
 
                 <Route element={<SuperAdminGuard />}>
                   <Route path="/admin/organizations" element={<OrganizationsPage />} />

@@ -12,6 +12,8 @@ Font.register({
   ],
 });
 
+Font.registerHyphenationCallback((word) => [word]);
+
 interface UnifiedProps {
   orden: OrderRow;
   orderItems: any[];
@@ -183,7 +185,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
       paddingTop: 40,
       paddingLeft: 40,
       paddingRight: 40,
-      paddingBottom: 145,
+      paddingBottom: 40,
       fontSize: 11,
       fontFamily: "Inter",
       color: "#333",
@@ -453,7 +455,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
                 if (row.fieldType === "text" || row.fieldType === "select") {
                   if (row.hideTableHeader) {
                     return (
-                      <View key={`${chunk.category}-${chunkIndex}-${index}`} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
+                      <View key={`${chunk.category}-${chunkIndex}-${index}`} style={[styles.tableRow, { flexDirection: "column", alignItems: "flex-start", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
                         {row.fieldLabel ? (
                           <Text style={{ fontSize: 10, marginBottom: 2 }}>
                             {row.fieldLabel}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addSearchItemToCart,
+  buildOrderBudgetData,
   buildOrderReceiptData,
   buildSearchItems,
   buildSelectedPatientSummary,
@@ -168,5 +169,38 @@ describe("createOrderUtils", () => {
     expect(summary).toContain("ID: V123");
     expect(summary).toContain("años");
     expect(summary).toContain("F");
+  });
+
+  it("builds order budget data with patient or defaults to general public", () => {
+    const cart = addSearchItemToCart([], buildSearchItems(templates, profiles)[1]);
+    const budgetWithPatient = buildOrderBudgetData({
+      selectedPatient: {
+        first_name: "Carlos",
+        last_name: "Gomez",
+        id_number: "V456",
+      },
+      cart,
+      total: 12.5,
+      exchangeRate: 40,
+      totalBs: 500,
+      notes: "Sintomas febriles",
+      now: new Date("2026-03-30T10:00:00Z"),
+    });
+
+    expect(budgetWithPatient.patientName).toBe("CARLOS GOMEZ");
+    expect(budgetWithPatient.patientId).toBe("V456");
+    expect(budgetWithPatient.notes).toBe("Sintomas febriles");
+    expect(budgetWithPatient.items).toEqual([{ test_name: "Hemograma", price: 12.5 }]);
+
+    const budgetPublic = buildOrderBudgetData({
+      selectedPatient: null,
+      cart,
+      total: 12.5,
+      exchangeRate: null,
+      totalBs: null,
+    });
+
+    expect(budgetPublic.patientName).toBe("PÚBLICO GENERAL");
+    expect(budgetPublic.patientId).toBe("N/A");
   });
 });

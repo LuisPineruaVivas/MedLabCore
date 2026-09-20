@@ -9,6 +9,8 @@ Font.register({
   ],
 });
 
+Font.registerHyphenationCallback((word) => [word]);
+
 interface PdfLabData {
   name?: string;
   address?: string;
@@ -98,6 +100,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
     },
     tableRow: {
       flexDirection: "row",
+      alignItems: "center",
       borderBottom: 0.5,
       borderBottomColor: "#e2e8f0",
       paddingTop: 1,

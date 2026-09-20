@@ -32,12 +32,19 @@ export const OrderReceiptPDF = ({ orderId, orderDate, patientName, patientId, it
 
   const styles = StyleSheet.create({
     page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#333' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottom: 2, borderBottomColor: primaryColor, paddingBottom: 12 },
-    labInfo: { flexDirection: 'column' },
-    labName: { fontSize: 16, fontWeight: 'bold', color: primaryColor },
-    labDetails: { fontSize: 9, color: '#64748b', marginTop: 2 },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+    },
+    labInfo: { flexDirection: 'column', width: '55%', minWidth: 0 },
+    labName: { fontSize: 12, fontWeight: 'bold', color: primaryColor, marginBottom: 2 },
+    labDetails: { fontSize: 9, color: '#64748b', lineHeight: 1.3 },
+    logoContainer: { width: '40%', alignItems: 'flex-end', justifyContent: 'flex-start' },
+    logo: { width: 220, height: 65, objectFit: 'contain' },
     
-    receiptTitle: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 4, color: primaryColor, textTransform: 'uppercase', letterSpacing: 2 },
+    receiptTitle: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 3, color: primaryColor, textTransform: 'uppercase', letterSpacing: 2 },
     receiptSubtitle: { fontSize: 9, textAlign: 'center', color: '#94a3b8', marginBottom: 16 },
 
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, backgroundColor: '#f8fafc', padding: 10, borderRadius: 4 },
@@ -76,7 +83,11 @@ export const OrderReceiptPDF = ({ orderId, orderDate, patientName, patientId, it
             {lab.phone && <Text style={styles.labDetails}>Tel: {lab.phone}</Text>}
             {lab.email && <Text style={styles.labDetails}>Email: {lab.email}</Text>}
           </View>
-          {lab.logo && <Image src={lab.logo} style={{ width: 180, height: 60 }} />}
+          {lab.logo && (
+            <View style={styles.logoContainer}>
+              <Image src={lab.logo} style={styles.logo} />
+            </View>
+          )}
         </View>
 
         {/* Title */}
@@ -132,23 +143,28 @@ export const OrderReceiptPDF = ({ orderId, orderDate, patientName, patientId, it
           </View>
         ))}
 
-        {/* Total */}
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>TOTAL USD</Text>
-          <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
-        </View>
-
-        {/* Total BS */}
-        {exchangeRate && totalBs != null && (
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
-            <Text style={{ fontSize: 10, color: '#475569', marginRight: 20 }}>
-              TOTAL BS (Tasa: {exchangeRate.toFixed(2)})
+        {/* Totals */}
+        <View style={{ marginTop: 10, paddingTop: 10, borderTop: 2, borderTopColor: primaryColor, alignItems: 'flex-end' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e293b', marginRight: 15, textAlign: 'right' }}>
+              TOTAL USD
             </Text>
-            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e293b' }}>
-              Bs. {totalBs.toFixed(2)}
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: primaryColor, minWidth: 90, textAlign: 'right' }}>
+              ${total.toFixed(2)}
             </Text>
           </View>
-        )}
+
+          {exchangeRate && totalBs != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 }}>
+              <Text style={{ fontSize: 10, color: '#475569', marginRight: 15, textAlign: 'right' }}>
+                TOTAL BS (Tasa: {exchangeRate.toFixed(2)})
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e293b', minWidth: 90, textAlign: 'right' }}>
+                Bs. {totalBs.toFixed(2)}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Portal access note */}
         {accessPin && portalUrl && (

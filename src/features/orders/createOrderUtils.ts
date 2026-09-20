@@ -243,6 +243,44 @@ export function buildOrderReceiptData(params: {
   } satisfies OrderReceiptData;
 }
 
+export interface OrderBudgetData {
+  budgetDate: string;
+  patientName: string;
+  patientId: string;
+  items: Array<{ test_name: string; price: number }>;
+  total: number;
+  exchangeRate?: number | null;
+  totalBs?: number | null;
+  notes?: string | null;
+}
+
+export function buildOrderBudgetData(params: {
+  selectedPatient: SelectedPatient | null;
+  cart: CartItem[];
+  total: number;
+  exchangeRate?: number | null;
+  totalBs?: number | null;
+  notes?: string | null;
+  now?: Date;
+}) {
+  const { selectedPatient, cart, total, exchangeRate, totalBs, notes, now } = params;
+
+  return {
+    budgetDate: format(now ?? new Date(), "dd/MM/yyyy"),
+    patientName: selectedPatient
+      ? `${selectedPatient.first_name} ${selectedPatient.last_name}`.toUpperCase()
+      : "PÚBLICO GENERAL",
+    patientId: selectedPatient?.id_number ?? "N/A",
+    items: cart
+      .filter((item) => item.price > 0)
+      .map((item) => ({ test_name: item.test_name, price: item.price })),
+    total,
+    exchangeRate: exchangeRate ?? null,
+    totalBs: totalBs ?? null,
+    notes: notes?.trim() || null,
+  } satisfies OrderBudgetData;
+}
+
 export function buildSelectedPatientSummary(patient: SelectedPatient) {
   const parts = [`ID: ${patient.id_number}`];
 
