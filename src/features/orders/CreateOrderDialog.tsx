@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, X, UserPlus, ShoppingCart, Printer, Package, FlaskConical } from "lucide-react";
+import { Search, Plus, X, UserPlus, ShoppingCart, Printer, Package, FlaskConical, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { cn } from "@/lib/utils";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
+import { OrderBudgetPDF } from "@/lib/orderBudgetPDF";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -34,6 +35,7 @@ import { useOrderProfiles, useOrderTemplates } from "../tests/useTestTemplates";
 import { useCreateOrder } from "./useOrders";
 import {
   addSearchItemToCart,
+  buildOrderBudgetData,
   buildOrderReceiptData,
   buildSearchItems,
   buildSelectedPatientSummary,
@@ -96,6 +98,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const [isExempted, setIsExempted] = useState(false);
   const [receiptData, setReceiptData] = useState<ReturnType<typeof buildOrderReceiptData> | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
+  const [isGeneratingBudget, setIsGeneratingBudget] = useState(false);
 
   const { data: patients = [], isFetching: searchingPatients } = usePatientSearch(debouncedSearch);
   const { data: templates = [] } = useOrderTemplates();
@@ -251,6 +254,60 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     }
   }
 
+  async function handleGenerateBudget() {
+    if (cart.length === 0) {
+      return;
+    }
+
+    setIsGeneratingBudget(true);
+
+    const pdfWindow = window.open("", "_blank");
+    if (pdfWindow) {
+      pdfWindow.document.title = "Generando Presupuesto...";
+      pdfWindow.document.body.innerHTML =
+        "<div style='display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#475569;'>Generando documento de presupuesto...</div>";
+    }
+
+    try {
+      const budgetData = buildOrderBudgetData({
+        selectedPatient,
+        cart,
+        total: effectiveTotals.total,
+        exchangeRate: currentRate,
+        totalBs: effectiveTotals.totalBs,
+        notes,
+      });
+
+      const budgetBlob = await pdf(
+        <OrderBudgetPDF
+          budgetDate={budgetData.budgetDate}
+          patientName={budgetData.patientName}
+          patientId={budgetData.patientId}
+          items={budgetData.items}
+          total={budgetData.total}
+          labData={labData}
+          exchangeRate={budgetData.exchangeRate}
+          totalBs={budgetData.totalBs}
+          notes={budgetData.notes}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(budgetBlob);
+      if (pdfWindow) {
+        pdfWindow.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch (error) {
+      if (pdfWindow) {
+        pdfWindow.close();
+      }
+      toast.error(getUserFacingErrorMessage(error, "No se pudo generar el presupuesto"));
+    } finally {
+      setIsGeneratingBudget(false);
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -262,8 +319,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       }}
     >
       <DialogContent className={cn(
-        "max-h-[70vh] overflow-y-auto w-[70vw]",
-        receiptData ? "sm:max-w-4xl" : "sm:max-w-5xl h-[90vh]",
+        "h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none overflow-y-auto p-4 sm:max-h-[70vh] sm:w-[70vw] sm:p-6",
+        receiptData ? "sm:max-w-4xl" : "sm:max-w-5xl sm:h-[90vh]",
         "sm:h-auto"
       )}>
         {receiptData ? (
@@ -275,7 +332,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               </DialogTitle>
               <DialogDescription>Imprima o descargue esta nota para el paciente.</DialogDescription>
             </DialogHeader>
-            <div className="h-[65vh] w-full border border-border rounded-lg overflow-hidden">
+            <div className="h-[calc(100dvh-12rem)] min-h-80 w-full overflow-hidden rounded-lg border border-border sm:h-[65vh]">
               <PDFViewer width="100%" height="100%" showToolbar>
                 <OrderThermalReceiptPDF
                   orderId={receiptData.order_seq}
@@ -419,7 +476,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
 
             <Separator />
 
-            <div className="flex flex-col lg:flex-row gap-4 mb-2 md:h-96">
+            <div className="mb-2 flex flex-col gap-4 lg:h-96 lg:flex-row">
               <div className="w-full space-y-4 h-full flex flex-col">
                 <Label className="text-sm font-semibold">2. Selecciona los examenes a realizar</Label>
                 <div className="relative">
@@ -433,7 +490,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                   />
                 </div>
 
-                <div className="border border-border rounded-lg overflow-y-auto divide-y divide-border">
+                <div className="max-h-[32vh] overflow-y-auto divide-y divide-border rounded-lg border border-border lg:max-h-none">
                   {filteredItems.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No se encontraron examenes con estos datos
@@ -494,7 +551,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
 
               <div className="w-full space-y-4 h-full flex flex-col">
                 <Label className="text-sm font-semibold">Resumen de la orden</Label>
-                <div className="border border-border rounded-lg h-full">
+                <div className="h-auto min-h-52 rounded-lg border border-border lg:h-full">
                   {cart.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No has seleccionado ningun examen
@@ -630,7 +687,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -640,12 +697,22 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               >
                 Cancelar
               </Button>
-              <Button
-                onClick={handleCreateOrder}
-                disabled={!selectedPatient || cart.length === 0 || createOrder.isPending}
-              >
-                {createOrder.isPending ? "Cargando..." : "Crear Orden"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateBudget}
+                  disabled={cart.length === 0 || isGeneratingBudget}
+                >
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  {isGeneratingBudget ? "Generando..." : "Generar Presupuesto"}
+                </Button>
+                <Button
+                  onClick={handleCreateOrder}
+                  disabled={!selectedPatient || cart.length === 0 || createOrder.isPending}
+                >
+                  {createOrder.isPending ? "Cargando..." : "Crear Orden"}
+                </Button>
+              </div>
             </DialogFooter>
           </>
         )}

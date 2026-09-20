@@ -42,8 +42,9 @@ serve(async (req) => {
     if (!fields || !Array.isArray(fields)) throw new Error("Los campos a extraer deben ser un arreglo");
     if (!apiKey) throw new Error("Falta la configuración de GEMINI_API_KEY en el servidor");
 
-    // Mejoramos el prompt para forzar a Gemini a devolver EXCLUSIVAMENTE JSON válido sin markdown
-    const prompt = `Extrae los siguientes campos de la imagen: ${fields.join(", ")}. 
+    // Mejoramos el prompt para forzar a Gemini a devolver EXCLUSIVAMENTE JSON válido sin markdown y con valores numéricos limpios
+    const prompt = `Extrae los siguientes campos de la imagen: ${fields.join(", ")}.
+    Para cada campo, extrae únicamente el valor numérico limpio del resultado (por ejemplo, si el resultado en la imagen es "2.9 x 10^3/uL" o "46.9 %" o "12.3 g/dL", extrae únicamente el número como "2.9", "46.9" o "12.3"). Si el resultado es una comparación o rango, extrae solo el rango o la comparación sin unidades (por ejemplo, "<0.5" o "2-4").
     Tu respuesta debe ser estrictamente un objeto JSON válido y plano, sin bloques de código markdown (\`\`\`json), sin saltos de línea innecesarios y sin texto adicional.`;
     
     // NOTA: Se actualizó al modelo estable actual gemini-2.5-flash para producción

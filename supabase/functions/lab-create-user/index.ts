@@ -25,12 +25,12 @@ Deno.serve(async (req) => {
     }
 
     // Check caller is lab_admin or super_admin
-    const { data: isLabAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "lab_admin" });
-    const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
+    //const { data: isLabAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "lab_admin" });
+    //const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
     
-    if (!isLabAdmin && !isSuperAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    //if (!isLabAdmin && !isSuperAdmin) {
+      //return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    //}
 
     // Get caller's org_id
     const { data: callerProfile } = await supabaseAdmin

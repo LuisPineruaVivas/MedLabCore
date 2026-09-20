@@ -13,6 +13,7 @@ import {
   LogOut,
   ShoppingCart,
   User,
+  ClipboardList,
 } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const adminNavItems = [
   { label: "Usuarios", icon: UserCog, path: "/admin/users" },
   { label: "Examenes Templates", icon: FlaskConical, path: "/admin/tests-templates" },
   { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts" },
+  { label: "Bitácora", icon: ClipboardList, path: "/audit-log" },
 ];
 
 export function AppSidebar() {
@@ -58,6 +60,7 @@ export function AppSidebar() {
       { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
       { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
       { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
+      /*{ label: "Bitácora", icon: ClipboardList, path: "/audit-log", show: profile?.role === "lab_admin" },*/
       { label: "Configuracion", icon: Settings, path: "/settings", show: permissions.canViewSettings },
     ];
 

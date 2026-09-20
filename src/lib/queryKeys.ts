@@ -66,6 +66,12 @@ export const queryKeys = {
   testMethods: {
     list: (orgId: string | null | undefined, activeOnly = false) => ["test-methods", orgId ?? "none", activeOnly ? "active" : "all"] as const,
   },
+  auditLogs: {
+    list: (
+      orgId: string | null | undefined,
+      filters: Record<string, string | number | null | undefined>
+    ) => ["audit-logs", orgId ?? "none", filters] as const,
+  },
   affiliateAccounts: {
     affiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
       ["affiliate-accounts", "affiliates", orgId ?? "none", role ?? "none"] as const,
