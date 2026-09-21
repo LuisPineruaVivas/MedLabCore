@@ -47,6 +47,8 @@ interface FlatRow {
   methodName?: string;
 }
 
+
+
 interface ReportChunk {
   category: string;
   rows: FlatRow[];
@@ -88,64 +90,59 @@ function parsePatientAge(age: string | number | undefined): number | undefined {
   return match[2]?.toLowerCase().startsWith("mes") ? value / 12 : value;
 }
 
-function estimateRowHeight(row: FlatRow) {
-  if (row.isSectionHeader) return 12;
+function estimateRowHeight(row: FlatRow): number {
+  if (row.isSectionHeader) return 16;
 
-  if (row.hideTableHeader && (row.fieldType === "text" || row.fieldType === "select")) {
-    const labelLines = Math.ceil((row.fieldLabel?.length || 0) / 60);
-    const valueText = (row.value || "") + (row.methodName ? `\nMétodo: ${row.methodName}` : "");
-    const valueLines = valueText.split("\n").reduce((acc, line) => acc + Math.max(1, Math.ceil(line.length / 65)), 0);
-    return 10 * (labelLines + valueLines) + 4;
+  const valStr = String(row.value || "");
+  const explicitLines = valStr.split("\n");
+  let totalValueLines = 0;
+  for (const line of explicitLines) {
+    totalValueLines += Math.max(1, Math.ceil(line.length / (row.hideTableHeader ? 55 : 38)));
   }
 
-  const labelLines = Math.ceil(row.fieldLabel.length / 28);
-  const valueText = (row.value || "") + (row.methodName ? `\nMétodo: ${row.methodName}` : "");
-  const valueLines = valueText.split("\n").reduce((acc, line) => acc + Math.max(1, Math.ceil(line.length / 42)), 0);
-  const rangeLines = Math.ceil(row.rangeDisplay.length / 18);
-  const lineCount = Math.max(1, labelLines, valueLines, rangeLines);
+  const labelLines = Math.ceil((row.fieldLabel?.length || 0) / 26);
+  const rangeLines = Math.ceil((row.rangeDisplay?.length || 0) / 16);
+  const lineCount = Math.max(1, labelLines, totalValueLines, rangeLines);
 
-  return 10 * lineCount;
+  return 14 * lineCount + (row.methodName ? 14 : 0) + 4;
 }
 
 function paginateCategories(
   categoryOrder: string[],
   grouped: Record<string, FlatRow[]>,
-  availableHeight = 600,
+  availableHeight: number,
 ): ReportChunk[] {
   const chunks: ReportChunk[] = [];
   let remainingHeight = availableHeight;
-  let hasContentOnPage = false;
 
   for (const category of categoryOrder) {
     const rows = grouped[category] || [];
+    if (rows.length === 0) continue;
     let rowIndex = 0;
 
-    const categoryHeight =
-      40 + rows.reduce((total, row) => total + estimateRowHeight(row), 0);
-
-    if (
-      hasContentOnPage &&
-      categoryHeight <= availableHeight &&
-      categoryHeight > remainingHeight
-    ) {
-      remainingHeight = availableHeight;
-      hasContentOnPage = false;
-    }
-
     while (rowIndex < rows.length) {
-      const continuesCategory = rowIndex > 0;
-      const categoryHeaderHeight = 20;
-      const tableHeaderHeight = 20;
-      const categoryHeaderHeightTotal = categoryHeaderHeight + tableHeaderHeight;
-      const firstRowHeight = estimateRowHeight(rows[rowIndex]);
+      const isCategoryContinuation = rowIndex > 0;
+      const hideTableHeader = rows.every(r => r.hideTableHeader);
+      const headerHeight = hideTableHeader ? 31 : 55.5;
 
-      if (hasContentOnPage && remainingHeight < categoryHeaderHeightTotal + firstRowHeight) {
+      let firstRowHeight = estimateRowHeight(rows[rowIndex]);
+      if (rows[rowIndex]?.isSectionHeader && rows[rowIndex + 1]) {
+        firstRowHeight += estimateRowHeight(rows[rowIndex + 1]);
+      }
+
+      let shouldStartNewPage = isCategoryContinuation;
+
+      if (!isCategoryContinuation && remainingHeight < headerHeight + firstRowHeight + 5) {
         remainingHeight = availableHeight;
-        hasContentOnPage = false;
+        shouldStartNewPage = true;
+      }
+
+      if (chunks.length === 0) {
+        shouldStartNewPage = false;
       }
 
       const chunkRows: FlatRow[] = [];
-      let chunkHeight = categoryHeaderHeightTotal;
+      let chunkHeight = headerHeight;
 
       while (rowIndex < rows.length) {
         const rowHeight = estimateRowHeight(rows[rowIndex]);
@@ -158,14 +155,25 @@ function paginateCategories(
         rowIndex += 1;
       }
 
+      if (chunkRows.length > 1 && chunkRows[chunkRows.length - 1].isSectionHeader) {
+        const lastRow = chunkRows.pop();
+        if (lastRow) {
+          chunkHeight -= estimateRowHeight(lastRow);
+          rowIndex -= 1;
+        }
+      }
+
       chunks.push({
         category,
         rows: chunkRows,
-        startsNewPage: continuesCategory,
+        startsNewPage: shouldStartNewPage,
       });
 
       remainingHeight -= chunkHeight;
-      hasContentOnPage = true;
+
+      if (rowIndex < rows.length) {
+        remainingHeight = availableHeight;
+      }
     }
   }
 
@@ -180,12 +188,14 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
   console.log("Order Items (Rivalta):", orderItems);
 
+  const hasSignature = shouldRenderSignatureBlock(orden);
+
   const styles = StyleSheet.create({
     page: {
       paddingTop: 40,
       paddingLeft: 40,
       paddingRight: 40,
-      paddingBottom: 40,
+      paddingBottom: hasSignature ? 150 : 40,
       fontSize: 11,
       fontFamily: "Inter",
       color: "#333",
@@ -369,7 +379,8 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
   }
 
   const categoryOrder = sortCategoriesByDepartmentOrder(Object.keys(grouped), departmentOrder);
-  const reportChunks = paginateCategories(categoryOrder, grouped);
+  const availablePageHeight = 842 - 170 - (hasSignature ? 150 : 40) - 15;
+  const reportChunks = paginateCategories(categoryOrder, grouped, availablePageHeight);
 
   return (
     <Document>
@@ -425,8 +436,8 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
           const hideTableHeader = chunk.rows.length > 0 && chunk.rows.every(r => r.hideTableHeader);
 
           return (
-            <View key={`${chunk.category}-${chunkIndex}`} break={chunk.startsNewPage} wrap={false}>
-              <View style={styles.categoryHeader} wrap={false} minPresenceAhead={80}>
+            <View key={`${chunk.category}-${chunkIndex}`} break={chunk.startsNewPage}>
+              <View style={styles.categoryHeader} wrap={false} minPresenceAhead={60}>
                 <Text style={styles.categoryHeaderText}>{chunk.category}</Text>
               </View>
 
