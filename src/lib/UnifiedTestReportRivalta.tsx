@@ -105,7 +105,10 @@ function formatNumericResult(value: unknown): string {
   const numericValue = parseNumericResult(value);
   if (numericValue === undefined) return String(value ?? "");
 
-  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 20 }).format(numericValue);
+  return new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 20,
+  }).format(numericValue);
 }
 
 function estimateRowHeight(row: FlatRow): number {
