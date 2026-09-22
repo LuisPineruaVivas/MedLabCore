@@ -90,6 +90,24 @@ function parsePatientAge(age: string | number | undefined): number | undefined {
   return match[2]?.toLowerCase().startsWith("mes") ? value / 12 : value;
 }
 
+function parseNumericResult(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+
+  const normalizedValue = value.trim();
+  if (!/^[+-]?\d+(?:[.,]\d+)?$/.test(normalizedValue)) return undefined;
+
+  const numberValue = Number(normalizedValue.replace(",", "."));
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function formatNumericResult(value: unknown): string {
+  const numericValue = parseNumericResult(value);
+  if (numericValue === undefined) return String(value ?? "");
+
+  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 20 }).format(numericValue);
+}
+
 function estimateRowHeight(row: FlatRow): number {
   if (row.isSectionHeader) return 16;
 
@@ -264,13 +282,6 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
       marginBottom: 3,
     },
     signatureImage: { width: 220, height: 90, objectFit: "contain" },
-    signatureLine: {
-      width: 220,
-      borderTopWidth: 1,
-      borderTopColor: "#334155",
-      marginTop: 2,
-      marginBottom: 4,
-    },
     signatureTextContainer: {
       alignItems: "center",
     },
@@ -346,14 +357,16 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
       for (const field of section.fields || []) {
         const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(field, patientGender, patientAge);
-        const parsedValue = Number(String(field.value ?? "").replace(",", "."));
+        const parsedValue = parseNumericResult(field.value);
         const resultColor = Number.isFinite(parsedValue)
           ? getCategoryStyle(parsedValue, matchedRange)
           : "black";
 
         sectionRows.push({
           fieldLabel: isMultiField ? field.label : item.test_name,
-          value: field.value || "........",
+          value: field.value !== undefined && field.value !== null && String(field.value).trim() !== ""
+            ? formatNumericResult(field.value)
+            : "........",
           unit: field.unit || "",
           rangeDisplay,
           isOutOfRange,
@@ -533,7 +546,6 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
               {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
               {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
             </View>
-            <View style={styles.signatureLine} />
             <View style={styles.signatureTextContainer}>
               {(orden.signature_footer_text?.trim()
                 ? orden.signature_footer_text

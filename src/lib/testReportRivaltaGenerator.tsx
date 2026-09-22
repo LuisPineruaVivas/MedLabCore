@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { TestTemplateRow, getFieldResultMeta, TemplateSection, TemplateField, FieldType } from '@/features/tests/schemas';
+import { getCategoryStyle } from "@/utils/validators";
 
 Font.register({
   family: "Inter",
@@ -29,12 +30,30 @@ interface PdfPatientData {
   id?: string;
 }
 
-type RenderField = TemplateField & { value?: string | number; type: FieldType };
+type RenderField = TemplateField & { value?: string | number; type: FieldType; method_name?: string };
 
 export interface TestTemplateReportProps {
   template: TestTemplateRow;
   labData?: PdfLabData;
   patientData?: PdfPatientData;
+}
+
+function parseNumericResult(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+
+  const normalizedValue = value.trim();
+  if (!/^[+-]?\d+(?:[.,]\d+)?$/.test(normalizedValue)) return undefined;
+
+  const numberValue = Number(normalizedValue.replace(",", "."));
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function formatNumericResult(value: unknown): string {
+  const numericValue = parseNumericResult(value);
+  if (numericValue === undefined) return String(value ?? "");
+
+  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 20 }).format(numericValue);
 }
 
 export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTemplateReportProps) => {
@@ -47,7 +66,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
   };
 
   const patient = patientData || defaultPatient;
-  const lab = labData || { name: "LABORATORIO CLÍNICO", address: "Av. Principal 123", phone: "555-0123" };
+  const lab = labData || { name: "LABORATORIO CLINICO", address: "Av. Principal 123", phone: "555-0123", email: "" };
   const primaryColor = labData?.primary_color || '#0ea5e9';
 
   const patientAge: number | undefined = typeof patient.age === 'number'
@@ -62,7 +81,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
       paddingTop: 40,
       paddingLeft: 40,
       paddingRight: 40,
-      paddingBottom: 145,
+      paddingBottom: 40,
       fontSize: 11,
       fontFamily: "Inter",
       color: "#333",
@@ -111,14 +130,13 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
     },
     tableRow: {
       flexDirection: "row",
-      alignItems: "center",
       borderBottom: 0.5,
       borderBottomColor: "#e2e8f0",
       paddingTop: 1,
       paddingBottom: 1,
     },
     colExam: { width: "35%", paddingLeft: 8 },
-    colResult: { width: "20%", textAlign: "left" },
+    colResult: { width: "20%", textAlign: "center" },
     colResultText: { width: "65%", lineHeight: 1.1 },
     compactTextResult: { lineHeight: 0.8, paddingTop: 0, paddingBottom: 0 },
     colUnit: { width: "15%", textAlign: "center" },
@@ -126,18 +144,32 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
     alertResult: { color: "#dc2626"},
     signatureSection: {
       position: "absolute",
-      bottom: 50,
+      bottom: 35,
       left: 40,
       right: 40,
-      paddingTop: 8,
-      borderTop: 1,
-      borderTopColor: "#e2e8f0",
+      alignItems: "center",
     },
-    signatureRow: { flexDirection: "row", gap: 5, justifyContent: "center" },
-    signatureImage: { width: 150, height: 70, objectFit: "contain" },
+    signatureImagesRow: {
+      flexDirection: "row",
+      gap: 15,
+      justifyContent: "center",
+      alignItems: "flex-end",
+      marginBottom: 3,
+    },
+    signatureImage: { width: 220, height: 90, objectFit: "contain" },
+    signatureTextContainer: {
+      alignItems: "center",
+    },
+    signatureFooterLine: {
+      fontSize: 8.5,
+      fontFamily: "Inter",
+      color: "#1e293b",
+      textAlign: "center",
+      lineHeight: 1.2,
+    },
     footer: {
       position: "absolute",
-      bottom: 25,
+      bottom: 15,
       left: 40,
       right: 40,
       borderTop: 1,
@@ -150,6 +182,8 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
   });
 
   const sections = template.schema?.sections || [];
+  const templateMethodName = typeof (template as any).method_name === "string" ? (template as any).method_name.trim() : "";
+  let methodRendered = false;
 
   return (
     <Document>
@@ -185,7 +219,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
           </View>
           <View style={styles.patientItem}>
             <Text>
-              <Text style={styles.label}>Fecha: </Text>
+              <Text style={styles.label}>Fecha de muestra: </Text>
               {patient.date}
             </Text>
           </View>
@@ -229,46 +263,82 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
               </View>
             )}
             {(section.fields || []).map((field: RenderField) => {
-              const { rangeDisplay, isOutOfRange } = getFieldResultMeta(
+              const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(
                 field,
                 patientGender,
                 patientAge
               );
 
               const hasExplicitValue = field.value !== undefined && field.value !== null && field.value !== '';
-              const sampleValue = hasExplicitValue
+              const rawValue = hasExplicitValue
                 ? String(field.value)
                 : (field.options && field.options.length > 0 ? field.options[0] : '........');
+
+              const sampleValue = hasExplicitValue || rawValue !== '........'
+                ? formatNumericResult(rawValue)
+                : '........';
+
+              const parsedValue = parseNumericResult(rawValue);
+              const resultColor = Number.isFinite(parsedValue)
+                ? getCategoryStyle(parsedValue, matchedRange)
+                : "black";
+
+              const fieldMethodName = field.method_name || (!methodRendered ? templateMethodName : undefined);
+              if (fieldMethodName) methodRendered = true;
 
               if (field.type === 'text' || field.type === 'select') {
                 if (template.schema?.hide_table_header) {
                   return (
-                    <View key={field.id} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
+                    <View key={field.id} style={[styles.tableRow, { flexDirection: "column", alignItems: "flex-start", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
                       {field.label ? (
                         <Text style={{ fontSize: 10, marginBottom: 2 }}>{field.label}</Text>
                       ) : null}
                       <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0 }]}>
                         {sampleValue}
                       </Text>
+                      {fieldMethodName ? (
+                        <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0, paddingTop: 4 }]}>
+                          <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                        </Text>
+                      ) : null}
                     </View>
                   );
                 }
 
                 return (
                   <View key={field.id} style={styles.tableRow} wrap={false}>
-                    <Text style={styles.colExam}>{field.label}</Text>
+                    <View style={styles.colExam}>
+                      <Text>{field.label}</Text>
+                      {fieldMethodName ? (
+                        <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                          <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                        </Text>
+                      ) : null}
+                    </View>
                     <Text style={[styles.colResultText, styles.compactTextResult]}>{sampleValue}</Text>
                   </View>
                 );
               }
 
               return (
-                <View key={field.id} style={styles.tableRow}>
-                  <Text style={styles.colExam}>{field.label}</Text>
-                  <Text style={[
-                    styles.colResult,
-                    isOutOfRange ? styles.alertResult : {},
-                  ]}>
+                <View key={field.id} style={styles.tableRow} wrap={false}>
+                  <View style={styles.colExam}>
+                    <Text>{field.label}</Text>
+                    {fieldMethodName ? (
+                      <Text style={{ paddingLeft: 6, paddingTop: 3 }}>
+                        <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text
+                    style={[
+                      styles.colResult,
+                      {
+                        color: resultColor === "black" && isOutOfRange ? "#dc2626" : resultColor || "#000",
+                        textAlign: "center"
+                      },
+                    ]}
+                  >
                     {sampleValue}
                   </Text>
                   <Text style={styles.colUnit}>{field.unit || ''}</Text>
@@ -279,7 +349,9 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
           </View>
         ))}
 
-        <Text style={styles.footer}>Documento generado de vista previa</Text>
+        <Text style={styles.footer}>
+          BIOANALISTA/BIOANALYST: LCDA. ROSWITA FUREK DE VILLASMIL COLG.N°18-0221-6825LCDA.ANGELA BEATO COLG N°18-0208-5523
+        </Text>
       </Page>
     </Document>
   );
