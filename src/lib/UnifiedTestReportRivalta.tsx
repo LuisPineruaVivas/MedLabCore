@@ -210,13 +210,14 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
   console.log("Order Items (Rivalta):", orderItems);
 
   const hasSignature = shouldRenderSignatureBlock(orden);
+  const reservedBottomSpace = hasSignature ? 175 : 40;
 
   const styles = StyleSheet.create({
     page: {
       paddingTop: 40,
       paddingLeft: 40,
       paddingRight: 40,
-      paddingBottom: hasSignature ? 150 : 40,
+      paddingBottom: reservedBottomSpace,
       fontSize: 11,
       fontFamily: "Inter",
       color: "#333",
@@ -272,7 +273,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     alertResult: { color: "#dc2626" },
     signatureSection: {
       position: "absolute",
-      bottom: 35,
+      bottom: 60,
       left: 40,
       right: 40,
       alignItems: "center",
@@ -297,7 +298,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
     },
     footer: {
       position: "absolute",
-      bottom: 15,
+      bottom: 40,
       left: 40,
       right: 40,
       borderTop: 1,
@@ -395,7 +396,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
   }
 
   const categoryOrder = sortCategoriesByDepartmentOrder(Object.keys(grouped), departmentOrder);
-  const availablePageHeight = 842 - 170 - (hasSignature ? 150 : 40) - 15;
+  const availablePageHeight = 842 - 170 - reservedBottomSpace - 15;
   const reportChunks = paginateCategories(categoryOrder, grouped, availablePageHeight);
 
   return (
