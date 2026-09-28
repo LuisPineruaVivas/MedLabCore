@@ -48,7 +48,7 @@ export const LetterHeadPDF = ({ orden, patientData }: UnifiedProps) => {
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="LETTER" style={styles.page}>
         <View style={styles.contentBox}>
 
           <View style={styles.row}>

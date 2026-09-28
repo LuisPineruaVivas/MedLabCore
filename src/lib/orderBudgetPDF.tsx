@@ -129,7 +129,7 @@ export const OrderBudgetPDF = ({
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="LETTER" style={styles.page}>
         {/* Header - Identical layout & styling to UnifiedTestReportPDF */}
         <View style={styles.header}>
           <View style={styles.labInfo}>

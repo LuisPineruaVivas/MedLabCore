@@ -271,6 +271,7 @@ export function useOrderItems(orderId: string | null) {
             category,
             sort_order,
             schema,
+            result_type,
             organization_exam_settings!template_id(custom_sort_order)
           )
         `)

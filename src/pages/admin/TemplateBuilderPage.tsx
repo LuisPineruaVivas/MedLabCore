@@ -90,6 +90,7 @@ export default function TemplateBuilderPage() {
         category: existingTemplate.category,
         base_price: Number(existingTemplate.base_price),
         schema: existingTemplate.schema,
+        result_type: existingTemplate.result_type || "STANDARD",
       }
     : undefined;
 
@@ -98,6 +99,7 @@ export default function TemplateBuilderPage() {
     category: "",
     base_price: 0,
     schema: { sections: [emptySection()] },
+    result_type: "STANDARD",
   };
 
   // ── Form ────────────────────────────────────────────────────
@@ -302,10 +304,15 @@ export default function TemplateBuilderPage() {
         <form
           id="template-builder-form"
           onSubmit={handleSubmit(
-            (data) =>
-              saveMutation.mutate(
+            (data) => {
+              const formattedData: TestTemplateFormData =
+                data.result_type === "MICROBIOLOGY"
+                  ? { ...data, schema: { sections: [] } }
+                  : data;
+
+              return saveMutation.mutate(
                 {
-                  formData: data,
+                  formData: formattedData,
                   id,
                   orgId,
                   isFork,
@@ -321,7 +328,8 @@ export default function TemplateBuilderPage() {
                     toast.error(getUserFacingErrorMessage(error, "No se pudo guardar la plantilla"));
                   },
                 }
-              ),
+              );
+            },
             (validationErrors) => {
               console.log("❌ Zod Errors Detail:", validationErrors);
             }
@@ -338,7 +346,9 @@ export default function TemplateBuilderPage() {
                 {Object.entries(errors).map(([key, value]) => (
                   <li key={key} className="text-xs text-red-500 font-medium">
                     <span className="uppercase">{key}</span>:{" "}
-                    {value.message || "Revisa este campo"}
+                    {typeof value.message === "string"
+                      ? value.message
+                      : "Revisa este campo"}
                   </li>
                 ))}
               </ul>
@@ -426,115 +436,170 @@ export default function TemplateBuilderPage() {
                     <Label htmlFor="tpl-hide-header" className="cursor-pointer">Ocultar Encabezado de Tabla</Label>
                   </div>
                 </div>
+
+                <div className="space-y-1.5 sm:col-span-3 pt-2 border-t border-border/60">
+                  <Label htmlFor="tpl-result-type" className="font-semibold text-foreground">
+                    Tipo / Estructura del Examen
+                  </Label>
+                  <Controller
+                    control={control}
+                    name="result_type"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || "STANDARD"}
+                        onValueChange={field.onChange}
+                        disabled={!isSuperAdmin && (!!id && !isFork)}
+                      >
+                        <SelectTrigger id="tpl-result-type" className="w-full sm:w-80">
+                          <SelectValue placeholder="Selecciona la estructura" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="STANDARD">
+                            Estándar / Cuantitativo (Campos y rangos personalizables)
+                          </SelectItem>
+                          <SelectItem value="MICROBIOLOGY">
+                            Microbiología / Cultivo (Muestra, Gram y Antibiograma dinámico)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Selecciona "Microbiología" para exámenes de cultivos bacteriológicos que requieren antibiogramas.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* ── Sections ── */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Secciones y Campos</h2>
-              <Button type="button" variant="outline" size="sm" onClick={addSection}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Agregar Sección
+          {/* ── Sections or Microbiology Notice ── */}
+          {currentFormData.result_type === "MICROBIOLOGY" ? (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-center gap-2 text-primary font-semibold text-base">
+                  <FlaskConical className="h-5 w-5" />
+                  <span>Estructura de Examen Bacteriológico / Microbiológico</span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Este examen utiliza una plantilla fija de microbiología. Al cargar resultados en una orden, el sistema desplegará automáticamente el formulario especializado con:
+                </p>
+                <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1 font-medium">
+                  <li>Tipo de muestra (Orina, Heces, Secreción, etc.)</li>
+                  <li>Coloración de Gram y Examen directo (Texto libre)</li>
+                  <li>Resultado del cultivo y germen aislado</li>
+                  <li>Tabla interactiva de Antibiograma (Sensible / Intermedio / Resistente con catálogo dinámico de antibióticos)</li>
+                </ul>
+                <p className="text-xs text-primary font-medium pt-2 border-t border-primary/20">
+                  ✓ No necesitas agregar secciones ni campos manuales para este tipo de examen.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Secciones y Campos</h2>
+                <Button type="button" variant="outline" size="sm" onClick={addSection}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Agregar Sección
+                </Button>
+              </div>
+
+              {typeof errors.schema === "object" && errors.schema && "sections" in errors.schema && errors.schema.sections && (
+                <p className="text-xs text-destructive">
+                  {typeof errors.schema.sections.message === "string"
+                    ? errors.schema.sections.message
+                    : "Revisa las secciones"}
+                </p>
+              )}
+
+              {sections.map((section, sIdx) => (
+                <Collapsible
+                  key={section.id}
+                  open={!collapsed[sIdx]}
+                  onOpenChange={(val) =>
+                    setCollapsed((p) => ({ ...p, [sIdx]: !val }))
+                  }
+                >
+                  <Card className="overflow-hidden">
+                    {/* Section header */}
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
+                      <GripVertical className="w-4 h-4 text-muted-foreground/50" />
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          {collapsed[sIdx] ? (
+                            <ChevronRight className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <Input
+                        className="h-8 text-sm font-medium flex-1 bg-transparent border-none focus-visible:ring-1"
+                        placeholder="Nombre de la sección (e.g. Análisis Físico)"
+                        value={section.name}
+                        onChange={(e) => updateSectionName(sIdx, e.target.value)}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {section.fields.length} campo
+                        {section.fields.length !== 1 ? "s" : ""}
+                      </span>
+                      {sections.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => removeSection(sIdx)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Fields */}
+                    <CollapsibleContent>
+                      <CardContent className="p-3 space-y-3">
+                        {section.fields.map((field, fIdx) => (
+                          <FieldRow
+                            key={field.id}
+                            field={field}
+                            onUpdate={(patch) => updateField(sIdx, fIdx, patch)}
+                            onRemove={
+                              section.fields.length > 1
+                                ? () => removeField(sIdx, fIdx)
+                                : undefined
+                            }
+                            onMoveUp={fIdx > 0 ? () => moveFieldUp(sIdx, fIdx) : undefined}
+                            onMoveDown={fIdx < section.fields.length - 1 ? () => moveFieldDown(sIdx, fIdx) : undefined}
+                            onInsertAfter={() => insertFieldAfter(sIdx, fIdx)}
+                          />
+                        ))}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs mt-1"
+                          onClick={() => addField(sIdx)}
+                        >
+                          <ListPlus className="w-3.5 h-3.5 mr-1" /> Agregar Campo
+                        </Button>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))}
+
+              {/* Bottom add section shortcut */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed text-muted-foreground hover:text-foreground"
+                onClick={addSection}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Sección
               </Button>
             </div>
-
-            {errors.schema?.sections && (
-              <p className="text-xs text-destructive">
-                {typeof errors.schema.sections.message === "string"
-                  ? errors.schema.sections.message
-                  : "Revisa las secciones"}
-              </p>
-            )}
-
-            {sections.map((section, sIdx) => (
-              <Collapsible
-                key={section.id}
-                open={!collapsed[sIdx]}
-                onOpenChange={(val) =>
-                  setCollapsed((p) => ({ ...p, [sIdx]: !val }))
-                }
-              >
-                <Card className="overflow-hidden">
-                  {/* Section header */}
-                  <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
-                    <GripVertical className="w-4 h-4 text-muted-foreground/50" />
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        {collapsed[sIdx] ? (
-                          <ChevronRight className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <Input
-                      className="h-8 text-sm font-medium flex-1 bg-transparent border-none focus-visible:ring-1"
-                      placeholder="Nombre de la sección (e.g. Análisis Físico)"
-                      value={section.name}
-                      onChange={(e) => updateSectionName(sIdx, e.target.value)}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {section.fields.length} campo
-                      {section.fields.length !== 1 ? "s" : ""}
-                    </span>
-                    {sections.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => removeSection(sIdx)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Fields */}
-                  <CollapsibleContent>
-                    <CardContent className="p-3 space-y-3">
-                      {section.fields.map((field, fIdx) => (
-                        <FieldRow
-                          key={field.id}
-                          field={field}
-                          onUpdate={(patch) => updateField(sIdx, fIdx, patch)}
-                          onRemove={
-                            section.fields.length > 1
-                              ? () => removeField(sIdx, fIdx)
-                              : undefined
-                          }
-                          onMoveUp={fIdx > 0 ? () => moveFieldUp(sIdx, fIdx) : undefined}
-                          onMoveDown={fIdx < section.fields.length - 1 ? () => moveFieldDown(sIdx, fIdx) : undefined}
-                          onInsertAfter={() => insertFieldAfter(sIdx, fIdx)}
-                        />
-                      ))}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs mt-1"
-                        onClick={() => addField(sIdx)}
-                      >
-                        <ListPlus className="w-3.5 h-3.5 mr-1" /> Agregar Campo
-                      </Button>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            ))}
-
-            {/* Bottom add section shortcut */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-dashed text-muted-foreground hover:text-foreground"
-              onClick={addSection}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Sección
-            </Button>
-          </div>
+          )}
         </form>
       </div>
 
@@ -564,6 +629,7 @@ export default function TemplateBuilderPage() {
                     org_id: null,
                     created_at: "",
                     updated_at: "",
+                    result_type: currentFormData.result_type,
                   }}
                   labData={getLabData(organization)}
                 />
@@ -913,3 +979,4 @@ function OptionsEditor({
     </div>
   );
 }
+

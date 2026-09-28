@@ -74,7 +74,7 @@ export const OrderReceiptPDF = ({ orderId, orderDate, patientName, patientId, it
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="LETTER" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.labInfo}>

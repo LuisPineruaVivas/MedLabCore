@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      antibiotics: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          is_active: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "antibiotics_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
       audit_logs: {
         Row: {
           id: string
@@ -642,6 +677,7 @@ export type Database = {
           schema: Json
           sort_order: number | null
           updated_at: string
+          result_type: string
         }
         Insert: {
           base_price?: number
@@ -655,6 +691,7 @@ export type Database = {
           schema?: Json
           sort_order?: number | null
           updated_at?: string
+          result_type?: string
         }
         Update: {
           base_price?: number
@@ -668,6 +705,7 @@ export type Database = {
           schema?: Json
           sort_order?: number | null
           updated_at?: string
+          result_type?: string
         }
         Relationships: [
           {
@@ -983,3 +1021,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -1,4 +1,6 @@
 import { memo, useState } from "react";
+import { isMicrobiologyResult, type MicrobiologyResultsData, type SensitivityValue, type AntibiogramEntry } from '@/features/microbiology/types';
+import { MicrobiologyResultForm } from '@/features/microbiology/MicrobiologyResultForm';
 import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { TestMethod } from "@/features/tests/useTestMethods";
@@ -11,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Calendar,
   ChevronDown,
@@ -194,6 +195,10 @@ interface OrderResultsPanelProps {
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
   updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
+  updateMicroField: (itemId: string, field: keyof Omit<MicrobiologyResultsData, 'result_type' | 'antibiogram' | 'isolated_germs'>, value: string) => void;
+  updateMicroGerms: (itemId: string, germs: string[]) => void;
+  updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
+  addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
   handleFileUploadForOCR: (e: React.ChangeEvent<HTMLInputElement>, categoryItems: OrderItem[], categoryName: string) => void;
 }
 
@@ -210,6 +215,10 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
   updateFieldValue,
   appendTextOption,
   updateMethod,
+  updateMicroField,
+  updateMicroGerms,
+  updateAntibiogram,
+  addAntibiogram,
   handleFileUploadForOCR,
 }: OrderResultsPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -286,6 +295,10 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     updateFieldValue={updateFieldValue}
                     appendTextOption={appendTextOption}
                     updateMethod={updateMethod}
+                    updateMicroField={updateMicroField}
+                    updateMicroGerms={updateMicroGerms}
+                    updateAntibiogram={updateAntibiogram}
+                    addAntibiogram={addAntibiogram}
                   />
                 ))}
               </CardContent>
@@ -331,11 +344,20 @@ export function getCategoryStats(
   resultsState: Record<string, ItemResultsData>,
   modifiedIds: Set<string>
 ) {
-  const hasAnyValue = (itemId: string) =>
-    resultsState[itemId]?.sections?.some((section) => section.fields?.some((field) => field.value !== undefined && field.value !== null && String(field.value).trim() !== ""));
+  const hasAnyValue = (itemId: string) => {
+    const data = resultsState[itemId];
+    if (isMicrobiologyResult(data)) {
+      return !!(data.sample_type || data.gram_stain || data.culture_result || data.isolated_germs?.some(g => g.trim()) || data.antibiogram?.some(a => a.sensitivity || Object.values(a.sensitivities || {}).some(Boolean)));
+    }
+    return data?.sections?.some((section) => section.fields?.some((field) => field.value !== undefined && field.value !== null && String(field.value).trim() !== ""));
+  };
 
   const hasAllValues = (itemId: string) => {
-    const sections = resultsState[itemId]?.sections;
+    const data = resultsState[itemId];
+    if (isMicrobiologyResult(data)) {
+      return !!(data.sample_type && data.gram_stain && (data.isolated_germs?.some(g => g.trim()) || data.culture_result));
+    }
+    const sections = data?.sections;
     if (!sections || sections.length === 0) return false;
 
     let hasFields = false;
@@ -365,6 +387,10 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   updateFieldValue,
   appendTextOption,
   updateMethod,
+  updateMicroField,
+  updateMicroGerms,
+  updateAntibiogram,
+  addAntibiogram,
 }: {
   item: OrderItem;
   itemResultsData?: ItemResultsData;
@@ -375,9 +401,32 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   updateFieldValue: (itemId: string, sectionIdx: number, fieldIdx: number, value: string) => void;
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
   updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
+  updateMicroField: (itemId: string, field: keyof Omit<MicrobiologyResultsData, 'result_type' | 'antibiogram' | 'isolated_germs'>, value: string) => void;
+  updateMicroGerms: (itemId: string, germs: string[]) => void;
+  updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
+  addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
 }) {
   if (!itemResultsData) {
     return <div className="py-4 text-center text-sm text-muted-foreground">Estructura de resultados no disponible.</div>;
+  }
+
+  if (isMicrobiologyResult(itemResultsData)) {
+    return (
+      <div className="border-b last:border-b-0 pb-6 mb-6 last:mb-0 last:pb-0">
+        <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-3">
+          <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+        </div>
+        <MicrobiologyResultForm
+          itemId={item.id}
+          itemResultsData={itemResultsData as MicrobiologyResultsData}
+          readOnly={readOnly}
+          updateMicroField={updateMicroField}
+          updateMicroGerms={updateMicroGerms}
+          updateAntibiogram={updateAntibiogram}
+          addAntibiogram={addAntibiogram}
+        />
+      </div>
+    );
   }
 
   return (
@@ -696,3 +745,4 @@ export function buildLabData(lab: OrganizationInfo | null | undefined) {
     lab_admin: lab?.profiles[0]?.full_name || ""
   };
 }
+
