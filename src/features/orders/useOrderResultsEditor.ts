@@ -1,4 +1,98 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isMicrobiologyResult, type MicrobiologyResultsData, type SensitivityValue, type AntibiogramEntry } from '@/features/microbiology/types';
+
+export function updateMicrobiologyField<
+  K extends keyof Omit<MicrobiologyResultsData, 'result_type' | 'antibiogram'>,
+>(
+  previousState: ResultsMap,
+  itemId: string,
+  field: K,
+  value: MicrobiologyResultsData[K]
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  itemData[field] = value as MicrobiologyResultsData[K];
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
+
+export function updateAntibiogramSensitivity(
+  previousState: ResultsMap,
+  itemId: string,
+  antibioticIdx: number,
+  sensitivity: SensitivityValue,
+  germIndex = 0
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  if (itemData.antibiogram && itemData.antibiogram[antibioticIdx]) {
+    const entry = itemData.antibiogram[antibioticIdx];
+    if (!entry.sensitivities) {
+      entry.sensitivities = {};
+      if (entry.sensitivity) {
+        entry.sensitivities[0] = entry.sensitivity;
+      }
+    }
+    entry.sensitivities[germIndex] = sensitivity;
+    if (germIndex === 0) {
+      entry.sensitivity = sensitivity;
+    }
+  }
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
+
+export function updateMicrobiologyGerms(
+  previousState: ResultsMap,
+  itemId: string,
+  germs: string[]
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  const slicedGerms = germs.slice(0, 3);
+  itemData.isolated_germs = slicedGerms;
+  itemData.culture_result = slicedGerms.filter(Boolean).join("\n");
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
+
+export function addAntibiogramEntry(
+  previousState: ResultsMap,
+  itemId: string,
+  entry: AntibiogramEntry
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  if (!itemData.antibiogram) {
+    itemData.antibiogram = [];
+  }
+  
+  if (!itemData.antibiogram.some((a) => a.antibiotic_id === entry.antibiotic_id)) {
+    itemData.antibiogram.push(entry);
+  }
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
 import type { FieldType, ReferenceRange } from "@/features/tests/schemas";
 
 export interface OrderResultFieldState {
@@ -29,6 +123,10 @@ export interface EditableOrderItem {
   test_method_id?: string | null;
   method_name?: string | null;
   results_data?: OrderItemResultsState | string | null;
+  test_templates?: {
+    result_type?: string | null;
+    [key: string]: unknown;
+  } | null;
 }
 
 type ResultsMap = Record<string, OrderItemResultsState>;
@@ -47,10 +145,39 @@ export function initializeResultsState(orderItems: EditableOrderItem[]): Results
   const initialState: ResultsMap = {};
 
   for (const item of orderItems) {
-    if (!item.results_data) continue;
-    initialState[item.id] = typeof item.results_data === "string"
-      ? JSON.parse(item.results_data)
-      : cloneResultsValue(item.results_data);
+    let rawData: Record<string, unknown> | null = null;
+    if (typeof item.results_data === "string") {
+      try {
+        rawData = JSON.parse(item.results_data);
+      } catch (e) {
+        rawData = null;
+      }
+    } else if (item.results_data && typeof item.results_data === "object") {
+      rawData = item.results_data as Record<string, unknown>;
+    }
+
+    const isMicrobiology =
+      item.test_templates?.result_type === "MICROBIOLOGY" ||
+      rawData?.result_type === "MICROBIOLOGY";
+
+    if (isMicrobiology) {
+      const germs = Array.isArray(rawData?.isolated_germs)
+        ? (rawData.isolated_germs as string[])
+        : typeof rawData?.culture_result === "string" && rawData.culture_result.trim() !== ""
+          ? rawData.culture_result.split("\n").map((s) => s.trim()).filter(Boolean)
+          : [""];
+
+      initialState[item.id] = {
+        result_type: "MICROBIOLOGY",
+        sample_type: typeof rawData?.sample_type === "string" ? rawData.sample_type : "",
+        gram_stain: typeof rawData?.gram_stain === "string" ? rawData.gram_stain : "",
+        culture_result: typeof rawData?.culture_result === "string" ? rawData.culture_result : "",
+        isolated_germs: germs.length > 0 ? germs : [""],
+        antibiogram: Array.isArray(rawData?.antibiogram) ? rawData.antibiogram : [],
+      } as unknown as OrderItemResultsState;
+    } else if (rawData) {
+      initialState[item.id] = cloneResultsValue(rawData as unknown as OrderItemResultsState);
+    }
   }
 
   return initialState;
@@ -79,7 +206,10 @@ export function updateResultsField(
   if (!currentItem) return previousState;
 
   const itemData = cloneResultsValue(currentItem);
-  itemData.sections?.[sectionIdx]?.fields?.[fieldIdx] && (itemData.sections[sectionIdx].fields![fieldIdx].value = value);
+  const targetField = itemData.sections?.[sectionIdx]?.fields?.[fieldIdx];
+  if (targetField) {
+    targetField.value = value;
+  }
 
   return {
     ...previousState,
@@ -132,6 +262,25 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     updateFieldValue(itemId, sectionIdx, fieldIdx, newValue);
   }, [resultsState, updateFieldValue]);
 
+  const updateMicroField = useCallback((itemId: string, field: keyof Omit<MicrobiologyResultsData, "result_type" | "antibiogram" | "isolated_germs">, value: string) => {
+    setResultsState((prev) => updateMicrobiologyField(prev, itemId, field, value));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
+
+  const updateMicroGerms = useCallback((itemId: string, germs: string[]) => {
+    setResultsState((prev) => updateMicrobiologyGerms(prev, itemId, germs));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
+
+  const updateAntibiogram = useCallback((itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex = 0) => {
+    setResultsState((prev) => updateAntibiogramSensitivity(prev, itemId, antibioticIdx, sensitivity, germIndex));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
+
+  const addAntibiogram = useCallback((itemId: string, entry: AntibiogramEntry) => {
+    setResultsState((prev) => addAntibiogramEntry(prev, itemId, entry));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
   const updateMethod = useCallback((itemId: string, method: SelectedMethod) => {
     setMethodsState((previous) => ({ ...previous, [itemId]: method }));
     setModifiedIds((previous) => new Set(previous).add(itemId));
@@ -151,6 +300,12 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     updateFieldValue,
     appendTextOption,
     updateMethod,
+    updateMicroField,
+    updateMicroGerms,
+    updateAntibiogram,
+    addAntibiogram,
     resetModified,
   };
 }
+
+

@@ -1,6 +1,8 @@
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { format } from "date-fns";
-import { getFieldResultMeta } from "@/features/tests/schemas";
+import { isMicrobiologyResult, type MicrobiologyResultsData } from '@/features/microbiology/types';
+import { MicrobiologyReportSection } from './MicrobiologyReportSection';
+import { getFieldResultMeta, type TemplateField } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
 
@@ -14,9 +16,44 @@ Font.register({
 
 Font.registerHyphenationCallback((word) => [word]);
 
+interface ReportResultField {
+  id?: string;
+  label: string;
+  type: TemplateField["type"];
+  value?: string | number | null;
+  unit?: string | null;
+  range?: string | null;
+  reference_ranges?: TemplateField["reference_ranges"];
+  options?: string[];
+}
+
+interface ReportResultsData {
+  category?: string;
+  result_type?: string;
+  sample_type?: string;
+  gram_stain?: string;
+  culture_result?: string;
+  antibiogram?: MicrobiologyResultsData["antibiogram"];
+  sections?: Array<{ name?: string; fields?: ReportResultField[] }>;
+  hide_table_header?: boolean;
+}
+
+interface ReportOrderItem {
+  category?: string;
+  resolved_sort_order?: number;
+  results_data?: string | ReportResultsData | null;
+  test_templates?: {
+    schema?: string | { hide_table_header?: boolean } | null;
+    category?: string;
+    result_type?: string;
+  } | null;
+  test_name: string;
+  method_name?: string | null;
+}
+
 interface UnifiedProps {
   orden: OrderRow;
-  orderItems: any[];
+  orderItems: ReportOrderItem[];
   departmentOrder?: string[];
   patientData: {
     name: string;
@@ -58,6 +95,8 @@ interface ReportChunk {
 const shouldRenderSignatureBlock = (order: OrderRow) =>
   order.status === "completada" && Boolean(order.firma_url || order.sello_url);
 
+const SIGNATURE_RESERVED_HEIGHT = 115;
+
 function buildDepartmentOrderMap(departmentOrder: string[] = []) {
   return new Map(departmentOrder.map((department, index) => [department, index] as const));
 }
@@ -90,7 +129,40 @@ function parsePatientAge(age: string | number | undefined): number | undefined {
   return match[2]?.toLowerCase().startsWith("mes") ? value / 12 : value;
 }
 
+function estimateMicrobiologyHeight(row: FlatRow): number {
+  // Estimate height for a MICRO_DATA block based on its content
+  try {
+    const data = JSON.parse(row.value) as {
+      sample_type?: string;
+      gram_stain?: string;
+      culture_result?: string;
+      isolated_germs?: string[];
+      antibiogram?: Array<{ antibiotic_id: string; sensitivity?: string | null; sensitivities?: Record<number, string> }>;
+    };
+    let height = 0;
+    height += 30; // "INFORME BACTERIOLÓGICO" title
+    if (data.sample_type) height += 20; // MUESTRA line
+    if (data.gram_stain) height += 20; // Gram line
+    const germs = data.isolated_germs?.filter(Boolean) ??
+      (data.culture_result ? data.culture_result.split("\n").filter(Boolean) : []);
+    height += 14 + (germs.length > 0 ? germs.length * 14 : 0) + 10; // Cultivo block
+    const abCount = (data.antibiogram || []).filter(ab => {
+      if (ab.sensitivity && ab.sensitivity !== "") return true;
+      if (ab.sensitivities) return Object.values(ab.sensitivities).some(v => v !== "");
+      return false;
+    }).length;
+    const germCount = germs.length > 0 ? germs.length : 1;
+    const rowsPerAb = 0.5; // all layouts use 2 antibiotics per row
+    const tableRows = Math.ceil(abCount * rowsPerAb);
+    if (abCount > 0) height += 30 + tableRows * 18; // ANTIBIOGRAMA title + rows
+    return height + 30; // extra margin
+  } catch {
+    return 250; // safe fallback
+  }
+}
+
 function estimateRowHeight(row: FlatRow): number {
+  if (row.fieldLabel === "MICRO_DATA") return estimateMicrobiologyHeight(row);
   if (row.isSectionHeader) return 16;
 
   const valStr = String(row.value || "");
@@ -110,10 +182,11 @@ function estimateRowHeight(row: FlatRow): number {
 function paginateCategories(
   categoryOrder: string[],
   grouped: Record<string, FlatRow[]>,
-  availableHeight: number,
+  firstPageHeight: number,
+  continuationPageHeight: number,
 ): ReportChunk[] {
   const chunks: ReportChunk[] = [];
-  let remainingHeight = availableHeight;
+  let remainingHeight = firstPageHeight;
 
   for (const category of categoryOrder) {
     const rows = grouped[category] || [];
@@ -123,7 +196,7 @@ function paginateCategories(
     while (rowIndex < rows.length) {
       const isCategoryContinuation = rowIndex > 0;
       const hideTableHeader = rows.every(r => r.hideTableHeader);
-      const headerHeight = hideTableHeader ? 31 : 55.5;
+      const headerHeight = hideTableHeader ? 26 : 48;
 
       let firstRowHeight = estimateRowHeight(rows[rowIndex]);
       if (rows[rowIndex]?.isSectionHeader && rows[rowIndex + 1]) {
@@ -133,7 +206,6 @@ function paginateCategories(
       let shouldStartNewPage = isCategoryContinuation;
 
       if (!isCategoryContinuation && remainingHeight < headerHeight + firstRowHeight + 5) {
-        remainingHeight = availableHeight;
         shouldStartNewPage = true;
       }
 
@@ -141,18 +213,36 @@ function paginateCategories(
         shouldStartNewPage = false;
       }
 
+      if (shouldStartNewPage) {
+        remainingHeight = continuationPageHeight;
+      }
+
       const chunkRows: FlatRow[] = [];
       let chunkHeight = headerHeight;
 
       while (rowIndex < rows.length) {
-        const rowHeight = estimateRowHeight(rows[rowIndex]);
+        const currentRow = rows[rowIndex];
+        // For MICROBIOLOGY_BLOCK, always count the paired MICRO_DATA row together
+        const isMicroBlock = currentRow.value === "MICROBIOLOGY_BLOCK";
+        const pairedRow = isMicroBlock ? rows[rowIndex + 1] : undefined;
+        const rowHeight = isMicroBlock && pairedRow
+          ? estimateRowHeight(currentRow) + estimateRowHeight(pairedRow)
+          : estimateRowHeight(currentRow);
+
         if (chunkRows.length > 0 && chunkHeight + rowHeight > remainingHeight) {
           break;
         }
 
-        chunkRows.push(rows[rowIndex]);
-        chunkHeight += rowHeight;
+        chunkRows.push(currentRow);
+        chunkHeight += estimateRowHeight(currentRow);
         rowIndex += 1;
+
+        // If we just added MICROBIOLOGY_BLOCK, immediately add the paired MICRO_DATA too
+        if (isMicroBlock && pairedRow) {
+          chunkRows.push(pairedRow);
+          chunkHeight += estimateRowHeight(pairedRow);
+          rowIndex += 1;
+        }
       }
 
       if (chunkRows.length > 1 && chunkRows[chunkRows.length - 1].isSectionHeader) {
@@ -172,7 +262,7 @@ function paginateCategories(
       remainingHeight -= chunkHeight;
 
       if (rowIndex < rows.length) {
-        remainingHeight = availableHeight;
+        remainingHeight = continuationPageHeight;
       }
     }
   }
@@ -195,7 +285,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
       paddingTop: 40,
       paddingLeft: 40,
       paddingRight: 40,
-      paddingBottom: hasSignature ? 140 : 40,
+      paddingBottom: SIGNATURE_RESERVED_HEIGHT,
       fontSize: 11,
       fontFamily: "Inter",
       color: "#333",
@@ -318,14 +408,56 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const resultsData = typeof item.results_data === "string" ? JSON.parse(item.results_data || "{}") : (item.results_data || {});
-    const templateSchema = typeof item.test_templates?.schema === "string" ? JSON.parse(item.test_templates.schema || "{}") : (item.test_templates?.schema || {});
+    const resultsData: ReportResultsData = typeof item.results_data === "string"
+      ? JSON.parse(item.results_data || "{}") as ReportResultsData
+      : item.results_data || {};
+    const templateSchema = typeof item.test_templates?.schema === "string"
+      ? JSON.parse(item.test_templates.schema || "{}") as { hide_table_header?: boolean }
+      : item.test_templates?.schema || {};
 
-    const category = item.category || resultsData?.category || "Pruebas Especiales";
+    const category = item.category || resultsData?.category || item.test_templates?.category || "Pruebas Especiales";
+    const isMicrobiology =
+      isMicrobiologyResult(resultsData) ||
+      item.test_templates?.result_type === "MICROBIOLOGY" ||
+      resultsData?.result_type === "MICROBIOLOGY";
+
+    if (isMicrobiology) {
+      if (!grouped[category]) grouped[category] = [];
+      const microData: MicrobiologyResultsData = isMicrobiologyResult(resultsData)
+        ? resultsData
+        : {
+            result_type: "MICROBIOLOGY",
+            sample_type: resultsData?.sample_type || "",
+            gram_stain: resultsData?.gram_stain || "",
+            culture_result: resultsData?.culture_result || "",
+            antibiogram: Array.isArray(resultsData?.antibiogram) ? resultsData.antibiogram : [],
+          };
+
+      grouped[category].push({
+        fieldLabel: item.test_name,
+        value: "MICROBIOLOGY_BLOCK",
+        unit: "",
+        rangeDisplay: "",
+        isOutOfRange: false,
+        isSectionHeader: true,
+        hideTableHeader: true,
+        methodName: undefined,
+      });
+      grouped[category].push({
+        fieldLabel: "MICRO_DATA",
+        value: JSON.stringify(microData),
+        unit: "",
+        rangeDisplay: "",
+        isOutOfRange: false,
+        hideTableHeader: true,
+      });
+      continue;
+    }
+
     if (!grouped[category]) grouped[category] = [];
 
-    const sections = resultsData?.sections || [];
-    const allFields: Array<{ label: string }> = sections.flatMap((section: any) => section.fields || []);
+    const sections = resultsData.sections || [];
+    const allFields: Array<{ label: string }> = sections.flatMap(section => section.fields || []);
     const isMultiField = allFields.length > 1;
     const hideTableHeader = Boolean(resultsData?.hide_table_header ?? templateSchema?.hide_table_header);
     const methodName = typeof item.method_name === "string" ? item.method_name.trim() : "";
@@ -355,7 +487,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
         sectionRows.push({
           fieldLabel: isMultiField ? field.label : item.test_name,
-          value: field.value || "........",
+          value: String(field.value || "........"),
           unit: field.unit || "",
           rangeDisplay,
           isOutOfRange,
@@ -381,12 +513,13 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   }
 
   const categoryOrder = sortCategoriesByDepartmentOrder(Object.keys(grouped), departmentOrder);
-  const availablePageHeight = 842 - 170 - (hasSignature ? 140 : 40) - 15;
-  const reportChunks = paginateCategories(categoryOrder, grouped, availablePageHeight);
+  const firstPageHeight = 792 - 150 - SIGNATURE_RESERVED_HEIGHT - 10;
+  const continuationPageHeight = 792 - 40 - SIGNATURE_RESERVED_HEIGHT - 10;
+  const reportChunks = paginateCategories(categoryOrder, grouped, firstPageHeight, continuationPageHeight);
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>
@@ -464,6 +597,16 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
                 }
 
                 if (row.value === "........" || row.value === "") return null;
+                if (row.fieldLabel === "MICRO_DATA") {
+                  try {
+                    const microData = JSON.parse(row.value) as MicrobiologyResultsData;
+                    return <MicrobiologyReportSection key={`${chunk.category}-${chunkIndex}-${index}`} data={microData} primaryColor={primaryColor} />;
+                  } catch (e) {
+                    return null;
+                  }
+                }
+                
+                if (row.value === "MICROBIOLOGY_BLOCK") return null;
 
                 if (row.fieldType === "text" || row.fieldType === "select") {
                   if (row.hideTableHeader) {
@@ -534,13 +677,10 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
               {orden.firma_url ? <Image src={orden.firma_url} style={styles.signatureImage} /> : null}
               {orden.sello_url ? <Image src={orden.sello_url} style={styles.signatureImage} /> : null}
             </View>
-            <View style={styles.signatureLine} />
             <View style={styles.signatureTextContainer}>
               {(orden.signature_footer_text?.trim()
                 ? orden.signature_footer_text
-                : orden.firma_name
-                ? `Lic. ${orden.firma_name}`
-                : ""
+                : ''
               )
                 .split("\n")
                 .map((line, idx) => (
@@ -559,3 +699,6 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
     </Document>
   );
 };
+
+
+

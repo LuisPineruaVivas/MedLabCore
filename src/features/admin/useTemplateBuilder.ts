@@ -38,6 +38,7 @@ export function buildTemplateUpsertPayload(
     category: formData.category,
     base_price: formData.base_price,
     schema: formData.schema as unknown as Json,
+    result_type: formData.result_type,
     updated_at: new Date().toISOString(),
   };
 
@@ -70,7 +71,7 @@ export function useTemplateById(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("test_templates")
-        .select("id, org_id, name, category, base_price, schema, is_active, created_at, updated_at, id_global_ref")
+        .select("id, org_id, name, category, base_price, schema, is_active, created_at, updated_at, id_global_ref, result_type")
         .eq("id", id!)
         .single();
 
@@ -128,3 +129,4 @@ export function useSaveTemplate() {
     },
   });
 }
+

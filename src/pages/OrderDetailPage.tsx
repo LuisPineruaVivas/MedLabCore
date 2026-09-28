@@ -50,6 +50,10 @@ export default function OrderDetailPage() {
     appendTextOption,
     updateMethod,
     resetModified,
+    updateMicroField,
+    updateMicroGerms,
+    updateAntibiogram,
+    addAntibiogram,
   } = useOrderResultsEditor(orderItems);
 
   const [isSavingAll, setIsSavingAll] = useState(false);
@@ -75,13 +79,21 @@ export default function OrderDetailPage() {
   const canEnterResults = permissions.canEnterResults;
   const canViewOrderDocuments = role !== "lab_affiliate";
   const orderItemsTyped = useMemo(
-    () => orderItems as Array<{ id: string | number; test_name?: string; name?: string }>,
+    () => orderItems as Array<{
+      results_data: import("@/features/orders/useOrderResultsEditor").OrderItemResultsState; id: string | number; test_name?: string; name?: string 
+}>,
     [orderItems]
   );
   const allReportItemIds = useMemo(() => orderItemsTyped.map((item) => String(item.id)), [orderItemsTyped]);
   const selectedReportItems = useMemo(
-    () => orderItemsTyped.filter((item) => selectedReportItemIds.has(String(item.id))),
-    [orderItemsTyped, selectedReportItemIds]
+    () =>
+      orderItemsTyped
+        .filter((item) => selectedReportItemIds.has(String(item.id)))
+        .map((item) => ({
+          ...item,
+          results_data: resultsState[String(item.id)] ?? item.results_data,
+        })),
+    [orderItemsTyped, selectedReportItemIds, resultsState]
   );
   const allItemsSelected = allReportItemIds.length > 0 && selectedReportItemIds.size === allReportItemIds.length;
 
@@ -529,6 +541,10 @@ export default function OrderDetailPage() {
               updateFieldValue={updateFieldValue}
               appendTextOption={appendTextOption}
               updateMethod={updateMethod}
+              updateMicroField={updateMicroField}
+              updateMicroGerms={updateMicroGerms}
+              updateAntibiogram={updateAntibiogram}
+              addAntibiogram={addAntibiogram}
               handleFileUploadForOCR={handleFileUploadForOCR}
             />
           )}
@@ -688,3 +704,4 @@ export default function OrderDetailPage() {
     </div>
   );
 }
+

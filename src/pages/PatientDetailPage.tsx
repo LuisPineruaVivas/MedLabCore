@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { EditPatientDialog } from "@/features/patients/EditPatientDialog";
+import { BloodGroupCardDialog } from "@/features/patients/BloodGroupCardDialog";
 import { usePatientDetail, usePatientOrders, useUpdatePatient } from "@/features/patients/usePatients";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,14 +27,17 @@ import {
   Briefcase,
   DollarSign,
   Edit,
+  HeartPulse,
 } from "lucide-react";
 import { differenceInMonths, differenceInYears, format, parse } from "date-fns";
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { organization, profile } = useCurrentOrgContext();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [bloodCardOpen, setBloodCardOpen] = useState(false);
   const updatePatient = useUpdatePatient(id ?? null);
   const { data: patient, isLoading: patientLoading } = usePatientDetail(id ?? null);
   const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(id ?? null);
@@ -78,7 +83,7 @@ export default function PatientDetailPage() {
         title={`${patient.first_name} ${patient.last_name}`}
         description={`Cédula: ${patient.id_number}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => navigate("/patients")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
@@ -86,6 +91,10 @@ export default function PatientDetailPage() {
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar Información
+            </Button>
+            <Button size="sm" onClick={() => setBloodCardOpen(true)} className="bg-red-600 hover:bg-red-700 text-white">
+              <HeartPulse className="w-4 h-4 mr-2" />
+              Generar Tarjeta de Grupo Sanguíneo
             </Button>
           </div>
         }
@@ -232,6 +241,22 @@ export default function PatientDetailPage() {
         } : null}
         onSubmit={async (data) => { await updatePatient.mutateAsync(data); }}
       />
+
+      {/* Blood Group Card Dialog */}
+      {patient && (
+        <BloodGroupCardDialog
+          open={bloodCardOpen}
+          onOpenChange={setBloodCardOpen}
+          patient={{
+            first_name: patient.first_name,
+            last_name: patient.last_name,
+            id_number: patient.id_number,
+            date_of_birth: patient.date_of_birth,
+          }}
+          organization={organization}
+          profile={profile}
+        />
+      )}
     </div>
   );
 }

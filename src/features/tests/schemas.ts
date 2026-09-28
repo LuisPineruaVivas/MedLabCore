@@ -51,13 +51,25 @@ export const templateJsonSchema = z.object({
   hide_table_header: z.boolean().optional(),
 });
 
-// ── Full template form ──────────────────────────────────────────
 export const testTemplateFormSchema = z.object({
   id: z.string().uuid("Invalid template").optional(),
   name: z.string().trim().min(1, "Test name is required").max(200),
   category: z.string().trim().min(1, "Category is required"),
   base_price: z.coerce.number().min(0, "Price must be positive"),
-  schema: templateJsonSchema,
+  schema: z.any(),
+  result_type: z.enum(["STANDARD", "MICROBIOLOGY"]).default("STANDARD"),
+}).superRefine((data, ctx) => {
+  if (data.result_type !== "MICROBIOLOGY") {
+    const parsed = templateJsonSchema.safeParse(data.schema);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        ctx.addIssue({
+          ...issue,
+          path: ["schema", ...issue.path],
+        });
+      }
+    }
+  }
 });
 
 export type TemplateField = z.infer<typeof templateFieldSchema>;
@@ -75,6 +87,7 @@ export interface TestTemplateRow {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  result_type: 'STANDARD' | 'MICROBIOLOGY';
 }
 
 // Categories
@@ -294,3 +307,4 @@ export function findMatchingRange(
   // Fallback: find a 'both' range
   return ranges.find((r) => r.gender === "ambos");
 }
+

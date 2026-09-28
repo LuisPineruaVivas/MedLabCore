@@ -79,7 +79,7 @@ export function AffiliateAccountStatementPDF({
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{labData?.name || "LABORATORIO CLINICO"}</Text>
