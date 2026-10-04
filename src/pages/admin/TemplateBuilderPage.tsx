@@ -1,6 +1,6 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/dialog";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { createEmptyTemplateField, createEmptyTemplateSection, useSaveTemplate, useTemplateById } from "@/features/admin/useTemplateBuilder";
+import { type MicrobiologyFieldDef, DEFAULT_MICROBIOLOGY_FIELDS } from "@/features/microbiology/types";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function emptyField(): TemplateField {
@@ -197,6 +198,44 @@ export default function TemplateBuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // ── Microbiology fields state ─────────────────────────────────
+  const getInitialMicroFields = (): MicrobiologyFieldDef[] => {
+    const schema = existingTemplate?.schema as { microbiology_fields?: MicrobiologyFieldDef[] } | null | undefined;
+    if (schema?.microbiology_fields && schema.microbiology_fields.length > 0) {
+      return schema.microbiology_fields;
+    }
+    return DEFAULT_MICROBIOLOGY_FIELDS.map(f => ({ ...f }));
+  };
+  const [microbiologyFields, setMicrobiologyFields] = useState<MicrobiologyFieldDef[]>(getInitialMicroFields);
+
+  // Sync microbiologyFields when existingTemplate finishes loading asynchronously
+  useEffect(() => {
+    if (existingTemplate?.schema) {
+      const rawSchema = typeof existingTemplate.schema === "string"
+        ? JSON.parse(existingTemplate.schema)
+        : existingTemplate.schema;
+      if (rawSchema?.microbiology_fields && Array.isArray(rawSchema.microbiology_fields) && rawSchema.microbiology_fields.length > 0) {
+        setMicrobiologyFields(rawSchema.microbiology_fields);
+      }
+    }
+  }, [existingTemplate]);
+
+  function addMicroField() {
+    const id = `custom-${Date.now()}`;
+    setMicrobiologyFields(prev => [
+      ...prev,
+      { id, key: id, label: "", fixed: false },
+    ]);
+  }
+
+  function removeMicroField(id: string) {
+    setMicrobiologyFields(prev => prev.filter(f => f.id !== id));
+  }
+
+  function updateMicroFieldLabel(id: string, label: string) {
+    setMicrobiologyFields(prev => prev.map(f => f.id === id ? { ...f, label } : f));
+  }
+
   // ── Save mutation ────────────────────────────────────────────
   const saveMutation = useSaveTemplate();
 
@@ -307,7 +346,15 @@ export default function TemplateBuilderPage() {
             (data) => {
               const formattedData: TestTemplateFormData =
                 data.result_type === "MICROBIOLOGY"
-                  ? { ...data, schema: { sections: [] } }
+                  ? {
+                      ...data,
+                      schema: {
+                        sections: [],
+                        // Store customized field definitions so the form and report
+                        // can use the lab's preferred labels and extra fields.
+                        microbiology_fields: microbiologyFields,
+                      },
+                    }
                   : data;
 
               return saveMutation.mutate(
@@ -448,7 +495,6 @@ export default function TemplateBuilderPage() {
                       <Select
                         value={field.value || "STANDARD"}
                         onValueChange={field.onChange}
-                        disabled={!isSuperAdmin && (!!id && !isFork)}
                       >
                         <SelectTrigger id="tpl-result-type" className="w-full sm:w-80">
                           <SelectValue placeholder="Selecciona la estructura" />
@@ -472,28 +518,92 @@ export default function TemplateBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* ── Sections or Microbiology Notice ── */}
+          {/* ── Sections or Microbiology Fields Editor ── */}
           {currentFormData.result_type === "MICROBIOLOGY" ? (
-            <Card className="border-primary/30 bg-primary/5">
-              <CardContent className="p-6 space-y-3">
-                <div className="flex items-center gap-2 text-primary font-semibold text-base">
-                  <FlaskConical className="h-5 w-5" />
-                  <span>Estructura de Examen Bacteriológico / Microbiológico</span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Este examen utiliza una plantilla fija de microbiología. Al cargar resultados en una orden, el sistema desplegará automáticamente el formulario especializado con:
-                </p>
-                <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1 font-medium">
-                  <li>Tipo de muestra (Orina, Heces, Secreción, etc.)</li>
-                  <li>Coloración de Gram y Examen directo (Texto libre)</li>
-                  <li>Resultado del cultivo y germen aislado</li>
-                  <li>Tabla interactiva de Antibiograma (Sensible / Intermedio / Resistente con catálogo dinámico de antibióticos)</li>
-                </ul>
-                <p className="text-xs text-primary font-medium pt-2 border-t border-primary/20">
-                  ✓ No necesitas agregar secciones ni campos manuales para este tipo de examen.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {/* Editable fields section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <FlaskConical className="h-4 w-4 text-primary" />
+                      Campos del Informe Bacteriológico
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addMicroField}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Agregar Campo Extra
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Personaliza los nombres de los campos que aparecen en el formulario y en el informe. Los campos fijos no pueden eliminarse.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {microbiologyFields.map((mField) => (
+                    <div
+                      key={mField.id}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                    >
+                      {mField.fixed ? (
+                        <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                      ) : (
+                        <div className="w-4 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                          {mField.fixed ? "Campo fijo — puedes renombrar la etiqueta" : "Campo personalizado (texto libre)"}
+                        </Label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder={
+                            mField.fixed
+                              ? `Ej. ${mField.key === "sample_type" ? "Tipo de Muestra" : mField.key === "gram_stain" ? "Coloración de Gram" : "Resultado del Cultivo"}`
+                              : "Ej. Observaciones, Notas..."
+                          }
+                          value={mField.label}
+                          onChange={(e) => updateMicroFieldLabel(mField.id, e.target.value)}
+                        />
+                      </div>
+                      {mField.fixed ? (
+                        <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
+                          Fijo
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                          onClick={() => removeMicroField(mField.id)}
+                          title="Eliminar campo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Fixed antibiogram section — info only */}
+              <Card className="border-border/50 bg-muted/30">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>Formato y Antibiograma de Microbiología</span>
+                  </div>
+                  <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
+                    <li><strong>Resultado del Cultivo Dual:</strong> El bioanalista podrá elegir entre modo Texto Libre (cultivo negativo/descriptivo) o Germen(es) Aislado(s) (cultivo positivo).</li>
+                    <li><strong>Antibiograma Interactivo (S / I / R):</strong> Se activará automáticamente cuando se aísle al menos un germen (hasta 3 gérmenes).</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -624,7 +734,9 @@ export default function TemplateBuilderPage() {
                     name: currentFormData.name,
                     category: currentFormData.category,
                     base_price: currentFormData.base_price,
-                    schema: currentFormData.schema,
+                    schema: currentFormData.result_type === "MICROBIOLOGY"
+                      ? { sections: [], microbiology_fields: microbiologyFields }
+                      : currentFormData.schema,
                     is_active: true,
                     org_id: null,
                     created_at: "",

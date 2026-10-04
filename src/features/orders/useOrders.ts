@@ -250,7 +250,7 @@ export function useOrder(orderId: string | null) {
 export function useOrderItems(orderId: string | null) {
   const { orgId } = useCurrentOrgContext();
 
-  return useQuery<any[]>({
+  return useQuery<Record<string, unknown>[]>({
     queryKey: queryKeys.orders.items(orderId, orgId),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -279,13 +279,27 @@ export function useOrderItems(orderId: string | null) {
 
       if (error) throw error;
 
-      return (data || []).map((item: any) => {
+      return (data || []).map((itemRecord: unknown) => {
+        const item = itemRecord as {
+          test_templates?: {
+            category?: string | null;
+            sort_order?: number | null;
+            schema?: unknown;
+            result_type?: string | null;
+            organization_exam_settings?: Array<{ custom_sort_order?: number | null }> | { custom_sort_order?: number | null } | null;
+          } | null;
+          [key: string]: unknown;
+        };
         const settings = item.test_templates?.organization_exam_settings;
         const customOrder = Array.isArray(settings) ? settings[0]?.custom_sort_order : settings?.custom_sort_order;
+        const templateSchema = typeof item.test_templates?.schema === "string"
+          ? JSON.parse(item.test_templates.schema || "{}")
+          : item.test_templates?.schema || null;
 
         return {
           ...item,
           category: item.test_templates?.category || "Pruebas Especiales",
+          template_schema: templateSchema,
           resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
         };
       });
