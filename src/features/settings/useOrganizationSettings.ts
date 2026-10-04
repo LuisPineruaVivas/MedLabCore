@@ -12,6 +12,7 @@ export interface OrganizationSettingsFormValues {
   email?: string | null;
   primary_color: string;
   secondary_color: string;
+  report_footer_text?: string | null;
 }
 
 export interface ManualExchangeRatePayload {
@@ -40,7 +41,7 @@ export function useOrganizationSettings(orgId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("name, address, phone, logo_url, email, primary_color, secondary_color")
+        .select("name, address, phone, logo_url, email, primary_color, secondary_color, report_footer_text, report_template")
         .eq("id", orgId)
         .single();
 
@@ -81,6 +82,7 @@ export function useSaveOrganizationSettings(orgId: string) {
       const payload = {
         ...values,
         logo_url: finalLogoUrl,
+        report_footer_text: values.report_footer_text ?? null,
       };
 
       const { error } = await supabase.from("organizations").update(payload).eq("id", orgId);

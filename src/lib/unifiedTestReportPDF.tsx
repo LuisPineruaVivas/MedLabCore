@@ -68,6 +68,7 @@ interface UnifiedProps {
     email?: string;
     logo?: string | null;
     primary_color?: string;
+    report_footer_text?: string | null;
   };
 }
 
@@ -423,15 +424,18 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
     if (isMicrobiology) {
       if (!grouped[category]) grouped[category] = [];
-      const microData: MicrobiologyResultsData = isMicrobiologyResult(resultsData)
-        ? resultsData
-        : {
-            result_type: "MICROBIOLOGY",
-            sample_type: resultsData?.sample_type || "",
-            gram_stain: resultsData?.gram_stain || "",
-            culture_result: resultsData?.culture_result || "",
-            antibiogram: Array.isArray(resultsData?.antibiogram) ? resultsData.antibiogram : [],
-          };
+      const microData = {
+        ...(isMicrobiologyResult(resultsData)
+          ? resultsData
+          : {
+              result_type: "MICROBIOLOGY" as const,
+              sample_type: resultsData?.sample_type || "",
+              gram_stain: resultsData?.gram_stain || "",
+              culture_result: resultsData?.culture_result || "",
+              antibiogram: Array.isArray(resultsData?.antibiogram) ? resultsData.antibiogram : [],
+            }),
+        template_schema: item.template_schema || templateSchema,
+      };
 
       grouped[category].push({
         fieldLabel: item.test_name,
@@ -692,9 +696,11 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
           </View>
         )}
 
-        {/*<Text style={styles.footer} fixed>
-          Este reporte contiene los resultados de todos los examenes solicitados en la orden.
-        </Text>*/}
+        {labData?.report_footer_text?.trim() && (
+          <Text style={styles.footer} fixed>
+            {labData.report_footer_text}
+          </Text>
+        )}
       </Page>
     </Document>
   );

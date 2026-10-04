@@ -3,6 +3,8 @@ import { isMicrobiologyResult, getGermSensitivity, type MicrobiologyResultsData 
 import {
   initializeResultsState,
   updateMicrobiologyField,
+  updateMicrobiologyExtraField,
+  updateMicrobiologyCultureMode,
   updateMicrobiologyGerms,
   updateAntibiogramSensitivity,
   addAntibiogramEntry,
@@ -117,5 +119,64 @@ describe("microbiology results data and state helpers", () => {
 
     const parseResult = testTemplateFormSchema.safeParse(validMicrobiologyForm);
     expect(parseResult.success).toBe(true);
+  });
+
+  it("handles custom microbiology field definitions and extra_fields updates", () => {
+    const customFields = [
+      { id: "1", key: "sample_type", label: "Tipo de Muestra Personalizado", fixed: true },
+      { id: "2", key: "gram_stain", label: "Examen Directo", fixed: true },
+      { id: "3", key: "custom_obs", label: "Observaciones de la Muestra", fixed: false },
+    ];
+
+    const initialItems: EditableOrderItem[] = [
+      {
+        id: "micro-item-1",
+        results_data: {
+          result_type: "MICROBIOLOGY",
+          sample_type: "Heces",
+          gram_stain: "Fresco sin hallazgos",
+          antibiogram: [],
+        },
+      },
+    ];
+
+    let state = initializeResultsState(initialItems);
+    state = updateMicrobiologyExtraField(state, "micro-item-1", "custom_obs", "Muestra purulenta");
+
+    const itemData = state["micro-item-1"] as unknown as MicrobiologyResultsData;
+    expect(itemData.extra_fields?.["custom_obs"]).toBe("Muestra purulenta");
+  });
+
+  it("toggles culture_mode between text and germs", () => {
+    const initialItems: EditableOrderItem[] = [
+      {
+        id: "micro-item-1",
+        results_data: {
+          result_type: "MICROBIOLOGY",
+          sample_type: "Heces",
+          gram_stain: "",
+          culture_mode: "text",
+          culture_result: "Negativo el desarrollo de gérmenes enteropatógenos",
+          isolated_germs: [],
+          antibiogram: [],
+        },
+      },
+    ];
+
+    let state = initializeResultsState(initialItems);
+    let itemData = state["micro-item-1"] as unknown as MicrobiologyResultsData;
+    expect(itemData.culture_mode).toBe("text");
+
+    // Switch to germs mode
+    state = updateMicrobiologyCultureMode(state, "micro-item-1", "germs");
+    itemData = state["micro-item-1"] as unknown as MicrobiologyResultsData;
+    expect(itemData.culture_mode).toBe("germs");
+    expect(itemData.isolated_germs).toEqual([""]);
+
+    // Switch back to text mode
+    state = updateMicrobiologyCultureMode(state, "micro-item-1", "text");
+    itemData = state["micro-item-1"] as unknown as MicrobiologyResultsData;
+    expect(itemData.culture_mode).toBe("text");
+    expect(itemData.isolated_germs).toEqual([]);
   });
 });

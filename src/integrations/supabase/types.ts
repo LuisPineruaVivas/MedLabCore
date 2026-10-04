@@ -422,6 +422,7 @@ export type Database = {
           name: string
           phone: string | null
           primary_color: string | null
+          report_footer_text: string | null
           report_template: string | null
           rif: string | null
           secondary_color: string | null
@@ -440,6 +441,7 @@ export type Database = {
           name: string
           phone?: string | null
           primary_color?: string | null
+          report_footer_text?: string | null
           report_template?: string | null
           rif?: string | null
           secondary_color?: string | null
@@ -458,6 +460,7 @@ export type Database = {
           name?: string
           phone?: string | null
           primary_color?: string | null
+          report_footer_text?: string | null
           report_template?: string | null
           rif?: string | null
           secondary_color?: string | null

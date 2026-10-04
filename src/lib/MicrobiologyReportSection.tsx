@@ -1,9 +1,16 @@
 import React from "react";
 import { Text, View, StyleSheet } from "@react-pdf/renderer";
-import { type MicrobiologyResultsData, getGermSensitivity } from "@/features/microbiology/types";
+import { 
+  type MicrobiologyResultsData, 
+  type MicrobiologyFieldDef, 
+  getGermSensitivity, 
+  getMicrobiologyFields 
+} from "@/features/microbiology/types";
 
 interface MicrobiologyReportSectionProps {
-  data: MicrobiologyResultsData;
+  data: MicrobiologyResultsData & {
+    template_schema?: { microbiology_fields?: MicrobiologyFieldDef[] } | null;
+  };
   primaryColor?: string;
 }
 
@@ -97,22 +104,27 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
     },
   });
 
+  const fieldDefs = getMicrobiologyFields(data.template_schema);
+  const FIXED_KEYS = new Set(["sample_type", "gram_stain", "culture_result"]);
+
+  const cultureFieldDef = fieldDefs.find(f => f.key === "culture_result");
+  const cultureLabel = cultureFieldDef?.label || "Cultivo";
+
   const germs = data.isolated_germs && data.isolated_germs.length > 0
     ? data.isolated_germs.map(g => g.trim()).filter(Boolean)
-    : data.culture_result
-      ? data.culture_result.split("\n").map(s => s.trim()).filter(Boolean)
-      : [];
+    : [];
 
+  const isGermsMode = data.culture_mode === "germs" || germs.length > 0;
   const germCount = germs.length > 0 ? germs.length : 1;
 
   // Filter antibiotics that have at least 1 sensitivity assigned for any germ
-  const validAntibiotics = (data.antibiogram || []).filter((ab) => {
+  const validAntibiotics = isGermsMode ? (data.antibiogram || []).filter((ab) => {
     for (let i = 0; i < germCount; i++) {
       const sens = getGermSensitivity(ab, i);
       if (sens && sens !== "") return true;
     }
     return false;
-  });
+  }) : [];
 
   // Prepare renderable list (pad for 2-column layout for all germ counts)
   const renderableAntibiotics = [...validAntibiotics];
@@ -129,25 +141,50 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
     <View style={styles.container} minPresenceAhead={80}>
       <Text style={styles.title}>INFORME BACTERIOLÓGICO</Text>
       
-      {data.sample_type && (
-        <Text style={styles.sampleType}>
-          MUESTRA: <Text style={{ fontWeight: "normal" }}>{data.sample_type.toUpperCase()}</Text>
-        </Text>
-      )}
+      {/* Render dynamic fields configured in template (fixed + custom extras) */}
+      {fieldDefs.map((fd) => {
+        if (fd.key === "sample_type" && data.sample_type) {
+          const sampleLabel = (fd.label || "MUESTRA").toUpperCase();
+          return (
+            <Text key={fd.id} style={styles.sampleType}>
+              {sampleLabel}: <Text style={{ fontWeight: "normal" }}>{data.sample_type.toUpperCase()}</Text>
+            </Text>
+          );
+        }
 
-      {data.gram_stain && (
-        <View style={styles.textBlock}>
-          <Text>
-            <Text style={styles.boldLabel}>Gram</Text>
-            <Text style={styles.boldLabelNoUnderline}>: </Text>
-            {data.gram_stain}
-          </Text>
-        </View>
-      )}
+        if (fd.key === "gram_stain" && data.gram_stain) {
+          return (
+            <View key={fd.id} style={styles.textBlock}>
+              <Text>
+                <Text style={styles.boldLabel}>{fd.label || "Gram"}</Text>
+                <Text style={styles.boldLabelNoUnderline}>: </Text>
+                {data.gram_stain}
+              </Text>
+            </View>
+          );
+        }
 
-      {germs.length > 0 ? (
+        if (!FIXED_KEYS.has(fd.key)) {
+          const extraValue = data.extra_fields?.[fd.key];
+          if (!extraValue) return null;
+          return (
+            <View key={fd.id} style={styles.textBlock}>
+              <Text>
+                <Text style={styles.boldLabel}>{fd.label || "Campo adicional"}</Text>
+                <Text style={styles.boldLabelNoUnderline}>: </Text>
+                {extraValue}
+              </Text>
+            </View>
+          );
+        }
+
+        return null;
+      })}
+
+      {/* Render Culture Result (Germs mode vs Free-text negative mode) */}
+      {isGermsMode && germs.length > 0 ? (
         <View style={styles.textBlock}>
-          <Text style={styles.boldLabelNoUnderline}>Cultivo: Germen(es) Aislado(s): </Text>
+          <Text style={styles.boldLabelNoUnderline}>{cultureLabel}: Germen(es) Aislado(s): </Text>
           {germs.map((germ, index) => (
             <Text key={index} style={{ marginLeft: germs.length > 1 ? 10 : 0 }}>
               {germs.length > 1 ? `${index + 1}.- ` : ""}{germ}
@@ -157,13 +194,14 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
       ) : data.culture_result ? (
         <View style={styles.textBlock}>
           <Text>
-            <Text style={styles.boldLabelNoUnderline}>Cultivo: Germen(es) Aislado(s) </Text>
+            <Text style={styles.boldLabel}>{cultureLabel}</Text>
+            <Text style={styles.boldLabelNoUnderline}>: </Text>
             {data.culture_result}
           </Text>
         </View>
       ) : null}
 
-      {validAntibiotics.length > 0 && (
+      {isGermsMode && validAntibiotics.length > 0 && (
         <View>
           <Text style={styles.antibiogramTitle}>ANTIBIOGRAMA</Text>
           

@@ -93,6 +93,46 @@ export function addAntibiogramEntry(
     [itemId]: itemData as unknown as OrderItemResultsState,
   };
 }
+
+export function updateMicrobiologyExtraField(
+  previousState: ResultsMap,
+  itemId: string,
+  key: string,
+  value: string
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  itemData.extra_fields = { ...(itemData.extra_fields ?? {}), [key]: value };
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
+
+export function updateMicrobiologyCultureMode(
+  previousState: ResultsMap,
+  itemId: string,
+  mode: "text" | "germs"
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  itemData.culture_mode = mode;
+  if (mode === "text") {
+    itemData.isolated_germs = [];
+  } else if (!itemData.isolated_germs || itemData.isolated_germs.length === 0) {
+    itemData.isolated_germs = [""];
+  }
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
 import type { FieldType, ReferenceRange } from "@/features/tests/schemas";
 
 export interface OrderResultFieldState {
@@ -163,16 +203,21 @@ export function initializeResultsState(orderItems: EditableOrderItem[]): Results
     if (isMicrobiology) {
       const germs = Array.isArray(rawData?.isolated_germs)
         ? (rawData.isolated_germs as string[])
-        : typeof rawData?.culture_result === "string" && rawData.culture_result.trim() !== ""
+        : typeof rawData?.culture_result === "string" && rawData.culture_result.trim() !== "" && !rawData?.culture_mode
           ? rawData.culture_result.split("\n").map((s) => s.trim()).filter(Boolean)
-          : [""];
+          : [];
+
+      const mode: "text" | "germs" = (rawData?.culture_mode as "text" | "germs")
+        || (germs.some(g => g.trim()) ? "germs" : "text");
 
       initialState[item.id] = {
         result_type: "MICROBIOLOGY",
         sample_type: typeof rawData?.sample_type === "string" ? rawData.sample_type : "",
         gram_stain: typeof rawData?.gram_stain === "string" ? rawData.gram_stain : "",
+        culture_mode: mode,
+        extra_fields: (rawData?.extra_fields as Record<string, string>) || {},
         culture_result: typeof rawData?.culture_result === "string" ? rawData.culture_result : "",
-        isolated_germs: germs.length > 0 ? germs : [""],
+        isolated_germs: mode === "germs" && germs.length === 0 ? [""] : germs,
         antibiogram: Array.isArray(rawData?.antibiogram) ? rawData.antibiogram : [],
       } as unknown as OrderItemResultsState;
     } else if (rawData) {
@@ -292,6 +337,16 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     setModifiedIds(new Set());
   }, []);
 
+  const updateMicroExtraField = useCallback((itemId: string, key: string, value: string) => {
+    setResultsState((prev) => updateMicrobiologyExtraField(prev, itemId, key, value));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
+
+  const updateMicroCultureMode = useCallback((itemId: string, mode: "text" | "germs") => {
+    setResultsState((prev) => updateMicrobiologyCultureMode(prev, itemId, mode));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
+
   return {
     resultsState,
     methodsState,
@@ -301,6 +356,8 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     appendTextOption,
     updateMethod,
     updateMicroField,
+    updateMicroExtraField,
+    updateMicroCultureMode,
     updateMicroGerms,
     updateAntibiogram,
     addAntibiogram,

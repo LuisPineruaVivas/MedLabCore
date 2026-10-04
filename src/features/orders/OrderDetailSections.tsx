@@ -47,6 +47,7 @@ type OrganizationInfo = {
   secondary_color?: string | null;
   city?: string | null;
   rif: string | null;
+  report_footer_text?: string | null;
   profiles?: {
     full_name: string;
   } | null;
@@ -196,6 +197,8 @@ interface OrderResultsPanelProps {
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
   updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
   updateMicroField: (itemId: string, field: keyof Omit<MicrobiologyResultsData, 'result_type' | 'antibiogram' | 'isolated_germs'>, value: string) => void;
+  updateMicroExtraField: (itemId: string, key: string, value: string) => void;
+  updateMicroCultureMode?: (itemId: string, mode: "text" | "germs") => void;
   updateMicroGerms: (itemId: string, germs: string[]) => void;
   updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
   addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
@@ -216,6 +219,8 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
   appendTextOption,
   updateMethod,
   updateMicroField,
+  updateMicroExtraField,
+  updateMicroCultureMode,
   updateMicroGerms,
   updateAntibiogram,
   addAntibiogram,
@@ -296,6 +301,8 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     appendTextOption={appendTextOption}
                     updateMethod={updateMethod}
                     updateMicroField={updateMicroField}
+                    updateMicroExtraField={updateMicroExtraField}
+                    updateMicroCultureMode={updateMicroCultureMode}
                     updateMicroGerms={updateMicroGerms}
                     updateAntibiogram={updateAntibiogram}
                     addAntibiogram={addAntibiogram}
@@ -332,7 +339,7 @@ export const OrderMobileSaveBar = memo(function OrderMobileSaveBar({
         <span className="whitespace-nowrap text-sm font-medium sm:hidden">{modifiedCount} cambios</span>
         <Button size="sm" className="rounded-full shadow-md" onClick={onSaveAll} disabled={isSavingAll}>
           <Save className="mr-1.5 h-4 w-4" />
-          {isSavingAll ? "Guardando..." : "Guardar Todo"}
+          {isSavingAll ? "Guardar Todo" : "Guardar Todo"}
         </Button>
       </div>
     </div>
@@ -388,6 +395,8 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   appendTextOption,
   updateMethod,
   updateMicroField,
+  updateMicroExtraField,
+  updateMicroCultureMode,
   updateMicroGerms,
   updateAntibiogram,
   addAntibiogram,
@@ -402,6 +411,8 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   appendTextOption: (itemId: string, sectionIdx: number, fieldIdx: number, option: string) => void;
   updateMethod: (itemId: string, method: { id: string; name: string } | null) => void;
   updateMicroField: (itemId: string, field: keyof Omit<MicrobiologyResultsData, 'result_type' | 'antibiogram' | 'isolated_germs'>, value: string) => void;
+  updateMicroExtraField: (itemId: string, key: string, value: string) => void;
+  updateMicroCultureMode?: (itemId: string, mode: "text" | "germs") => void;
   updateMicroGerms: (itemId: string, germs: string[]) => void;
   updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
   addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
@@ -420,7 +431,10 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
           itemId={item.id}
           itemResultsData={itemResultsData as MicrobiologyResultsData}
           readOnly={readOnly}
+          templateSchema={item.template_schema}
           updateMicroField={updateMicroField}
+          updateMicroExtraField={updateMicroExtraField}
+          updateMicroCultureMode={updateMicroCultureMode}
           updateMicroGerms={updateMicroGerms}
           updateAntibiogram={updateAntibiogram}
           addAntibiogram={addAntibiogram}
@@ -742,7 +756,8 @@ export function buildLabData(lab: OrganizationInfo | null | undefined) {
     secondary_color: lab?.secondary_color || "#0ea5e9",
     ciudad: lab?.city || "",
     rif: lab?.rif || "",
-    lab_admin: lab?.profiles[0]?.full_name || ""
+    lab_admin: lab?.profiles?.full_name || "",
+    report_footer_text: lab?.report_footer_text || null,
   };
 }
 

@@ -51,6 +51,8 @@ export default function OrderDetailPage() {
     updateMethod,
     resetModified,
     updateMicroField,
+    updateMicroExtraField,
+    updateMicroCultureMode,
     updateMicroGerms,
     updateAntibiogram,
     addAntibiogram,
@@ -542,6 +544,8 @@ export default function OrderDetailPage() {
               appendTextOption={appendTextOption}
               updateMethod={updateMethod}
               updateMicroField={updateMicroField}
+              updateMicroExtraField={updateMicroExtraField}
+              updateMicroCultureMode={updateMicroCultureMode}
               updateMicroGerms={updateMicroGerms}
               updateAntibiogram={updateAntibiogram}
               addAntibiogram={addAntibiogram}
