@@ -9,6 +9,7 @@ export interface OrganizationSettingsFormValues {
   address: string;
   phone: string | null;
   logo_url?: string | null;
+  watermark_url?: string | null;
   email?: string | null;
   primary_color: string;
   secondary_color: string;
@@ -26,6 +27,11 @@ export function buildOrganizationLogoPath(orgId: string, fileName: string, times
   return `${orgId}/logo-${timestamp}.${fileExtension}`;
 }
 
+export function buildOrganizationWatermarkPath(orgId: string, fileName: string, timestamp: number) {
+  const fileExtension = fileName.split(".").pop() ?? "png";
+  return `${orgId}/watermark-${timestamp}.${fileExtension}`;
+}
+
 export function buildManualExchangeRateUpsert(payload: ManualExchangeRatePayload) {
   return {
     org_id: payload.orgId,
@@ -41,7 +47,7 @@ export function useOrganizationSettings(orgId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("name, address, phone, logo_url, email, primary_color, secondary_color, report_footer_text, report_template")
+        .select("name, address, phone, logo_url, watermark_url, email, primary_color, secondary_color, report_footer_text, report_template")
         .eq("id", orgId)
         .single();
 
@@ -59,12 +65,16 @@ export function useSaveOrganizationSettings(orgId: string) {
     mutationFn: async ({
       values,
       selectedFile,
+      selectedWatermarkFile,
     }: {
       values: OrganizationSettingsFormValues;
       selectedFile?: File | null;
+      selectedWatermarkFile?: File | null;
     }) => {
       let finalLogoUrl = values.logo_url ?? null;
+      let finalWatermarkUrl = values.watermark_url ?? null;
 
+      // Upload logo if provided
       if (selectedFile) {
         const filePath = buildOrganizationLogoPath(orgId, selectedFile.name, Date.now());
         const { error: uploadError } = await supabase.storage
@@ -79,9 +89,25 @@ export function useSaveOrganizationSettings(orgId: string) {
         finalLogoUrl = publicUrl;
       }
 
+      // Upload watermark if provided
+      if (selectedWatermarkFile) {
+        const filePath = buildOrganizationWatermarkPath(orgId, selectedWatermarkFile.name, Date.now());
+        const { error: uploadError } = await supabase.storage
+          .from("logos")
+          .upload(filePath, selectedWatermarkFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("logos").getPublicUrl(filePath);
+        finalWatermarkUrl = publicUrl;
+      }
+
       const payload = {
         ...values,
         logo_url: finalLogoUrl,
+        watermark_url: finalWatermarkUrl,
         report_footer_text: values.report_footer_text ?? null,
       };
 
@@ -96,6 +122,7 @@ export function useSaveOrganizationSettings(orgId: string) {
       toast.success("Informacion actualizada exitosamente");
       return data;
     },
+
     onError: (error) => {
       toast.error(getUserFacingErrorMessage(error, "No se pudo actualizar la organizacion"));
     },

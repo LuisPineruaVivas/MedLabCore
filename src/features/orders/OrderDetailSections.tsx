@@ -43,6 +43,7 @@ type OrganizationInfo = {
   phone?: string | null;
   email?: string | null;
   logo_url?: string | null;
+  watermark_url?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
   city?: string | null;
@@ -752,6 +753,7 @@ export function buildLabData(lab: OrganizationInfo | null | undefined) {
     phone: lab?.phone || "",
     email: lab?.email || "",
     logo: lab?.logo_url || null,
+    watermark: lab?.watermark_url || null,
     primary_color: lab?.primary_color || "#0ea5e9",
     secondary_color: lab?.secondary_color || "#0ea5e9",
     ciudad: lab?.city || "",

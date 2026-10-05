@@ -292,7 +292,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
       color: "#333",
     },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomColor: "#EEE" },
-    labInfo: { flexDirection: "column", width: "45%", minWidth: 0 },
+    labInfo: { flexDirection: "column", width: "50%", minWidth: 0 },
     labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
     labDetails: { fontSize: 9, color: "#64748b", lineHeight: 1.3 },
     logoContainer: { width: "35%", alignItems: "flex-end", justifyContent: "flex-start" },
@@ -386,6 +386,16 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
       fontSize: 8,
       color: "#94a3b8",
     },
+    watermark: {
+      position: "absolute",
+      top: "15%",
+      left: "15%",
+      width: "70%",
+      height: "70%",
+      opacity: 0.1,
+      objectFit: "contain",
+      zIndex: -1,
+    }
   });
 
   const departmentOrderMap = buildDepartmentOrderMap(departmentOrder);
@@ -524,6 +534,9 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
+        {labData?.watermark && (
+          <Image src={labData.watermark} style={styles.watermark} fixed />
+        )}
         <View style={styles.header}>
           <View style={styles.labInfo}>
             <Text style={styles.labName}>{lab.name}</Text>

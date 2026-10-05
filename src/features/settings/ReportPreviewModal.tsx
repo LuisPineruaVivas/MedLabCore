@@ -129,6 +129,7 @@ interface PreviewLabData {
   phone?: string;
   email?: string;
   logo?: string | null;
+  watermark?: string | null;
   primary_color?: string;
   secondary_color?: string;
   report_footer_text?: string | null;
@@ -154,6 +155,7 @@ export function ReportPreviewModal({
     labData.phone,
     labData.email,
     labData.logo,
+    labData.watermark,
     labData.primary_color,
     labData.secondary_color,
     labData.report_footer_text,

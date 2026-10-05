@@ -14,6 +14,8 @@ describe("Order detail helpers", () => {
       ciudad: "",
       rif: "",
       lab_admin: "",
+      report_footer_text: null,
+      watermark: null,
     });
   });
 
