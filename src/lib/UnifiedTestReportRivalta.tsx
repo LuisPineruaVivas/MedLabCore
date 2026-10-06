@@ -271,7 +271,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
       color: "#333",
     },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomColor: "#EEE"},
-    labInfo: { flexDirection: "column", width: "50%", minWidth: 0 },
+    labInfo: { flexDirection: "column", width: "55%", minWidth: 0 },
     labName: { fontSize: 12, fontWeight: "bold", color: primaryColor },
     labDetails: { fontSize: 9, color: "#64748b", lineHeight: 1.3 },
     logoContainer: { width: "35%", alignItems: "flex-end", justifyContent: "flex-start" },
