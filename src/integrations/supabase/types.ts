@@ -428,6 +428,7 @@ export type Database = {
           secondary_color: string | null
           state: string | null
           subscription_active: boolean
+          watermark_url: string | null
         }
         Insert: {
           address?: string | null
@@ -447,6 +448,7 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          watermark_url?: string | null
         }
         Update: {
           address?: string | null
@@ -466,6 +468,7 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          watermark_url?: string | null
         }
         Relationships: []
       }

@@ -453,7 +453,7 @@ export function BloodGroupCardDialog({
                         className="text-[8px] font-bold uppercase text-center tracking-wider leading-none"
                         style={{ color: labData.primary_color }}
                       >
-                        LIC. EN BIOANALISTA
+                        BIOANALISTA
                       </span>
                       {bioanalystData.name && (
                         <span className="text-[7.5px] text-slate-600 text-center leading-tight truncate max-w-full mt-0.5">

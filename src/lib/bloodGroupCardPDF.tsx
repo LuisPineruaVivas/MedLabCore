@@ -292,7 +292,7 @@ export function BloodGroupCardPDF({
                 )}
                 <View style={styles.signatureLine} />
                 <Text style={styles.signatureTitle} hyphenationCallback={noHyphenation}>
-                  LIC. EN BIOANALISTA
+                  BIOANALISTA
                 </Text>
                 {bioanalystData?.name && (
                   <Text style={styles.signatureFooterText} hyphenationCallback={noHyphenation}>
