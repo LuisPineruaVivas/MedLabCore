@@ -6,7 +6,7 @@ import type { OrderRow } from "@/features/orders/schemas";
 
 // ── Dummy data used only for the live preview ─────────────────────────────────
 
-const DUMMY_PATIENT = {
+export const DUMMY_PATIENT = {
   name: "PACIENTE DE PRUEBA",
   id: "12345678",
   age: "35 Años",
@@ -14,7 +14,7 @@ const DUMMY_PATIENT = {
 };
 
 /** Minimal OrderRow shape needed to render the PDF without errors */
-const DUMMY_ORDER: OrderRow = {
+export const DUMMY_ORDER: OrderRow = {
   id: "preview-00000000-0000-0000-0000-000000000000",
   org_id: "preview",
   patient_id: "preview",
@@ -37,7 +37,7 @@ const DUMMY_ORDER: OrderRow = {
   completed_at: null,
 };
 
-const DUMMY_ORDER_ITEMS = [
+export const DUMMY_ORDER_ITEMS = [
   {
     test_name: "Glucosa",
     category: "QUÍMICA SANGUÍNEA",

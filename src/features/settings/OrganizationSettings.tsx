@@ -19,7 +19,11 @@ import {
   useOrganizationSettings,
   useSaveOrganizationSettings,
 } from "./useOrganizationSettings";
-import { ReportPreviewModal } from "./ReportPreviewModal";
+import { DUMMY_ORDER, DUMMY_ORDER_ITEMS, DUMMY_PATIENT, ReportPreviewModal } from "./ReportPreviewModal";
+import { DynamicTestReportPDF } from "@/lib/orderReportDispatcher";
+import { pdf } from "@react-pdf/renderer";
+import { toast } from "sonner";
+import { isMobileDevice } from "../orders/orderDetailUtils";
 
 const orgSchema = z.object({
   name: z.string().min(2, "Nombre del laboratorio es requerido"),
@@ -137,6 +141,36 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
     secondary_color: currentValues.secondary_color || "#0ea5e9",
     report_footer_text: currentValues.report_footer_text || null,
   };
+
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  async function handlePreviewClick() {
+    if (isMobileDevice()) {
+      setIsGeneratingPdf(true);
+      try {
+        const reportBlob = await pdf(
+          <DynamicTestReportPDF
+            reportTemplate={reportTemplate}
+            orden={DUMMY_ORDER}
+            orderItems={DUMMY_ORDER_ITEMS}
+            departmentOrder={["QUÍMICA SANGUÍNEA", "HEMATOLOGÍA"]}
+            patientData={DUMMY_PATIENT}
+            labData={previewLabData}
+          />
+        ).toBlob();
+
+        const url = URL.createObjectURL(reportBlob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error generando reporte móvil:", error);
+        toast.error("No se pudo abrir el informe en el móvil. Intenta de nuevo.");
+      } finally {
+        setIsGeneratingPdf(false);
+      }
+    } else {
+      setPreviewOpen(true);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -319,9 +353,10 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setPreviewOpen(true)}
+              onClick={handlePreviewClick}
+              disabled={isGeneratingPdf}
             >
-              <Eye className="mr-2 h-4 w-4" />
+              {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
               Previsualizar informe
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
