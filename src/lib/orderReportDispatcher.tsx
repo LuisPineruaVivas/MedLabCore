@@ -1,8 +1,11 @@
 import React from "react";
 import { UnifiedTestReportPDF } from "@/lib/unifiedTestReportPDF";
 import { UnifiedTestReportRivalta } from "@/lib/UnifiedTestReportRivalta";
+import { UnifiedTestReportPalermo } from "@/lib/UnifiedTestReportPalermo";
+
 import { TestReportPDF, type TestTemplateReportProps } from "@/lib/testReportGenerator";
 import { TestReportRivaltaPDF } from "@/lib/testReportRivaltaGenerator";
+import { TestReportPalermoPDF } from "@/lib/testReportPalermoGenerator";
 
 export type { TestTemplateReportProps };
 
@@ -35,6 +38,7 @@ export interface UnifiedReportProps {
 export const REPORT_TEMPLATES: Record<string, React.ComponentType<UnifiedReportProps>> = {
   default: UnifiedTestReportPDF as unknown as React.ComponentType<UnifiedReportProps>,
   rivalta: UnifiedTestReportRivalta as unknown as React.ComponentType<UnifiedReportProps>,
+  palermo: UnifiedTestReportPalermo as unknown as React.ComponentType<UnifiedReportProps>,
 };
 
 /**
@@ -67,6 +71,7 @@ export const DynamicTestReportPDF: React.FC<DynamicTestReportPDFProps> = ({
 export const TEST_TEMPLATE_REPORT_TEMPLATES: Record<string, React.ComponentType<TestTemplateReportProps>> = {
   default: TestReportPDF as unknown as React.ComponentType<TestTemplateReportProps>,
   rivalta: TestReportRivaltaPDF as unknown as React.ComponentType<TestTemplateReportProps>,
+  palermo: TestReportPalermoPDF as unknown as React.ComponentType<TestTemplateReportProps>,
 };
 
 /**
