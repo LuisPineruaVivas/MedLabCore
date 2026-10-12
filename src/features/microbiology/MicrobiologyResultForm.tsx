@@ -27,6 +27,7 @@ interface MicrobiologyResultFormProps {
   updateMicroGerms: (itemId: string, germs: string[]) => void;
   updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
   addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
+  removeAntibiogram: (itemId: string, antibioticId: string) => void;
 }
 
 export function MicrobiologyResultForm({
@@ -40,6 +41,7 @@ export function MicrobiologyResultForm({
   updateMicroGerms,
   updateAntibiogram,
   addAntibiogram,
+  removeAntibiogram,
 }: MicrobiologyResultFormProps) {
   const { data: antibiotics = [] } = useAntibiotics({ activeOnly: true });
   const createAntibiotic = useCreateAntibiotic();
@@ -123,7 +125,6 @@ export function MicrobiologyResultForm({
       });
       
       setNewAntibioticName("");
-      setPopoverOpen(false);
       toast.success("Antibiótico añadido al catálogo y al antibiograma");
     } catch {
       toast.error("Error al añadir el antibiótico. Puede que ya exista.");
@@ -136,7 +137,6 @@ export function MicrobiologyResultForm({
       antibiotic_name: ab.name,
       sensitivity: null,
     });
-    setPopoverOpen(false);
   };
 
   const unassignedAntibiotics = antibiotics.filter(
@@ -326,19 +326,30 @@ export function MicrobiologyResultForm({
                   <PopoverContent className="w-80 p-3" align="end">
                     <div className="space-y-3">
                       <h4 className="text-sm font-medium">Agregar Antibiótico</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Selecciona uno o varios antibióticos. El cuadro permanecerá abierto.
+                      </p>
                       
                       {unassignedAntibiotics.length > 0 && (
                         <div className="max-h-40 overflow-y-auto space-y-1 pr-1 border rounded-md p-1">
                           {unassignedAntibiotics.map((ab) => (
-                            <div
+                            <button
                               key={ab.id}
-                              className="text-xs p-1.5 hover:bg-muted cursor-pointer rounded"
+                              type="button"
+                              className="w-full text-left text-xs p-1.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                               onClick={() => handleAddExistingToAntibiogram(ab)}
                             >
                               + {ab.name}
-                            </div>
+                            </button>
                           ))}
                         </div>
+                      )}
+                      {unassignedAntibiotics.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {antibiotics.length === 0
+                            ? "No hay antibióticos disponibles en el catálogo."
+                            : "Todos los antibióticos del catálogo ya están agregados."}
+                        </p>
                       )}
 
                       <div className="flex gap-2">
@@ -392,7 +403,24 @@ export function MicrobiologyResultForm({
                   ) : (
                     antibiogram.map((entry, idx) => (
                       <tr key={entry.antibiotic_id} className="hover:bg-muted/30">
-                        <td className="px-3 py-1.5 font-medium">{entry.antibiotic_name}</td>
+                        <td className="px-3 py-1.5 font-medium">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>{entry.antibiotic_name}</span>
+                            {!readOnly && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeAntibiogram(itemId, entry.antibiotic_id)}
+                                aria-label={`Quitar ${entry.antibiotic_name} del antibiograma`}
+                                title="Quitar del antibiograma"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
                         
                         {germs.map((_, gIdx) => {
                           const sens = getGermSensitivity(entry, gIdx);

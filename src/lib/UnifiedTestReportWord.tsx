@@ -89,7 +89,11 @@ interface ReportItem {
   method: string;
   isMicrobiology: boolean;
   results: ReportResults;
-  schema: { microbiology_fields?: Array<{ id: string; key: string; label: string; fixed: boolean }> };
+  schema: {
+    microbiology_fields?: Array<{ id: string; key: string; label: string; fixed: boolean }>;
+    hide_table_header?: boolean;
+  };
+  hideTableHeader: boolean;
   sortOrder: number;
 }
 
@@ -126,6 +130,7 @@ function toReportItems(items: Array<Record<string, unknown>>): ReportItem[] {
     const testTemplate = asRecord(item.test_templates);
     const schemaValue = item.template_schema ?? testTemplate.schema;
     const schema = parseObject(schemaValue) as ReportItem["schema"];
+    const hideTableHeader = Boolean(results.hide_table_header ?? schema?.hide_table_header);
 
     return {
       category: String(item.category ?? results.category ?? testTemplate.category ?? "Pruebas Especiales"),
@@ -134,6 +139,7 @@ function toReportItems(items: Array<Record<string, unknown>>): ReportItem[] {
       isMicrobiology: results.result_type === "MICROBIOLOGY" || testTemplate.result_type === "MICROBIOLOGY",
       results,
       schema,
+      hideTableHeader,
       sortOrder: typeof item.resolved_sort_order === "number" ? item.resolved_sort_order : 0,
     };
   });
@@ -259,6 +265,25 @@ function standardRows(item: ReportItem, age: number | undefined, gender: string)
         const numeric = Number(String(field.value).replace(",", "."));
         return Number.isFinite(numeric) && numeric >= min && numeric <= max;
       })?.color;
+      if ((field.type === "text" || field.type === "select") && item.hideTableHeader) {
+        const valueParagraphs = String(field.value).split("\n").map((line) =>
+          paragraph(line, { size: 20 })
+        );
+        rows.push(new TableRow({
+          children: [
+            tableCell([
+              paragraph(label, { bold: true, size: 22, color: "0F172A" }),
+              ...(method ? [paragraph(`Método: ${method}`, { size: 17 })] : []),
+            ], { width: COLUMN_WIDTHS[0] }),
+            tableCell(valueParagraphs, {
+              columnSpan: 3,
+              width: COLUMN_WIDTHS[1] + COLUMN_WIDTHS[2] + COLUMN_WIDTHS[3],
+            }),
+          ],
+        }));
+        continue;
+      }
+
       const result = new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 50 },
@@ -422,6 +447,8 @@ export async function generateUnifiedTestReportWord(props: WordReportProps): Pro
 
   for (const [category, categoryItems] of groupedItems) {
     const hasStandardTests = categoryItems.some((item) => !item.isMicrobiology);
+    const allHideTableHeader = categoryItems.every((item) => item.hideTableHeader);
+    const showTableHeader = hasStandardTests && !allHideTableHeader;
     const reportRows = categoryItems.flatMap((item) => (
       item.isMicrobiology
         ? microbiologyRows(item)
@@ -443,7 +470,7 @@ export async function generateUnifiedTestReportWord(props: WordReportProps): Pro
     }));
 
     const tableRows = [
-      ...(hasStandardTests ? [new TableRow({
+      ...(showTableHeader ? [new TableRow({
         tableHeader: true,
         children: ["EXAMEN", "RESULTADO", "UNIDADES", "VALORES DE REF."].map((label, index) =>
           tableCell([paragraph(label, { bold: true, alignment: index === 0 ? AlignmentType.LEFT : AlignmentType.CENTER })], { fill: "F1F5F9", width: COLUMN_WIDTHS[index] }),

@@ -54,4 +54,56 @@ describe("generateUnifiedTestReportWord", () => {
     expect(blob.type).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     expect(Array.from(new Uint8Array(await blob.arrayBuffer()).slice(0, 2))).toEqual([0x50, 0x4b]);
   });
+
+  it("creates a DOCX report when hide_table_header is true for text tests", async () => {
+    const blob = await generateUnifiedTestReportWord({
+      orden: {
+        id: "order-2",
+        org_id: "org-1",
+        patient_id: "patient-1",
+        status: "completada",
+        payment_status: "paid",
+        total_amount: 0,
+        is_exempted: false,
+        exchange_rate: null,
+        firma_url: null,
+        firma_name: null,
+        total_bs: null,
+        notes: null,
+        access_pin: null,
+        created_at: "2026-10-08T12:00:00.000Z",
+        created_by: "user-1",
+        updated_at: "2026-10-08T12:00:00.000Z",
+        completed_at: null,
+        order_seq: 8,
+        sello_url: null,
+        signature_footer_text: null,
+      },
+      orderItems: [{
+        category: "Inmunología",
+        test_name: "Anca P",
+        results_data: {
+          hide_table_header: true,
+          sections: [{
+            name: "",
+            fields: [{
+              label: "Anca P",
+              type: "text",
+              value: "ANCA P .......... 0,00\nValores de referencia",
+            }],
+          }],
+        },
+      }],
+      patientData: {
+        name: "Paciente de prueba",
+        id: "12345678",
+        age: "30 Años",
+        gender: "masculino",
+      },
+      labData: { name: "Laboratorio de prueba" },
+    });
+
+    expect(blob.type).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    expect(Array.from(new Uint8Array(await blob.arrayBuffer()).slice(0, 2))).toEqual([0x50, 0x4b]);
+  });
 });
