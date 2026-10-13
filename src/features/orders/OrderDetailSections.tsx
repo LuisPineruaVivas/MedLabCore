@@ -203,6 +203,7 @@ interface OrderResultsPanelProps {
   updateMicroGerms: (itemId: string, germs: string[]) => void;
   updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
   addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
+  removeAntibiogram: (itemId: string, antibioticId: string) => void;
   handleFileUploadForOCR: (e: React.ChangeEvent<HTMLInputElement>, categoryItems: OrderItem[], categoryName: string) => void;
 }
 
@@ -225,6 +226,7 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
   updateMicroGerms,
   updateAntibiogram,
   addAntibiogram,
+  removeAntibiogram,
   handleFileUploadForOCR,
 }: OrderResultsPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -307,6 +309,7 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     updateMicroGerms={updateMicroGerms}
                     updateAntibiogram={updateAntibiogram}
                     addAntibiogram={addAntibiogram}
+                    removeAntibiogram={removeAntibiogram}
                   />
                 ))}
               </CardContent>
@@ -401,6 +404,7 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   updateMicroGerms,
   updateAntibiogram,
   addAntibiogram,
+  removeAntibiogram,
 }: {
   item: OrderItem;
   itemResultsData?: ItemResultsData;
@@ -417,6 +421,7 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
   updateMicroGerms: (itemId: string, germs: string[]) => void;
   updateAntibiogram: (itemId: string, antibioticIdx: number, sensitivity: SensitivityValue, germIndex?: number) => void;
   addAntibiogram: (itemId: string, entry: AntibiogramEntry) => void;
+  removeAntibiogram: (itemId: string, antibioticId: string) => void;
 }) {
   if (!itemResultsData) {
     return <div className="py-4 text-center text-sm text-muted-foreground">Estructura de resultados no disponible.</div>;
@@ -439,6 +444,7 @@ const OrderResultItemEditor = memo(function OrderResultItemEditor({
           updateMicroGerms={updateMicroGerms}
           updateAntibiogram={updateAntibiogram}
           addAntibiogram={addAntibiogram}
+          removeAntibiogram={removeAntibiogram}
         />
       </div>
     );
@@ -762,4 +768,3 @@ export function buildLabData(lab: OrganizationInfo | null | undefined) {
     report_footer_text: lab?.report_footer_text || null,
   };
 }
-

@@ -1,6 +1,8 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { TestTemplateRow, getFieldResultMeta, TemplateSection, TemplateField, FieldType } from '@/features/tests/schemas';
 import { getCategoryStyle } from "@/utils/validators";
+import { MicrobiologyReportSection } from "@/lib/MicrobiologyReportSection";
+import { createMicrobiologyPreviewData } from "@/lib/microbiologyPreviewData";
 
 Font.register({
   family: "Inter",
@@ -243,7 +245,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
         </View>
 
         {/* Table header */}
-        {!template.schema?.hide_table_header && (
+        {template.result_type !== "MICROBIOLOGY" && !template.schema?.hide_table_header && (
           <View style={styles.tableHeader}>
             <Text style={[styles.colExam]}>EXAMEN</Text>
             <Text style={[styles.colResult]}>RESULTADO</Text>
@@ -253,7 +255,9 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
         )}
 
         {/* Sections & Fields */}
-        {sections.map((section: TemplateSection) => (
+        {template.result_type === "MICROBIOLOGY" ? (
+          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema)} />
+        ) : sections.map((section: TemplateSection) => (
           <View key={section.id}>
             {section.name === '' ? null : (
               <View style={styles.tableRow}>
@@ -288,19 +292,45 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
 
               if (field.type === 'text' || field.type === 'select') {
                 if (template.schema?.hide_table_header) {
+                  const hasLabel = Boolean(field.label && field.label.trim());
                   return (
-                    <View key={field.id} style={[styles.tableRow, { flexDirection: "column", alignItems: "flex-start", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
-                      {field.label ? (
-                        <Text style={{ fontSize: 10, marginBottom: 2 }}>{field.label}</Text>
+                    <View
+                      key={field.id}
+                      style={[
+                        styles.tableRow,
+                        {
+                          flexDirection: "row",
+                          alignItems: "flex-start",
+                          paddingLeft: 8,
+                          paddingRight: 8,
+                          paddingTop: 3,
+                          paddingBottom: 3,
+                        },
+                      ]}
+                      wrap={false}
+                    >
+                      {hasLabel ? (
+                        <View style={{ maxWidth: "35%", marginRight: 10, flexShrink: 0 }}>
+                          <Text style={{ fontWeight: "bold", fontSize: 11.5, color: "#0f172a" }}>
+                            {field.label}
+                          </Text>
+                          {fieldMethodName ? (
+                            <Text style={{ fontSize: 8.5, color: "#64748b", marginTop: 2 }}>
+                              <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                            </Text>
+                          ) : null}
+                        </View>
                       ) : null}
-                      <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0 }]}>
-                        {sampleValue}
-                      </Text>
-                      {fieldMethodName ? (
-                        <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0, paddingTop: 4 }]}>
-                          <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.compactTextResult, { width: "100%" }]}>
+                          {sampleValue}
                         </Text>
-                      ) : null}
+                        {!hasLabel && fieldMethodName ? (
+                          <Text style={{ fontSize: 8.5, color: "#64748b", marginTop: 2 }}>
+                            <Text style={{ fontWeight: "bold" }}>Método:</Text> {fieldMethodName}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
                   );
                 }

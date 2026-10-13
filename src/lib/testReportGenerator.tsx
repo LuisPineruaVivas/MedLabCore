@@ -1,5 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { TestTemplateRow, getFieldResultMeta, TemplateSection, TemplateField, FieldType } from '@/features/tests/schemas';
+import { MicrobiologyReportSection } from "@/lib/MicrobiologyReportSection";
+import { createMicrobiologyPreviewData } from "@/lib/microbiologyPreviewData";
 
 Font.register({
   family: "Inter",
@@ -168,7 +170,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         </View>
 
         {/* Single table header */}
-        {!template.schema?.hide_table_header && (
+        {template.result_type !== "MICROBIOLOGY" && !template.schema?.hide_table_header && (
           <View style={styles.tableHeader}>
             <Text style={[styles.colExam, { fontWeight: 'bold' }]}>EXAMEN</Text>
             <Text style={[styles.colResult, { fontWeight: 'bold' }]}>RESULTADO</Text>
@@ -178,7 +180,9 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
         )}
 
         {/* Secciones con encabezado + campos */}
-        {sections.map((section: TemplateSection) => (
+        {template.result_type === "MICROBIOLOGY" ? (
+          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema)} />
+        ) : sections.map((section: TemplateSection) => (
           <View key={section.id}>
             {section.name === '' ?
               null
@@ -203,14 +207,35 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
 
               if (field.type === 'text' || field.type === 'select') {
                 if (template.schema?.hide_table_header) {
+                  const hasLabel = Boolean(field.label && field.label.trim());
                   return (
-                    <View key={field.id} style={[styles.tableRow, { flexDirection: "column", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
-                      {field.label ? (
-                        <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>{field.label}</Text>
+                    <View
+                      key={field.id}
+                      style={[
+                        styles.tableRow,
+                        {
+                          flexDirection: "row",
+                          alignItems: "flex-start",
+                          paddingLeft: 8,
+                          paddingRight: 8,
+                          paddingTop: 3,
+                          paddingBottom: 3,
+                        },
+                      ]}
+                      wrap={false}
+                    >
+                      {hasLabel ? (
+                        <View style={{ maxWidth: "35%", marginRight: 10, flexShrink: 0 }}>
+                          <Text style={{ fontWeight: "bold", fontSize: 11.5, color: "#0f172a" }}>
+                            {field.label}
+                          </Text>
+                        </View>
                       ) : null}
-                      <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: field.label ? 16 : 0 }]}>
-                        {sampleValue}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.compactTextResult, { width: "100%" }]}>
+                          {sampleValue}
+                        </Text>
+                      </View>
                     </View>
                   );
                 }

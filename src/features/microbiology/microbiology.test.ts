@@ -8,6 +8,7 @@ import {
   updateMicrobiologyGerms,
   updateAntibiogramSensitivity,
   addAntibiogramEntry,
+  removeAntibiogramEntry,
   type EditableOrderItem,
 } from "@/features/orders/useOrderResultsEditor";
 import { testTemplateFormSchema } from "@/features/tests/schemas";
@@ -106,6 +107,33 @@ describe("microbiology results data and state helpers", () => {
 
     expect(getGermSensitivity(entry, 0)).toBe("R");
     expect(getGermSensitivity(entry, 1)).toBe("S");
+  });
+
+  it("removes an antibiotic from the antibiogram while leaving the previous state unchanged", () => {
+    const initialItems: EditableOrderItem[] = [
+      {
+        id: "micro-item-1",
+        results_data: {
+          result_type: "MICROBIOLOGY",
+          sample_type: "Orina",
+          gram_stain: "",
+          antibiogram: [
+            { antibiotic_id: "ab-1", antibiotic_name: "Cefuroxime", sensitivity: "S" },
+            { antibiotic_id: "ab-2", antibiotic_name: "Amikacina", sensitivity: null },
+          ],
+        },
+      },
+    ];
+
+    const state = initializeResultsState(initialItems);
+    const nextState = removeAntibiogramEntry(state, "micro-item-1", "ab-1");
+    const itemData = nextState["micro-item-1"] as unknown as MicrobiologyResultsData;
+    const originalData = state["micro-item-1"] as unknown as MicrobiologyResultsData;
+
+    expect(itemData.antibiogram).toEqual([
+      { antibiotic_id: "ab-2", antibiotic_name: "Amikacina", sensitivity: null },
+    ]);
+    expect(originalData.antibiogram).toHaveLength(2);
   });
 
   it("validates form schema flexibly when result_type is MICROBIOLOGY", () => {

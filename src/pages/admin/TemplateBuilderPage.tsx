@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/dialog";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { createEmptyTemplateField, createEmptyTemplateSection, useSaveTemplate, useTemplateById } from "@/features/admin/useTemplateBuilder";
-import { type MicrobiologyFieldDef, DEFAULT_MICROBIOLOGY_FIELDS } from "@/features/microbiology/types";
+import { type MicrobiologyFieldDef, getMicrobiologyFields } from "@/features/microbiology/types";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function emptyField(): TemplateField {
@@ -201,12 +201,14 @@ export default function TemplateBuilderPage() {
   // ── Microbiology fields state ─────────────────────────────────
   const getInitialMicroFields = (): MicrobiologyFieldDef[] => {
     const schema = existingTemplate?.schema as { microbiology_fields?: MicrobiologyFieldDef[] } | null | undefined;
-    if (schema?.microbiology_fields && schema.microbiology_fields.length > 0) {
-      return schema.microbiology_fields;
-    }
-    return DEFAULT_MICROBIOLOGY_FIELDS.map(f => ({ ...f }));
+    return getMicrobiologyFields(schema).map((field) => ({ ...field }));
   };
   const [microbiologyFields, setMicrobiologyFields] = useState<MicrobiologyFieldDef[]>(getInitialMicroFields);
+  const specimenFields = microbiologyFields.filter(
+    (field) => field.key === "sample_type" || field.key === "gram_stain"
+  );
+  const additionalMicroFields = microbiologyFields.filter((field) => !field.fixed);
+  const cultureResultField = microbiologyFields.find((field) => field.key === "culture_result");
 
   // Sync microbiologyFields when existingTemplate finishes loading asynchronously
   useEffect(() => {
@@ -215,7 +217,7 @@ export default function TemplateBuilderPage() {
         ? JSON.parse(existingTemplate.schema)
         : existingTemplate.schema;
       if (rawSchema?.microbiology_fields && Array.isArray(rawSchema.microbiology_fields) && rawSchema.microbiology_fields.length > 0) {
-        setMicrobiologyFields(rawSchema.microbiology_fields);
+        setMicrobiologyFields(getMicrobiologyFields(rawSchema));
       }
     }
   }, [existingTemplate]);
@@ -521,13 +523,49 @@ export default function TemplateBuilderPage() {
           {/* ── Sections or Microbiology Fields Editor ── */}
           {currentFormData.result_type === "MICROBIOLOGY" ? (
             <div className="space-y-4">
-              {/* Editable fields section */}
+              {/* The first two fixed fields describe the specimen and direct examination. */}
               <Card>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-primary" />
+                    Muestra y examen directo
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Personaliza las etiquetas de los dos campos fijos que aparecen al inicio del informe.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {specimenFields.map((mField) => (
+                    <div
+                      key={mField.id}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                    >
+                      <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                          Campo fijo — puedes renombrar la etiqueta
+                        </Label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder={`Ej. ${mField.key === "sample_type" ? "Tipo de Muestra" : "Coloración de Gram"}`}
+                          value={mField.label}
+                          onChange={(e) => updateMicroFieldLabel(mField.id, e.target.value)}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
+                        Fijo
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <FlaskConical className="h-4 w-4 text-primary" />
-                      Campos del Informe Bacteriológico
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Campos adicionales
                     </CardTitle>
                     <Button
                       type="button"
@@ -539,41 +577,33 @@ export default function TemplateBuilderPage() {
                       Agregar Campo Extra
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Personaliza los nombres de los campos que aparecen en el formulario y en el informe. Los campos fijos no pueden eliminarse.
+                  <p className="text-xs text-muted-foreground">
+                    Estos campos de texto libre aparecen después de los datos de muestra y antes del resultado del cultivo/antibiograma.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {microbiologyFields.map((mField) => (
-                    <div
-                      key={mField.id}
-                      className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
-                    >
-                      {mField.fixed ? (
-                        <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                      ) : (
+                  {additionalMicroFields.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No hay campos adicionales. Puedes agregarlos si necesitas incluir observaciones u otra información.
+                    </p>
+                  ) : (
+                    additionalMicroFields.map((mField) => (
+                      <div
+                        key={mField.id}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                      >
                         <div className="w-4 shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <Label className="text-xs text-muted-foreground mb-1 block">
-                          {mField.fixed ? "Campo fijo — puedes renombrar la etiqueta" : "Campo personalizado (texto libre)"}
-                        </Label>
-                        <Input
-                          className="h-8 text-sm"
-                          placeholder={
-                            mField.fixed
-                              ? `Ej. ${mField.key === "sample_type" ? "Tipo de Muestra" : mField.key === "gram_stain" ? "Coloración de Gram" : "Resultado del Cultivo"}`
-                              : "Ej. Observaciones, Notas..."
-                          }
-                          value={mField.label}
-                          onChange={(e) => updateMicroFieldLabel(mField.id, e.target.value)}
-                        />
-                      </div>
-                      {mField.fixed ? (
-                        <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
-                          Fijo
-                        </span>
-                      ) : (
+                        <div className="flex-1 min-w-0">
+                          <Label className="text-xs text-muted-foreground mb-1 block">
+                            Campo personalizado (texto libre)
+                          </Label>
+                          <Input
+                            className="h-8 text-sm"
+                            placeholder="Ej. Observaciones, Notas..."
+                            value={mField.label}
+                            onChange={(e) => updateMicroFieldLabel(mField.id, e.target.value)}
+                          />
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
@@ -581,25 +611,52 @@ export default function TemplateBuilderPage() {
                           className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
                           onClick={() => removeMicroField(mField.id)}
                           title="Eliminar campo"
+                          aria-label={`Eliminar campo ${mField.label || "personalizado"}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Fixed antibiogram section — info only */}
-              <Card className="border-border/50 bg-muted/30">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Formato y Antibiograma de Microbiología</span>
-                  </div>
-                  <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
-                    <li><strong>Resultado del Cultivo Dual:</strong> El bioanalista podrá elegir entre modo Texto Libre (cultivo negativo/descriptivo) o Germen(es) Aislado(s) (cultivo positivo).</li>
-                    <li><strong>Antibiograma Interactivo (S / I / R):</strong> Se activará automáticamente cuando se aísle al menos un germen (hasta 3 gérmenes).</li>
+              {/* The culture label belongs to the dedicated culture/antibiogram section in result entry and reports. */}
+              <Card className="border-primary/30 bg-primary/[0.03]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-primary" />
+                    Resultado del cultivo y antibiograma
+                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      Campo fijo · aparece al final
+                    </span>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Esta etiqueta identifica la sección que va después de los campos adicionales. En el resultado se usa para escribir el texto del cultivo negativo o presentar los gérmenes aislados y su antibiograma.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {cultureResultField && (
+                    <div key={cultureResultField.id} className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
+                          Etiqueta de la sección (solo puedes renombrarla)
+                        </Label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder="Ej. Resultado del Cultivo"
+                          value={cultureResultField.label}
+                          onChange={(e) => updateMicroFieldLabel(cultureResultField.id, e.target.value)}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
+                        Fijo
+                      </span>
+                    </div>
+                  )}
+                  <ul className="list-disc pl-5 mt-3 text-xs text-muted-foreground space-y-1">
+                    <li>El bioanalista elige entre texto libre (cultivo negativo/descriptivo) o gérmenes aislados.</li>
+                    <li>La tabla interactiva de sensibilidad (S / I / R) se habilita al registrar gérmenes, hasta un máximo de 3.</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -722,9 +779,16 @@ export default function TemplateBuilderPage() {
         <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden border-none">
           <div className="flex flex-col h-full">
             <div className="p-4 border-b border-border flex justify-between items-center">
-              <h3 className="font-medium text-sm">
-                Vista Previa: {currentFormData.name || "Nuevo Examen"}
-              </h3>
+              <div>
+                <h3 className="font-medium text-sm">
+                  Vista Previa: {currentFormData.name || "Nuevo Examen"}
+                </h3>
+                {currentFormData.result_type === "MICROBIOLOGY" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Datos ficticios de ejemplo para mostrar el informe bacteriológico.
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex-1 bg-white">
               <PDFViewer width="100%" height="100%" showToolbar={true}>
@@ -1091,4 +1155,3 @@ function OptionsEditor({
     </div>
   );
 }
-

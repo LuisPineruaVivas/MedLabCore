@@ -184,7 +184,7 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
       {/* Render Culture Result (Germs mode vs Free-text negative mode) */}
       {isGermsMode && germs.length > 0 ? (
         <View style={styles.textBlock}>
-          <Text style={styles.boldLabelNoUnderline}>{cultureLabel}: Germen(es) Aislado(s): </Text>
+          <Text style={styles.boldLabelNoUnderline}>Germen(es) Aislado(s): </Text>
           {germs.map((germ, index) => (
             <Text key={index} style={{ marginLeft: germs.length > 1 ? 10 : 0 }}>
               {germs.length > 1 ? `${index + 1}.- ` : ""}{germ}

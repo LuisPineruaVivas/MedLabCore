@@ -94,6 +94,25 @@ export function addAntibiogramEntry(
   };
 }
 
+export function removeAntibiogramEntry(
+  previousState: ResultsMap,
+  itemId: string,
+  antibioticId: string
+): ResultsMap {
+  const currentItem = previousState[itemId];
+  if (!currentItem || !isMicrobiologyResult(currentItem)) return previousState;
+
+  const itemData = cloneResultsValue(currentItem) as MicrobiologyResultsData;
+  itemData.antibiogram = (itemData.antibiogram ?? []).filter(
+    (entry) => entry.antibiotic_id !== antibioticId
+  );
+
+  return {
+    ...previousState,
+    [itemId]: itemData as unknown as OrderItemResultsState,
+  };
+}
+
 export function updateMicrobiologyExtraField(
   previousState: ResultsMap,
   itemId: string,
@@ -326,6 +345,10 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     setResultsState((prev) => addAntibiogramEntry(prev, itemId, entry));
     setModifiedIds((prev) => new Set(prev).add(itemId));
   }, []);
+  const removeAntibiogram = useCallback((itemId: string, antibioticId: string) => {
+    setResultsState((prev) => removeAntibiogramEntry(prev, itemId, antibioticId));
+    setModifiedIds((prev) => new Set(prev).add(itemId));
+  }, []);
   const updateMethod = useCallback((itemId: string, method: SelectedMethod) => {
     setMethodsState((previous) => ({ ...previous, [itemId]: method }));
     setModifiedIds((previous) => new Set(previous).add(itemId));
@@ -361,8 +384,8 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
     updateMicroGerms,
     updateAntibiogram,
     addAntibiogram,
+    removeAntibiogram,
     resetModified,
   };
 }
-
 

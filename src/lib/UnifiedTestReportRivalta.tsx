@@ -153,12 +153,15 @@ function estimateRowHeight(row: FlatRow): number {
 
   const valStr = String(row.value || "");
   const explicitLines = valStr.split("\n");
+  const hasLabel = Boolean(row.fieldLabel && row.fieldLabel.trim());
+  const valueCharsPerLine = row.hideTableHeader ? (hasLabel ? 42 : 55) : 38;
   let totalValueLines = 0;
   for (const line of explicitLines) {
-    totalValueLines += Math.max(1, Math.ceil(line.length / (row.hideTableHeader ? 55 : 38)));
+    totalValueLines += Math.max(1, Math.ceil(line.length / valueCharsPerLine));
   }
 
-  const labelLines = Math.ceil((row.fieldLabel?.length || 0) / 26);
+  const labelCharsPerLine = row.hideTableHeader ? 18 : 26;
+  const labelLines = Math.ceil((row.fieldLabel?.length || 0) / labelCharsPerLine);
   const rangeLines = Math.ceil((row.rangeDisplay?.length || 0) / 16);
   const lineCount = Math.max(1, labelLines, totalValueLines, rangeLines);
 
@@ -596,21 +599,45 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
                 if (row.fieldType === "text" || row.fieldType === "select") {
                   if (row.hideTableHeader) {
+                    const hasLabel = Boolean(row.fieldLabel && row.fieldLabel.trim());
                     return (
-                      <View key={`${chunk.category}-${chunkIndex}-${index}`} style={[styles.tableRow, { flexDirection: "column", alignItems: "flex-start", paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }]} wrap={false}>
-                        {row.fieldLabel ? (
-                          <Text style={{ fontSize: 10, marginBottom: 2 }}>
-                            {row.fieldLabel}
-                          </Text>
+                      <View
+                        key={`${chunk.category}-${chunkIndex}-${index}`}
+                        style={[
+                          styles.tableRow,
+                          {
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            paddingLeft: 8,
+                            paddingRight: 8,
+                            paddingTop: 3,
+                            paddingBottom: 3,
+                          },
+                        ]}
+                        wrap={false}
+                      >
+                        {hasLabel ? (
+                          <View style={{ maxWidth: "35%", marginRight: 10, flexShrink: 0 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 11.5, color: "#0f172a" }}>
+                              {row.fieldLabel}
+                            </Text>
+                            {row.methodName ? (
+                              <Text style={{ fontSize: 8.5, color: "#64748b", marginTop: 2 }}>
+                                <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                              </Text>
+                            ) : null}
+                          </View>
                         ) : null}
-                        <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0 }]}>
-                          {row.value}
-                        </Text>
-                        {row.methodName ? (
-                          <Text style={[styles.compactTextResult, { width: "100%", paddingLeft: row.fieldLabel ? 16 : 0, paddingTop: 4 }]}>
-                            <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.compactTextResult, { width: "100%" }]}>
+                            {row.value}
                           </Text>
-                        ) : null}
+                          {!hasLabel && row.methodName ? (
+                            <Text style={{ fontSize: 8.5, color: "#64748b", marginTop: 2 }}>
+                              <Text style={{ fontWeight: "bold" }}>Método:</Text> {row.methodName}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
                     );
                   }

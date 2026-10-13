@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { pdf } from "@react-pdf/renderer";
-import { ArrowLeft, ClipboardCheck, FileText, Receipt, Save } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileDown, FileText, Receipt, Save } from "lucide-react";
 import { Atom } from "react-loading-indicators";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
@@ -56,10 +56,12 @@ export default function OrderDetailPage() {
     updateMicroGerms,
     updateAntibiogram,
     addAntibiogram,
+    removeAntibiogram,
   } = useOrderResultsEditor(orderItems);
 
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [reportFormat, setReportFormat] = useState<"pdf" | "word">("pdf");
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -203,12 +205,13 @@ export default function OrderDetailPage() {
           : null;
 
 
-  function openReportItemSelection() {
+  function openReportItemSelection(format: "pdf" | "word") {
     if (orderItems.length === 0) {
       toast.error("No hay exámenes disponibles para imprimir.");
       return;
     }
 
+    setReportFormat(format);
     setSelectedReportItemIds(new Set(allReportItemIds));
     setReportItemSelectionOpen(true);
   }
@@ -220,6 +223,34 @@ export default function OrderDetailPage() {
     }
 
     setReportItemSelectionOpen(false);
+
+    if (reportFormat === "word") {
+      setReportLoading(true);
+      try {
+        const { generateUnifiedTestReportWord } = await import("@/lib/UnifiedTestReportWord");
+        const reportBlob = await generateUnifiedTestReportWord({
+          orden: order,
+          orderItems: selectedReportItems as Array<Record<string, unknown>>,
+          departmentOrder,
+          patientData: { ...patientInfo, age: `${patientInfo.age}` },
+          labData,
+        });
+        const downloadUrl = URL.createObjectURL(reportBlob);
+        const downloadLink = document.createElement("a");
+        const patientName = patientInfo.name.replace(/[<>:"/\\|?*]/g, "").trim() || "paciente";
+        downloadLink.href = downloadUrl;
+        downloadLink.download = `Informe-${patientName}-${order.order_seq.toString().padStart(4, "0")}.docx`;
+        downloadLink.click();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        toast.success("Informe Word generado y descargado.");
+      } catch (error) {
+        console.error("Error generando informe Word:", error);
+        toast.error(getUserFacingErrorMessage(error, "No se pudo generar el informe Word."));
+      } finally {
+        setReportLoading(false);
+      }
+      return;
+    }
 
     if (isMobileDevice()) {
       setReportLoading(true);
@@ -272,7 +303,11 @@ export default function OrderDetailPage() {
   }
 
   async function handleViewReport() {
-    openReportItemSelection();
+    openReportItemSelection("pdf");
+  }
+
+  function handleGenerateWord() {
+    openReportItemSelection("word");
   }
 
   async function handleViewLetterhead() {
@@ -478,6 +513,12 @@ export default function OrderDetailPage() {
                 {reportLoading ? "Generando..." : "Ver Informe"}
               </Button>
             )}
+            {/*canViewOrderDocuments && (
+              <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={reportLoading}>
+                <FileDown className="mr-2 h-4 w-4" />
+                {reportLoading && reportFormat === "word" ? "Generando Word..." : "Generar Word"}
+              </Button>
+            )*/}
             {canViewOrderDocuments && (
               <Button variant="outline" size="sm" onClick={handleViewReceipt} disabled={receiptLoading}>
                 <Receipt className="mr-2 h-4 w-4" />
@@ -549,6 +590,7 @@ export default function OrderDetailPage() {
               updateMicroGerms={updateMicroGerms}
               updateAntibiogram={updateAntibiogram}
               addAntibiogram={addAntibiogram}
+              removeAntibiogram={removeAntibiogram}
               handleFileUploadForOCR={handleFileUploadForOCR}
             />
           )}
@@ -560,7 +602,7 @@ export default function OrderDetailPage() {
       <Dialog open={reportItemSelectionOpen} onOpenChange={setReportItemSelectionOpen}>
         <DialogContent className="sm:max-w-3xl w-[90vw]">
           <DialogHeader>
-            <DialogTitle>Seleccionar exámenes para el informe</DialogTitle>
+            <DialogTitle>Seleccionar exámenes para el informe {reportFormat === "word" ? "Word" : "PDF"}</DialogTitle>
             <DialogDescription>
               Elige los exámenes que quieres incluir en el informe. Puedes seleccionar todos o marcar los que ya estén completos.
             </DialogDescription>
@@ -573,7 +615,7 @@ export default function OrderDetailPage() {
                 onChange={toggleSelectAllReportItems}
                 className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
-              <span className="font-medium">Imprimir todos</span>
+              <span className="font-medium">              Seleccionar todos</span>
             </label>
             <div className="grid gap-2 max-h-[50vh] overflow-y-auto rounded-lg border border-border bg-background p-3">
               {orderItemsTyped.map((item) => {
@@ -597,8 +639,8 @@ export default function OrderDetailPage() {
             <Button variant="outline" onClick={() => setReportItemSelectionOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleConfirmReportSelection} disabled={selectedReportItemIds.size === 0}>
-              Continuar
+            <Button onClick={handleConfirmReportSelection} disabled={selectedReportItemIds.size === 0 || reportLoading}>
+              {reportFormat === "word" ? "Generar Word" : "Continuar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -708,4 +750,3 @@ export default function OrderDetailPage() {
     </div>
   );
 }
-
