@@ -5,6 +5,25 @@ export const queryKeys = {
   organizations: ["organizations"] as const,
   currentOrgContext: (userId: string | null | undefined) => ["current-org-context", userId ?? "anonymous"] as const,
   exchangeRate: (orgId: string | null | undefined) => ["exchange-rate", orgId ?? "none"] as const,
+  erp: {
+    exchangeRates: (orgId: string | null | undefined) => ["erp", "exchange-rates", orgId ?? "none"] as const,
+    bankAccounts: (orgId: string | null | undefined, activeOnly: boolean) => ["erp", "bank-accounts", orgId ?? "none", activeOnly ? "active" : "all"] as const,
+    invoices: (orgId: string | null | undefined, status: string) => ["erp", "invoices", orgId ?? "none", status] as const,
+    invoice: (invoiceId: string | null | undefined) => ["erp", "invoice", invoiceId ?? "none"] as const,
+    payments: (invoiceId: string | null | undefined) => ["erp", "payments", invoiceId ?? "none"] as const,
+    schedules: (invoiceId: string | null | undefined) => ["erp", "schedules", invoiceId ?? "none"] as const,
+    receivables: (orgId: string | null | undefined) => ["erp", "receivables", orgId ?? "none"] as const,
+    cashSession: (orgId: string | null | undefined) => ["erp", "cash-session", orgId ?? "none"] as const,
+    cashSessions: (orgId: string | null | undefined) => ["erp", "cash-sessions", orgId ?? "none"] as const,
+    cashSummary: (sessionId: string | null | undefined) => ["erp", "cash-summary", sessionId ?? "none"] as const,
+    items: (orgId: string | null | undefined) => ["erp", "items", orgId ?? "none"] as const,
+    kardex: (itemId: string | null | undefined) => ["erp", "kardex", itemId ?? "none"] as const,
+    testMaterials: (orgId: string | null | undefined, templateId: string | null | undefined) =>
+      ["erp", "test-materials", orgId ?? "none", templateId ?? "none"] as const,
+    bomPreview: (orderId: string | null | undefined) => ["erp", "bom-preview", orderId ?? "none"] as const,
+    report: (kind: "financial" | "profitability" | "inventory" | "receivables", orgId: string | null | undefined, from?: string, to?: string) =>
+      ["erp", "report", kind, orgId ?? "none", from ?? "", to ?? ""] as const,
+  },
   orders: {
     all: (orgId: string | null | undefined) => ["orders", orgId ?? "none"] as const,
     list: (

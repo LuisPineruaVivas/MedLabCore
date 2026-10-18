@@ -9,6 +9,7 @@ import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
 import { ProfileSettings } from "@/features/settings/ProfileSettings";
+import { ErpModuleToggle } from "@/features/settings/ErpModuleToggle";
 
 type SettingsDialog = "org" | "dept" | "users" | "exchange" | "profile" | null;
 
@@ -103,6 +104,7 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{item.desc}</p>
           </div>
         ))}
+        {role === "lab_admin" && <ErpModuleToggle />}
       </div>
 
       <Dialog open={activeDialog === "org"} onOpenChange={(open) => !open && setActiveDialog(null)}>

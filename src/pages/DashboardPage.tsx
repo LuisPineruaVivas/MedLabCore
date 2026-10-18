@@ -15,6 +15,7 @@ import { es } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErpDashboardWidgets } from "@/features/erp/components/ErpDashboardWidgets";
 import {
   useDashboardStats,
   usePendingOrders,
@@ -66,6 +67,8 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      <ErpDashboardWidgets orgId={orgId} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Orders */}
