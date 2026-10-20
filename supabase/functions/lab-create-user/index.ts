@@ -17,27 +17,29 @@ Deno.serve(async (req) => {
     );
 
     // Verify caller is lab_admin
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check caller is lab_admin or super_admin
-    //const { data: isLabAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "lab_admin" });
-    //const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
-    
-    //if (!isLabAdmin && !isSuperAdmin) {
-      //return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    //}
-
-    // Get caller's org_id
+    // Get caller's org_id and role
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("org_id")
+      .select("org_id, role")
       .eq("id", caller.id)
       .single();
+
+    // Check caller is lab_admin or super_admin. Lab admins are identified by
+    // profiles.role (what the app and the org RLS use); super admins by user_roles.
+    const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
+    if (callerProfile?.role !== "lab_admin" && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { email, password, full_name, role } = await req.json();
 
@@ -60,7 +62,9 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, org_id: orgId },
+      user_metadata: { full_name },
+      // handle_new_user reads role/org_id only from app_metadata, which only the service role can set.
+      app_metadata: { role, org_id: orgId },
     });
 
     if (createError) {
@@ -75,10 +79,10 @@ Deno.serve(async (req) => {
         .eq("user_id", newUser.user.id);
     }
 
-    // Update profile role
+    // Update profile role and org (service role; also covers an older handle_new_user)
     await supabaseAdmin
       .from("profiles")
-      .update({ role })
+      .update({ role, org_id: orgId })
       .eq("id", newUser.user.id);
 
     return new Response(JSON.stringify({ user: newUser.user }), {

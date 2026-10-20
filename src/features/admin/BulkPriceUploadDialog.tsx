@@ -86,10 +86,9 @@ async function readFileAsBase64(file: File): Promise<string> {
 
 async function readDocxAsText(file: File): Promise<string> {
   // Dynamically import mammoth to extract text from .docx
-  // We send the raw text to Gemini which then structures it
-  const mammoth = await import("https://esm.sh/mammoth@1.8.0" as string) as {
-    extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
-  };
+  // We send the raw text to Gemini which then structures it.
+  // Bundled from package-lock (not a CDN URL) so the code is pinned and integrity-checked.
+  const { default: mammoth } = await import("mammoth");
   const buffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer: buffer });
   return result.value;
