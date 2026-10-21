@@ -489,6 +489,17 @@ $$;
 revoke execute on function public.get_public_org_brand(uuid) from public;
 grant execute on function public.get_public_org_brand(uuid) to anon, authenticated, service_role;
 
+-- Transitional: the app version live on `main` still reads portal branding as
+-- anon straight from the table (name, logo, colors, contact, report_template
+-- filtered by id). Keep exactly those columns readable so the portal does not
+-- break; rif, plan flags and every other column stay hidden. Drop this grant
+-- and policy once every deployed client uses get_public_org_brand.
+grant select (id, name, logo_url, primary_color, secondary_color, email, phone, address, report_template)
+  on public.organizations to anon;
+drop policy if exists "Anon can read organization branding columns" on public.organizations;
+create policy "Anon can read organization branding columns" on public.organizations
+  for select to anon using (true);
+
 -- ---------------------------------------------------------------------------
 -- 8. Order workflow guards.
 --    (rls/orders+order_items/update-no-role-transition-or-column-guard)

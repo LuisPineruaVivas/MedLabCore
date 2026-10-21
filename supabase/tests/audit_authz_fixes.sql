@@ -327,7 +327,20 @@ rollback to savepoint s;
 savepoint s;
 select pg_temp.act_as_anon();
 select pg_temp.expect_error('select name, rif, email, subscription_active, has_erp_module from public.organizations', 'permission denied');
+select pg_temp.expect_error('select rif from public.organizations', 'permission denied');
+select pg_temp.expect_error('select has_erp_module from public.organizations', 'permission denied');
+select pg_temp.expect_error('select * from public.organizations', 'permission denied');
 select pg_temp.assert_true((select name = 'Audit Test B' from public.get_public_org_brand(pg_temp.id('orgB'))), 'anon gets branding for one org');
+-- The query the live `main` portal still runs (useOrgPatientPortal).
+select pg_temp.assert_true((
+  select name = 'Audit Test B' from public.organizations where id = pg_temp.id('orgB')
+), 'legacy anon branding select still works');
+select pg_temp.assert_eq((
+  select count(*) from (
+    select name, logo_url, primary_color, secondary_color, email, phone, address, report_template
+    from public.organizations where id = pg_temp.id('orgB')
+  ) q
+), 1, 'legacy anon branding columns readable');
 select pg_temp.act_as(pg_temp.id('adminA'));
 select pg_temp.assert_eq((select count(*) from public.organizations where id in (pg_temp.id('orgA'), pg_temp.id('orgB'))), 1, 'staff see only their own org');
 select pg_temp.act_as(pg_temp.id('superAdmin'));
