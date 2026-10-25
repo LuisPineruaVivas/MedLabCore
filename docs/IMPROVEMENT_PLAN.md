@@ -53,7 +53,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☐ |
 | B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
 | B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☐ |
-| P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☐ |
+| P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
 | P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ |
 | P-03 | Money totals computed in the browser over all rows | Perf | 🟠 | M | ☐ (with B-01/B-02) |
 | P-04 | "Guardar todo" fires N requests and N refetches | Perf | 🟠 | S | ☐ (with B-03) |
@@ -608,3 +608,4 @@ Create small, tested helpers so fixes are made once:
 | Date | Item(s) | Commit | Notes |
 |---|---|---|---|
 | 2026-10-25 | — | `716e3c9` | Plan created from code review of `dev`. ERP pilot fixes (B2/B4/E1 from the ERP checklist) and the `expect_error` test-helper fix were already done in `716e3c9` / `95e1807`. |
+| 2026-10-25 | P-01 | _pending_ | ReportViewerPage lazy-loaded. First-load JS ~2.4 MB → 819 KB; react-pdf no longer requested on /login (checked in browser on a production build). |

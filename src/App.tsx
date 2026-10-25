@@ -15,7 +15,9 @@ import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { ErpGuard } from "./components/ErpGuard";
 import { Analytics } from "@vercel/analytics/react";
-import ReportViewerPage from "./pages/ReportViewerPage";
+// Lazy like every other page: it pulls in react-pdf and all report layouts,
+// which must not be downloaded on the login screen.
+const ReportViewerPage = lazy(() => import("@/pages/ReportViewerPage"));
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
