@@ -96,8 +96,8 @@ Reglas importantes:
 - Si un examen no tiene precio visible, omítelo.
 - Responde SOLO con el JSON, sin markdown ni texto adicional.`;
 
-    // deno-lint-ignore no-explicit-any
-    const parts: any[] = [{ text: systemPrompt }];
+    type GeminiPart = { text: string } | { inline_data: { mime_type: string; data: string } };
+    const parts: GeminiPart[] = [{ text: systemPrompt }];
 
     if (file_base64) {
       // Image mode

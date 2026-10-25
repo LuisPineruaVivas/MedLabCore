@@ -10,8 +10,9 @@ import { TestReportPalermoPDF } from "@/lib/testReportPalermoGenerator";
 export type { TestTemplateReportProps };
 
 export interface UnifiedReportProps {
-  orden: any;
-  orderItems: any[];
+  // Loose on purpose: each layout declares its own order/item types (unify in M-01).
+  orden: unknown;
+  orderItems: unknown[];
   departmentOrder?: string[];
   patientData: {
     name: string;
@@ -31,7 +32,7 @@ export interface UnifiedReportProps {
     ciudad?: string;
     rif?: string;
     lab_admin?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

@@ -126,7 +126,7 @@ export default function PatientPortalPage() {
     if (isMobile) {
       setReportLoading(true);
       try {
-        const ReportComponent = getReportComponent(order.report_template || (brand as any)?.report_template);
+        const ReportComponent = getReportComponent(order.report_template || brand?.report_template);
         const reportBlob = await pdf(
           <ReportComponent
             orden={order}
@@ -389,7 +389,7 @@ export default function PatientPortalPage() {
             {selectedOrder && patientInfo ? (
               (() => {
                 const ReportComponent = getReportComponent(
-                  selectedOrder.report_template || (brand as any)?.report_template
+                  selectedOrder.report_template || brand?.report_template
                 );
                 return (
                   <PDFViewer width="100%" height="100%" className="border-none">

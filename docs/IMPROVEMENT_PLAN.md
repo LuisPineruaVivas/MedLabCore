@@ -73,7 +73,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☐ |
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ☐ |
-| M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ☐ |
+| M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☑ |
 | M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ◐ |
 | M-07 | Dead code & stale config | Maint | 🟢 | S | ☐ |
@@ -618,3 +618,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-10 | _pending_ | Report ranges use erp_local_date(now()); passes with timezone UTC and America/Caracas (evening window not reproducible in daytime) |
 | 2026-10-25 | S-06 | _pending_ | Moved to tools/thermal-debug.html (not served); open locally in Chrome for Web Serial debugging |
 | 2026-10-25 | M-05 | _pending_ | All 21 ad-hoc keys (14 files) moved to queryKeys.ts with identical shapes; prefix keys for invalidation; queryKeys.test.ts |
+| 2026-10-25 | M-04 | _pending_ | ◐ lint 37 errors → 0 (dev-dist ignored, all `any` typed, exhaustive-deps fixed, tailwind import); 18 react-refresh dev-only warnings left for M-01/M-02 (shadcn ui accepted) |

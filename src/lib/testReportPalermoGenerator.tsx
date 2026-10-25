@@ -184,7 +184,8 @@ export const TestReportPalermoPDF = ({ template, labData, patientData }: TestTem
   });
 
   const sections = template.schema?.sections || [];
-  const templateMethodName = typeof (template as any).method_name === "string" ? (template as any).method_name.trim() : "";
+  const rawMethodName = (template as { method_name?: unknown }).method_name;
+  const templateMethodName = typeof rawMethodName === "string" ? rawMethodName.trim() : "";
   let methodRendered = false;
 
   return (

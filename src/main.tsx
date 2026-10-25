@@ -6,7 +6,7 @@ import "./index.css";
 import { Buffer } from 'buffer';
 import { env } from "@/lib/env";
 import { scrubBreadcrumb, scrubEvent } from "@/lib/sentryScrub";
-(window as any).Buffer = Buffer;
+(window as Window & { Buffer?: typeof Buffer }).Buffer = Buffer;
 
 registerSW({
   immediate: true,

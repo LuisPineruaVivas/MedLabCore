@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 // ── Exam Profile types ──────────────────────────────────────
 
 export interface ExamProfileRow {
@@ -25,7 +26,7 @@ export interface ProfileWithTemplates extends ExamProfileRow {
       name: string;
       category: string;
       base_price: number;
-      schema: any;
+      schema: Json;
     };
   }[];
 }

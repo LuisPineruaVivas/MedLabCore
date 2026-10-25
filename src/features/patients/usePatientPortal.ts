@@ -92,7 +92,7 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
     queryFn: async (): Promise<OrderWithItems[]> => {
       if (!patientId) return [];
 
-      const { data, error } = await (supabase.rpc as any)("portal_get_patient_orders", {
+      const { data, error } = await supabase.rpc("portal_get_patient_orders", {
         p_patient_id: patientId,
         p_pin: pin.trim().toUpperCase()
       });
@@ -100,21 +100,7 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
       if (error) throw error;
       if (!data || !Array.isArray(data)) return [];
 
-      return data.map((row: {
-        order_id: string;
-        created_at: string;
-        status: string;
-        total_amount: number;
-        access_pin: string;
-        org_name: string;
-        org_logo_url: string | null;
-        order_seq: number;
-        firma_url: string | null;
-        sello_url: string | null;
-        report_template?: string | null;
-        department_order: unknown;
-        items: PatientPortalOrderItem[];
-      }) => ({
+      return data.map((row) => ({
         id:           row.order_id,
         created_at:   row.created_at,
         status:       row.status,
@@ -129,7 +115,8 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
         departmentOrder: Array.isArray(row.department_order)
           ? row.department_order.filter((item): item is string => typeof item === "string")
           : [],
-        items:        Array.isArray(row.items) ? row.items : [],
+        // items is a JSON array built by the RPC; its shape is order_items plus category/sort info.
+        items:        Array.isArray(row.items) ? (row.items as unknown as PatientPortalOrderItem[]) : [],
       }));
     },
     enabled: !!patientId && !!pin,

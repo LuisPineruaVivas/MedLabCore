@@ -123,7 +123,7 @@ export const DUMMY_ORDER_ITEMS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-interface PreviewLabData {
+type PreviewLabData = {
   name?: string;
   address?: string;
   phone?: string;
@@ -133,7 +133,8 @@ interface PreviewLabData {
   primary_color?: string;
   secondary_color?: string;
   report_footer_text?: string | null;
-}
+};
+
 
 interface ReportPreviewModalProps {
   open: boolean;
@@ -149,17 +150,11 @@ export function ReportPreviewModal({
   reportTemplate = "default",
 }: ReportPreviewModalProps) {
   // Only memoize so the PDF doesn't re-render on every keystroke outside the modal
-  const stableLabData = useMemo(() => labData, [
-    labData.name,
-    labData.address,
-    labData.phone,
-    labData.email,
-    labData.logo,
-    labData.watermark,
-    labData.primary_color,
-    labData.secondary_color,
-    labData.report_footer_text,
-  ]);
+  const { name, address, phone, email, logo, watermark, primary_color, secondary_color, report_footer_text } = labData;
+  const stableLabData = useMemo<PreviewLabData>(
+    () => ({ name, address, phone, email, logo, watermark, primary_color, secondary_color, report_footer_text }),
+    [name, address, phone, email, logo, watermark, primary_color, secondary_color, report_footer_text]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
