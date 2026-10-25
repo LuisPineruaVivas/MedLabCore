@@ -81,7 +81,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ◐ |
 | M-07 | Dead code & stale config | Maint | 🟢 | S | ☐ |
 | M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☐ |
-| T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ☐ |
+| T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ◐ |
 | T-02 | One command to run the SQL test suites | Tests | 🟠 | S | ☑ |
 | T-03 | Component tests for critical flows | Tests | 🟢 | M | ☐ |
 
@@ -633,3 +633,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-03, P-04 | b68116c (+705925d) | ◐ "Guardar todo" = one save_order_results call (one transaction, one refetch); Spanish error messages. SQL test: all-or-nothing, ORDER_RESULTS_LOCKED kept, other lab refused. Awaiting db push + preview test |
 | 2026-10-25 | T-02 | 5adba11 | npm run test:db (scripts/test-db.mjs): 7 suites PASS, auto-prepends unapplied migrations, Caracas tz; negative control (lock trigger dropped) → FAIL. Also npm run dev:local (.env.localdb, not committed) + local DB migrated to 20261025010000 |
 | 2026-10-25 | B-06, M-03 (step 1) | 9ff6869 | tsc 52 → 0 errors; `npm run typecheck` added. All PDF layouts + single-test generators compile to identical JS (type-only). Real bug found: Word report images had no `type` (docx v9) → saved as `.undefined`; now `type: "png"` — **check a Word report with logo/signature/stamp in local testing**. M-03 steps 2–4 (noImplicitAny, strictNullChecks, strict) still to do in Phase 7. |
+| 2026-10-25 | T-01 | ae8a50d | ◐ `.github/workflows/ci.yml`: web job (npm ci, lint, typecheck, test, build) + database job (`supabase start` + `npm run test:db`). Every step passes locally; clean `npm ci` works without --legacy-peer-deps (plugin-react-swc 4.3.3). @swc/core pinned ~1.15.47 (1.16 refuses to load on this PC: cache-folder permission check) — revisit later. Becomes ☑ when the first push shows green checks (release). |
