@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
-import { ChevronRight, Copy, DollarSign, Eye, FlaskConical, ListOrdered, Package, Pencil, Plus, Search, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { Boxes, ChevronRight, Copy, DollarSign, Eye, FlaskConical, ListOrdered, Package, Pencil, Plus, Search, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { StatCard } from "@/components/ui/StatCard";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useErpModule } from "@/hooks/useErpModule";
+import { TestMaterialsEditor } from "@/features/erp/components/TestMaterialsEditor";
 import { ProfileBuilderDialog } from "@/features/tests/ProfileBuilderDialog";
 import { ExamOrderView } from "@/features/tests/ExamOrderView";
 import { DepartmentOrderView } from "@/features/tests/DepartmentOrderView";
@@ -90,6 +92,10 @@ export default function TestsPage() {
   const totalTemplates = templatesData?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalTemplates / pageSize));
   const canManageTests = isSuperAdmin || role === "lab_admin";
+  const { isErpEnabled, canManageFinances, canConfirmConsumption } = useErpModule();
+  // Recipes (BOM) are edited by lab admins and visible to bioanalysts when the ERP is on.
+  const canViewRecipes = isErpEnabled && (canManageFinances || canConfirmConsumption);
+  const [recipeTpl, setRecipeTpl] = useState<TestTemplateRow | null>(null);
 
   useEffect(() => setPage(1), [debouncedSearch]);
 
@@ -204,6 +210,7 @@ export default function TestsPage() {
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}><Eye className="h-3 w-3" />Visualizar</Button>
                           {canEdit && <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => handleEdit(tpl)}>{isGlobal && !isSuperAdmin ? <Copy className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}Editar</Button>}
+                          {canViewRecipes && <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setRecipeTpl(tpl)}><Boxes className="h-3 w-3" />Insumos</Button>}
                         </TableCell>
                       </TableRow>
                     </Fragment>
@@ -231,6 +238,7 @@ export default function TestsPage() {
                     <div className="mt-3 flex items-center gap-2">
                       <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}><Eye className="mr-1 h-3 w-3" />Visualizar</Button>
                       {canEdit && <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={() => handleEdit(tpl)}>{isGlobal && !isSuperAdmin ? <Copy className="mr-1 h-3 w-3" /> : <Pencil className="mr-1 h-3 w-3" />}Editar</Button>}
+                      {canViewRecipes && <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={() => setRecipeTpl(tpl)}><Boxes className="mr-1 h-3 w-3" />Insumos</Button>}
                       <button className="inline-flex h-7 items-center px-2" onClick={() => (isSuperAdmin || tpl.org_id === orgId) && toggleMutation.mutate({ id: tpl.id, is_active: !tpl.is_active })} disabled={!isSuperAdmin && tpl.org_id !== orgId}>{tpl.is_active ? <ToggleRight className="h-5 w-5 text-success" /> : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}</button>
                     </div>
                   </div>
@@ -252,6 +260,13 @@ export default function TestsPage() {
               </div>
             </CardFooter>
           </Card>
+
+          <Dialog open={!!recipeTpl} onOpenChange={(open) => !open && setRecipeTpl(null)}>
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-auto">
+              <DialogHeader><DialogTitle className="flex items-center gap-2"><Boxes className="h-4 w-4 text-primary" />Insumos por examen: {recipeTpl?.name}</DialogTitle></DialogHeader>
+              {recipeTpl && <TestMaterialsEditor orgId={orgId} templateId={recipeTpl.id} canEdit={canManageFinances} />}
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
             <DialogContent className="flex h-[90vh] w-[95vw] max-w-5xl flex-col overflow-hidden p-0">

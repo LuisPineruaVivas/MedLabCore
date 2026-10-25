@@ -10,10 +10,15 @@ import {
   Building2,
   UserCog,
   HandCoins,
+  Calculator,
   LogOut,
   ShoppingCart,
   User,
   ClipboardList,
+  Landmark,
+  FileText,
+  Boxes,
+  BarChart3,
 } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -22,6 +27,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useHasAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
+import { useErpModule } from "@/hooks/useErpModule";
 
 const adminNavItems = [
   { label: "Laboratorios", icon: Building2, path: "/admin/organizations" },
@@ -37,6 +43,7 @@ export function AppSidebar() {
   const { isSuperAdmin } = useUserRole();
   const { signOut, user } = useAuth();
   const { profile, permissions } = useCurrentOrgContext();
+  const { isErpEnabled, canManageFinances, canRegisterPayments, canManageCashRegister, canManageInventory, canViewFinancialReports } = useErpModule();
   const { data: hasAffiliateUsers = false } = useHasAffiliateUsers();
 
   const displayName = user?.email || "Usuario";
@@ -59,13 +66,19 @@ export function AppSidebar() {
       { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
       { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
       { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
+      { label: "Facturas", icon: FileText, path: "/erp/invoices", show: isErpEnabled && (canManageFinances || canRegisterPayments) },
+      { label: "Métodos de cobro", icon: Landmark, path: "/erp/bank-accounts", show: isErpEnabled && canManageFinances },
+      { label: "Cuentas por cobrar", icon: HandCoins, path: "/erp/accounts-receivable", show: isErpEnabled && canManageFinances },
+      { label: "Caja", icon: Calculator, path: "/erp/cash-register", show: isErpEnabled && canManageCashRegister },
+      { label: "Inventario", icon: Boxes, path: "/erp/inventory", show: isErpEnabled && canManageInventory },
+      { label: "Reportes", icon: BarChart3, path: "/erp/reports", show: isErpEnabled && (canViewFinancialReports || canManageInventory) },
       { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
       /*{ label: "Bitácora", icon: ClipboardList, path: "/audit-log", show: profile?.role === "lab_admin" },*/
       { label: "Configuracion", icon: Settings, path: "/settings", show: permissions.canViewSettings },
     ];
 
     return items.filter((item) => item.show);
-  }, [hasAffiliateUsers, permissions, profile?.role]);
+  }, [canManageCashRegister, canManageFinances, canManageInventory, canRegisterPayments, canViewFinancialReports, hasAffiliateUsers, isErpEnabled, permissions, profile?.role]);
 
   const navItems = isSuperAdmin ? adminNavItems.filter((item) => item.path !== "/affiliate-accounts" || hasAffiliateUsers) : labNavItems;
 

@@ -17,7 +17,10 @@ Deno.serve(async (req) => {
     );
 
     // Verify caller is super_admin
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !caller) {
@@ -40,7 +43,9 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, org_id },
+      user_metadata: { full_name },
+      // handle_new_user reads role/org_id only from app_metadata, which only the service role can set.
+      app_metadata: { role, org_id },
     });
 
     if (createError) {
@@ -55,10 +60,10 @@ Deno.serve(async (req) => {
         .eq("user_id", newUser.user.id);
     }
 
-    // Also update profile role column
+    // Also update profile role and org columns (also covers an older handle_new_user)
     await supabaseAdmin
       .from("profiles")
-      .update({ role })
+      .update({ role, org_id })
       .eq("id", newUser.user.id);
 
     return new Response(JSON.stringify({ user: newUser.user }), {

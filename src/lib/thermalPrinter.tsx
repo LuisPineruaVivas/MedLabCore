@@ -1,14 +1,25 @@
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 
-export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58) {
-  const labName = data.labData?.name || 'LABORATORIO MEDICO';
-  const labAddr = data.labData?.address || '';
-  const labPhone = data.labData?.phone || '';
+// Patient, test and lab fields are tenant-controlled and the popup shares the
+// app's origin (and its localStorage session), so every interpolated value is escaped.
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  const orderNum = String(data.orderId).padStart(4, '0');
-  const orderDate = data.orderDate;
-  const patient = data.patientName;
-  const patientId = data.patientId;
+export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58) {
+  const labName = escapeHtml(data.labData?.name || 'LABORATORIO MEDICO');
+  const labAddr = escapeHtml(data.labData?.address || '');
+  const labPhone = escapeHtml(data.labData?.phone || '');
+
+  const orderNum = escapeHtml(String(data.orderId).padStart(4, '0'));
+  const orderDate = escapeHtml(data.orderDate);
+  const patient = escapeHtml(data.patientName);
+  const patientId = escapeHtml(data.patientId);
 
   const items = data.items || [];
   const total = Number(data.total) || 0;
@@ -19,7 +30,7 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
 
   const itemRows = items.map(i => `
     <tr>
-      <td class="item-name">${i.test_name}</td>
+      <td class="item-name">${escapeHtml(i.test_name)}</td>
       <td class="item-price">$${Number(i.price).toFixed(2)}</td>
     </tr>`).join('');
 
@@ -27,6 +38,7 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
   <title>Nota de Entrega ${orderNum}</title>
   <style>
     /* ── Reset ── */
@@ -154,7 +166,7 @@ export function buildReceiptHTML(data: ThermalReceiptData, paperMm: 58 | 80 = 58
   ${pin ? `
   <hr class="hr mt2">
   <div class="center mt1 bold">PIN DE ACCESO</div>
-  <div class="center bold large mt1">${pin.split('').join(' ')}</div>
+  <div class="center bold large mt1">${escapeHtml(pin.split('').join(' '))}</div>
   ` : ''}
 
   <!-- Footer -->
@@ -176,6 +188,9 @@ export async function printThermalReceipt(data: ThermalReceiptData, paperMm: 58 
         reject(new Error("Ventana emergente bloqueada. Por favor, permite pop-ups para este sitio."));
         return;
       }
+      // Same effect as noopener (which would make window.open return null and
+      // leave nothing to write into): the receipt cannot reach back into the app.
+      win.opener = null;
 
       win.document.write(html);
       win.document.close();

@@ -9,12 +9,15 @@ import {
   UserCog,
   Receipt,
   HandCoins,
+  FileText,
+  Boxes,
 } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useHasAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
+import { useErpModule } from "@/hooks/useErpModule";
 
 const adminNavItems = [
   { label: "Labs", icon: Building2, path: "/admin/organizations" },
@@ -27,6 +30,7 @@ export function BottomNav() {
   const location = useLocation();
   const { isSuperAdmin } = useUserRole();
   const { permissions, profile } = useCurrentOrgContext();
+  const { isErpEnabled, canManageFinances, canRegisterPayments, canManageInventory } = useErpModule();
   const { data: hasAffiliateUsers = false } = useHasAffiliateUsers();
 
   const labNavItems = useMemo(() => {
@@ -36,12 +40,15 @@ export function BottomNav() {
       { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
       { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
       { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
+      { label: "Facturas", icon: FileText, path: "/erp/invoices", show: isErpEnabled && (canManageFinances || canRegisterPayments) },
+      // Admins already have a full bar on mobile; they reach Inventario from the sidebar menu.
+      { label: "Insumos", icon: Boxes, path: "/erp/inventory", show: isErpEnabled && canManageInventory && !canManageFinances },
       { label: "Afiliados", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
       { label: "Config", icon: Settings, path: "/settings", show: permissions.canViewSettings },
     ];
 
     return items.filter((item) => item.show);
-  }, [hasAffiliateUsers, permissions, profile?.role]);
+  }, [canManageFinances, canManageInventory, canRegisterPayments, hasAffiliateUsers, isErpEnabled, permissions, profile?.role]);
 
   const navItems = isSuperAdmin ? adminNavItems.filter((item) => item.path !== "/affiliate-accounts" || hasAffiliateUsers) : labNavItems;
 

@@ -74,7 +74,7 @@ export function useCurrentOrgContext(): CurrentOrgContext {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("id, name, address, phone, email, logo_url, watermark_url, primary_color, secondary_color, report_template, report_footer_text, city, state, country, rif, is_active, subscription_active, created_at, profiles!inner (role, full_name, email)")
+        .select("id, name, address, phone, email, logo_url, watermark_url, primary_color, secondary_color, report_template, report_footer_text, city, state, country, rif, is_active, subscription_active, has_erp_module, created_at, profiles!inner (role, full_name, email)")
         .eq("id", orgId!)
         .eq("profiles.role", "lab_admin")
         .single();

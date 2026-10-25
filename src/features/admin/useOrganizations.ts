@@ -23,7 +23,7 @@ export function useOrganizations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("id, name, city, state, country, address, email, phone, rif, is_active, subscription_active, created_at")
+        .select("id, name, city, state, country, address, email, phone, rif, is_active, subscription_active, has_erp_module, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -84,6 +84,17 @@ export function useToggleOrganizationActive() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations });
     },
+  });
+}
+
+export function useToggleOrganizationErp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, has_erp_module }: { id: string; has_erp_module: boolean }) => {
+      const { error } = await supabase.from("organizations").update({ has_erp_module: !has_erp_module }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.organizations }),
   });
 }
 

@@ -13,6 +13,7 @@ import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
 import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
+import { ErpGuard } from "./components/ErpGuard";
 import { Analytics } from "@vercel/analytics/react";
 import ReportViewerPage from "./pages/ReportViewerPage";
 
@@ -34,6 +35,13 @@ const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
 const AuditLogPage = lazy(() => import("@/pages/AuditLogPage"));
+const BankAccountsPage = lazy(() => import("@/pages/erp/BankAccountsPage"));
+const InvoicesPage = lazy(() => import("@/pages/erp/InvoicesPage"));
+const InvoiceDetailPage = lazy(() => import("@/pages/erp/InvoiceDetailPage"));
+const AccountsReceivablePage = lazy(() => import("@/pages/erp/AccountsReceivablePage"));
+const CashRegisterPage = lazy(() => import("@/pages/erp/CashRegisterPage"));
+const InventoryPage = lazy(() => import("@/pages/erp/InventoryPage"));
+const FinancialDashboardPage = lazy(() => import("@/pages/erp/FinancialDashboardPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +111,22 @@ const App = () => (
 
                 <Route element={<RoleGuard permission="canViewSettings" />}>
                   <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+
+                <Route element={<ErpGuard />}>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                    <Route path="/erp/bank-accounts" element={<BankAccountsPage />} />
+                  </Route>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "secretary", "super_admin"]} />}>
+                    <Route path="/erp/invoices" element={<InvoicesPage />} />
+                    <Route path="/erp/invoices/:id" element={<InvoiceDetailPage />} />
+                    <Route path="/erp/accounts-receivable" element={<AccountsReceivablePage />} />
+                    <Route path="/erp/cash-register" element={<CashRegisterPage />} />
+                  </Route>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "bioanalyst", "super_admin"]} />}>
+                    <Route path="/erp/inventory" element={<InventoryPage />} />
+                    <Route path="/erp/reports" element={<FinancialDashboardPage />} />
+                  </Route>
                 </Route>
 
 

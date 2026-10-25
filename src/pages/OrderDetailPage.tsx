@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { useErpModule } from "@/hooks/useErpModule";
+import { ConsumptionConfirmDialog } from "@/features/erp/components/ConsumptionConfirmDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -78,6 +80,8 @@ export default function OrderDetailPage() {
   const [companionCertificateOpen, setCompanionCertificateOpen] = useState(false);
   const [companionName, setCompanionName] = useState("");
   const [companionDocumentId, setCompanionDocumentId] = useState("");
+  const [consumptionOpen, setConsumptionOpen] = useState(false);
+  const { isErpEnabled } = useErpModule();
 
   const labData = useMemo(() => buildLabData(organization), [organization]);
   const canEnterResults = permissions.canEnterResults;
@@ -174,16 +178,28 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // ERP labs confirm supply consumption; the RPC discounts stock and completes the order.
+    if (isErpEnabled) {
+      setConsumptionOpen(true);
+      return;
+    }
+
     updateStatus.mutate({
       orderId: order.id,
       orgId: order.org_id,
       status: "completada",
       completed_at: new Date().toISOString(),
+      ...buildOrderSignature(),
+    });
+  }
+
+  function buildOrderSignature() {
+    return {
       firma_url: profile?.firma_url || null,
       firma_name: profile?.full_name || null,
       sello_url: profile?.sello_url || null,
       signature_footer_text: profile?.signature_footer_text || null,
-    });
+    };
   }
 
   const primaryStatusAction =
@@ -746,7 +762,14 @@ export default function OrderDetailPage() {
         type="companion"
       />
 
-
+      {isErpEnabled && (
+        <ConsumptionConfirmDialog
+          open={consumptionOpen}
+          onOpenChange={setConsumptionOpen}
+          order={{ id: order.id, org_id: order.org_id, order_seq: order.order_seq }}
+          signature={buildOrderSignature()}
+        />
+      )}
     </div>
   );
 }

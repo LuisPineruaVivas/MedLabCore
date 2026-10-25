@@ -11,6 +11,8 @@ import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { useErpModule } from "@/hooks/useErpModule";
+import { OrderPaymentDialog } from "@/features/erp/components/OrderPaymentDialog";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import {
@@ -82,6 +84,7 @@ function isMobileReceiptFlow() {
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: CreateOrderDialogProps) {
   const { orgId, user, role } = useCurrentOrgContext();
+  const { isErpEnabled, canRegisterPayments } = useErpModule();
   const createOrder = useCreateOrder();
   const queryClient = useQueryClient();
   const { data: exchangeRateData } = useExchangeRate(orgId);
@@ -99,6 +102,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   const [receiptData, setReceiptData] = useState<ReturnType<typeof buildOrderReceiptData> | null>(null);
   const [thermalPrinting, setThermalPrinting] = useState(false);
   const [isGeneratingBudget, setIsGeneratingBudget] = useState(false);
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const { data: patients = [], isFetching: searchingPatients } = usePatientSearch(debouncedSearch);
   const { data: templates = [] } = useOrderTemplates();
@@ -137,6 +142,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     setReceiptData(null);
     setNotes("");
     setIsExempted(false);
+    setCreatedInvoiceId(null);
+    setPaymentOpen(false);
   }
 
   const createMutation = useCreatePatient();
@@ -181,6 +188,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
       });
 
       toast.success("Orden creada correctamente");
+      const invoiceId = (order as { invoiceId?: string | null }).invoiceId ?? null;
+      setCreatedInvoiceId(invoiceId);
 
       const generatedReceiptData = buildOrderReceiptData({
         orderId: String((order as { orderId?: string }).orderId),
@@ -309,6 +318,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
   }
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
@@ -365,6 +375,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               </PDFViewer>
             </div>
             <DialogFooter>
+              {isErpEnabled && canRegisterPayments && createdInvoiceId && !isExempted && (
+                <Button variant="outline" onClick={() => setPaymentOpen(true)}>Registrar pago</Button>
+              )}
               {/*<Button variant="outline" onClick={handleThermalPrint} disabled={thermalPrinting}>
                 {thermalPrinting ? "Imprimiendo..." : "Imprimir Termica"}
               </Button>*/}
@@ -718,5 +731,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
         )}
       </DialogContent>
     </Dialog>
+    <OrderPaymentDialog invoiceId={createdInvoiceId} open={paymentOpen} onOpenChange={setPaymentOpen} />
+    </>
   );
 }

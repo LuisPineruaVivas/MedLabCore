@@ -1,0 +1,7 @@
+-- Production data snapshot, loaded into production on 2026-09-20.
+--
+-- Intentionally empty. This version must exist so the local migration history
+-- matches production's supabase_migrations.schema_migrations (repaired on 2026-10-18).
+--
+-- The real data lives in supabase/seed.sql: local only, git-ignored, and loaded by
+-- `supabase db reset` after all migrations. Never put real data in migrations.
