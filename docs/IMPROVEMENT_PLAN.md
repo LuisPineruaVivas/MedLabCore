@@ -43,9 +43,9 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 
 | ID | Title | Area | Prio | Effort | Status |
 |---|---|---|---|---|---|
-| B-01 | Billing totals wrong for labs with > 1,000 orders | Bug | 🔴 | M | ☐ |
-| B-02 | Affiliate pending balance / order list truncated at 1,000 | Bug | 🔴 | M | ☐ |
-| B-03 | "Guardar todo" (results) reports failure after partial save | Bug | 🔴 | S | ☐ |
+| B-01 | Billing totals wrong for labs with > 1,000 orders | Bug | 🔴 | M | ◐ |
+| B-02 | Affiliate pending balance / order list truncated at 1,000 | Bug | 🔴 | M | ◐ |
+| B-03 | "Guardar todo" (results) reports failure after partial save | Bug | 🔴 | S | ◐ |
 | B-04 | Global retry rule never detects Supabase permission errors | Bug | 🟠 | S | ☑ |
 | B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☐ |
 | B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☐ |
@@ -55,8 +55,8 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☑ |
 | P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
 | P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ |
-| P-03 | Money totals computed in the browser over all rows | Perf | 🟠 | M | ☐ (with B-01/B-02) |
-| P-04 | "Guardar todo" fires N requests and N refetches | Perf | 🟠 | S | ☐ (with B-03) |
+| P-03 | Money totals computed in the browser over all rows | Perf | 🟠 | M | ◐ |
+| P-04 | "Guardar todo" fires N requests and N refetches | Perf | 🟠 | S | ◐ |
 | P-05 | Lists use `select("*")` / unbounded fetches | Perf | 🟢 | S | ☐ |
 | P-06 | Main entry chunk 471 KB | Perf | 🟢 | M | ☐ |
 | S-01 | No security headers (CSP, frame-ancestors, …) on the site | Sec | 🔴 | M | ☐ |
@@ -620,3 +620,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | M-05 | 0be1958 | All 21 ad-hoc keys (14 files) moved to queryKeys.ts with identical shapes; prefix keys for invalidation; queryKeys.test.ts |
 | 2026-10-25 | M-04 | f613157 | ◐ lint 37 errors → 0 (dev-dist ignored, all `any` typed, exhaustive-deps fixed, tailwind import); 18 react-refresh dev-only warnings left for M-01/M-02 (shadcn ui accepted) |
 | 2026-10-25 | B-08 | ec0208e | Follow-up from preview test: full-name search ("carlos perez", "perez, carlos") now matches word by word via matchAllWords; checked on local PostgREST incl. orders/billing joins |
+| 2026-10-25 | B-01, B-02, P-03 | efe72c0 (+705925d) | ◐ Totals via get_billing_totals / get_affiliate_pending_balance (SECURITY INVOKER, caller's RLS); affiliate orders paginated (50) with selection kept across pages. SQL test: 1,200 / 1,100 orders exact, other lab sees 0. Awaiting db push + preview test |
+| 2026-10-25 | B-03, P-04 | b68116c (+705925d) | ◐ "Guardar todo" = one save_order_results call (one transaction, one refetch); Spanish error messages. SQL test: all-or-nothing, ORDER_RESULTS_LOCKED kept, other lab refused. Awaiting db push + preview test |
