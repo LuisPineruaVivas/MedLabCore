@@ -19,7 +19,7 @@ import { useOrderResultsEditor } from "@/features/orders/useOrderResultsEditor";
 import { useOrder, useOrderItems, useSaveResults, useUpdateOrderStatus } from "@/features/orders/useOrders";
 import { OrderMobileSaveBar, OrderResultsPanel, OrderSidebar, buildLabData } from "@/features/orders/OrderDetailSections";
 import { AttendanceCertificatePreviewDialog, ReceiptPreviewDialog, ReportPreviewDialog } from "@/features/orders/OrderDetailDialogs";
-import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, canApproveAndSignOrder, collectOcrFieldLabels, isMobileDevice } from "@/features/orders/orderDetailUtils";
+import { applyOcrResultsToState, buildOrderPatientInfo, buildThermalReceiptData, canApproveAndSignOrder, collectOcrFieldLabels, getSaveResultsErrorMessage, isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
 import { useTestMethods } from "@/features/tests/useTestMethods";
 import { getReportComponent } from "@/lib/orderReportDispatcher";
@@ -142,22 +142,21 @@ export default function OrderDetailPage() {
 
     setIsSavingAll(true);
     try {
-      await Promise.all(
-        Array.from(modifiedIds).map((itemId) =>
-          saveResults.mutateAsync({
-            itemId,
-            orderId: order.id,
-            orgId: order.org_id,
-            resultsData: resultsState[itemId] as unknown as Json,
-            testMethodId: methodsState[itemId]?.id ?? null,
-            methodName: methodsState[itemId]?.name ?? null,
-          })
-        )
-      );
+      await saveResults.mutateAsync({
+        orderId: order.id,
+        orgId: order.org_id,
+        items: Array.from(modifiedIds).map((itemId) => ({
+          itemId,
+          resultsData: resultsState[itemId] as unknown as Json,
+          testMethodId: methodsState[itemId]?.id ?? null,
+          methodName: methodsState[itemId]?.name ?? null,
+        })),
+      });
       toast.success("Resultados guardados correctamente");
       resetModified();
     } catch (error) {
-      toast.error(getUserFacingErrorMessage(error, "No se pudieron guardar los resultados"));
+      // All-or-nothing: every exam stays marked as modified, which is accurate.
+      toast.error(getSaveResultsErrorMessage(error));
     } finally {
       setIsSavingAll(false);
     }

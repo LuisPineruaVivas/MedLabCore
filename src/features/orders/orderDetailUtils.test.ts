@@ -5,6 +5,7 @@ import {
   buildThermalReceiptData,
   canApproveAndSignOrder,
   collectOcrFieldLabels,
+  getSaveResultsErrorMessage,
 } from "./orderDetailUtils";
 
 describe("order detail utils", () => {
@@ -168,5 +169,12 @@ describe("order detail utils", () => {
         })
       ).toBe(true);
     });
+  });
+
+  it("explains why 'Guardar todo' failed", () => {
+    expect(getSaveResultsErrorMessage({ message: "ORDER_RESULTS_LOCKED" })).toMatch(/completada o cancelada/);
+    expect(getSaveResultsErrorMessage(new Error("ORDER_ITEMS_NOT_FOUND"))).toMatch(/Recarga/);
+    expect(getSaveResultsErrorMessage(new Error("Failed to fetch"))).toMatch(/No se guardo ningun cambio/);
+    expect(getSaveResultsErrorMessage(null)).toMatch(/No se guardo ningun cambio/);
   });
 });

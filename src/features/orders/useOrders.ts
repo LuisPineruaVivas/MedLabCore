@@ -4,6 +4,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { matchAllWords } from "@/lib/postgrest";
+import { pendingRpc } from "@/lib/pendingRpc";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { OrderWithPatient, OrderStatus } from "./schemas";
 import { toast } from "@/hooks/use-toast";
@@ -351,29 +352,36 @@ export function useCreateOrder() {
   });
 }
 
+export interface SaveResultsItem {
+  itemId: string;
+  resultsData: Json;
+  testMethodId?: string | null;
+  methodName?: string | null;
+}
+
 export function useSaveResults() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // One request and one transaction for every modified exam: either all are saved
+    // or none is, and the order is refetched once.
     mutationFn: async ({
-      itemId,
       orderId,
-      orgId,
-      resultsData,
-      testMethodId,
-      methodName,
+      items,
     }: {
-      itemId: string;
       orderId: string;
       orgId: string | null | undefined;
-      resultsData: Json;
-      testMethodId?: string | null;
-      methodName?: string | null;
+      items: SaveResultsItem[];
     }) => {
-      const { error } = await supabase
-        .from("order_items")
-        .update({ results_data: resultsData, test_method_id: testMethodId ?? null, method_name: methodName ?? null })
-        .eq("id", itemId);
+      const { error } = await pendingRpc("save_order_results", {
+        p_order_id: orderId,
+        p_items: items.map((item) => ({
+          item_id: item.itemId,
+          results_data: item.resultsData,
+          test_method_id: item.testMethodId ?? null,
+          method_name: item.methodName ?? null,
+        })),
+      });
       if (error) throw error;
     },
     onSuccess: (_, variables) => {

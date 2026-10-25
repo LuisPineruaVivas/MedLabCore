@@ -71,6 +71,18 @@ export function buildThermalReceiptData(
   };
 }
 
+/** Spanish message for a failed "Guardar todo" (nothing is saved when it fails). */
+export function getSaveResultsErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? "");
+  if (message.includes("ORDER_RESULTS_LOCKED")) {
+    return "La orden esta completada o cancelada: sus resultados ya no se pueden modificar.";
+  }
+  if (message.includes("ORDER_ITEMS_NOT_FOUND")) {
+    return "Algunos examenes ya no existen en esta orden. Recarga la pagina e intenta de nuevo.";
+  }
+  return "No se pudieron guardar los resultados. No se guardo ningun cambio; intenta de nuevo.";
+}
+
 export function isMobileDevice() {
   return (
     typeof window !== "undefined" &&
