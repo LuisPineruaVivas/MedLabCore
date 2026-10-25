@@ -51,7 +51,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-03 | "Guardar todo" (results) reports failure after partial save | Bug | 🔴 | S | ◐ |
 | B-04 | Global retry rule never detects Supabase permission errors | Bug | 🟠 | S | ☑ |
 | B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☐ |
-| B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☐ |
+| B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☑ |
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☑ |
 | B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☑ |
 | B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
@@ -75,7 +75,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☐ |
-| M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ☐ |
+| M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ◐ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☑ |
 | M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ◐ |
@@ -632,3 +632,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-01, B-02, P-03 | efe72c0 (+705925d) | ◐ Totals via get_billing_totals / get_affiliate_pending_balance (SECURITY INVOKER, caller's RLS); affiliate orders paginated (50) with selection kept across pages. SQL test: 1,200 / 1,100 orders exact, other lab sees 0. Awaiting db push + preview test |
 | 2026-10-25 | B-03, P-04 | b68116c (+705925d) | ◐ "Guardar todo" = one save_order_results call (one transaction, one refetch); Spanish error messages. SQL test: all-or-nothing, ORDER_RESULTS_LOCKED kept, other lab refused. Awaiting db push + preview test |
 | 2026-10-25 | T-02 | 5adba11 | npm run test:db (scripts/test-db.mjs): 7 suites PASS, auto-prepends unapplied migrations, Caracas tz; negative control (lock trigger dropped) → FAIL. Also npm run dev:local (.env.localdb, not committed) + local DB migrated to 20261025010000 |
+| 2026-10-25 | B-06, M-03 (step 1) | 9ff6869 | tsc 52 → 0 errors; `npm run typecheck` added. All PDF layouts + single-test generators compile to identical JS (type-only). Real bug found: Word report images had no `type` (docx v9) → saved as `.undefined`; now `type: "png"` — **check a Word report with logo/signature/stamp in local testing**. M-03 steps 2–4 (noImplicitAny, strictNullChecks, strict) still to do in Phase 7. |
