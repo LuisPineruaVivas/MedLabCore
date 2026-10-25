@@ -64,7 +64,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-03 | Portal PIN guessable at scale (no server throttle) and in URLs | Sec | 🟠 | M | ☐ |
 | S-04 | Edge functions: CORS `*`, raw errors, Gemini key in URL | Sec | 🟠 | S | ☐ |
 | S-05 | Remove temporary anon branding grant after `main` release | Sec | 🟠 | S | ☐ |
-| S-06 | Public `thermal-debug.html` shipped to production | Sec | 🟢 | S | ☐ |
+| S-06 | Public `thermal-debug.html` shipped to production | Sec | 🟢 | S | ☑ |
 | S-07 | Database hardening batch (audit hardening notes) | Sec | 🟠 | M | ☐ |
 | S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ☐ |
 | S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ☐ |
@@ -616,3 +616,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-08 | _pending_ | Searches quoted via ilikeAny (also useOrders.ts); checked on local PostgREST: comma no longer errors, % and _ literal |
 | 2026-10-25 | M-06 | _pending_ | ◐ postgrest.ts + errors.ts done; json.ts goes with B-05 (Phase 6), form pattern with B-09 |
 | 2026-10-25 | B-10 | _pending_ | Report ranges use erp_local_date(now()); passes with timezone UTC and America/Caracas (evening window not reproducible in daytime) |
+| 2026-10-25 | S-06 | _pending_ | Moved to tools/thermal-debug.html (not served); open locally in Chrome for Web Serial debugging |
