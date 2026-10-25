@@ -50,7 +50,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☐ |
 | B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☐ |
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☑ |
-| B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☐ |
+| B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☑ |
 | B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
 | B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☐ |
 | P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
@@ -75,7 +75,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ☐ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ☐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☐ |
-| M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ☐ |
+| M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ◐ |
 | M-07 | Dead code & stale config | Maint | 🟢 | S | ☐ |
 | M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☐ |
 | T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ☐ |
@@ -613,3 +613,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | S-02 | _pending_ | beforeSend/beforeSendTransaction/beforeBreadcrumb replace dni/pin with [filtered]; replay explicitly masked; sendDefaultPii false (src/lib/sentryScrub.ts + 3 tests). Address-bar cleanup moved to S-03. |
 | 2026-10-25 | B-04 | _pending_ | isNonRetryableError in src/lib/errors.ts (HTTP 4xx, PGRST*, P0001 = RPC raise exception, 42*/22*/23*); QueryClient retry uses it. 2 new tests. Note: RPC app codes arrive as code P0001, not their own name. |
 | 2026-10-25 | B-07 | _pending_ | PDF built once per order; auth/auto-login effects guarded by refs; patient/lab data memoized |
+| 2026-10-25 | B-08 | _pending_ | Searches quoted via ilikeAny (also useOrders.ts); checked on local PostgREST: comma no longer errors, % and _ literal |
+| 2026-10-25 | M-06 | _pending_ | ◐ postgrest.ts + errors.ts done; json.ts goes with B-05 (Phase 6), form pattern with B-09 |

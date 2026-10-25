@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
+import { ilikeAny } from "@/lib/postgrest";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 
 export function useBillingSummary(page: number, search: string, statusFilter: string, monthFilter: string) {
@@ -45,8 +46,7 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
       }
 
       if (search.trim()) {
-        const term = `%${search.trim()}%`;
-        query = query.or(`first_name.ilike.${term},last_name.ilike.${term},id_number.ilike.${term}`, { foreignTable: "patients" });
+        query = query.or(ilikeAny(["first_name", "last_name", "id_number"], search), { foreignTable: "patients" });
       }
 
       const [{ data: ordersPage, error: pageError, count }, { data: allOrders, error: allError }] = await Promise.all([

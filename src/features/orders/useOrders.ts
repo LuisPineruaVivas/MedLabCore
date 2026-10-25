@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
+import { ilikeAny } from "@/lib/postgrest";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { OrderWithPatient, OrderStatus } from "./schemas";
 import { toast } from "@/hooks/use-toast";
@@ -171,11 +172,7 @@ export function useOrdersList(
       }
 
       if (searchTerm) {
-        const searchFilter = `%${searchTerm}%`;
-        query = query.or(
-          `first_name.ilike.${searchFilter},last_name.ilike.${searchFilter},id_number.ilike.${searchFilter}`,
-          { foreignTable: "patients" }
-        );
+        query = query.or(ilikeAny(["first_name", "last_name", "id_number"], searchTerm), { foreignTable: "patients" });
       }
 
       const { data, error, count } = await query.range(offset, offset + pageSize - 1);

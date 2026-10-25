@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
+import { ilikeAny } from "@/lib/postgrest";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
@@ -39,8 +40,7 @@ export function usePatientsList(page: number, search: string) {
         .order("created_at", { ascending: false });
 
       if (search.trim()) {
-        const filter = `%${search.trim()}%`;
-        query = query.or(`first_name.ilike.${filter},last_name.ilike.${filter},id_number.ilike.${filter}`);
+        query = query.or(ilikeAny(["first_name", "last_name", "id_number"], search));
       }
 
       const { data, error, count } = await query.range(offset, offset + pageSize - 1);
@@ -133,7 +133,7 @@ export function usePatientSearch(search: string) {
         .from("patients")
         .select("id, id_number, first_name, last_name, date_of_birth, gender, phone")
         .eq("org_id", orgId!)
-        .or(`id_number.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`)
+        .or(ilikeAny(["id_number", "first_name", "last_name"], search))
         .limit(10);
 
       if (error) throw error;
