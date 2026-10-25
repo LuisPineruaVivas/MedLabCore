@@ -71,7 +71,7 @@ export function AppSidebar() {
       { label: "Cuentas por cobrar", icon: HandCoins, path: "/erp/accounts-receivable", show: isErpEnabled && canManageFinances },
       { label: "Caja", icon: Calculator, path: "/erp/cash-register", show: isErpEnabled && canManageCashRegister },
       { label: "Inventario", icon: Boxes, path: "/erp/inventory", show: isErpEnabled && canManageInventory },
-      { label: "Reportes", icon: BarChart3, path: "/erp/reports", show: isErpEnabled && (canViewFinancialReports || canManageInventory) },
+      { label: "Reportes", icon: BarChart3, path: "/erp/reports", show: isErpEnabled && canViewFinancialReports },
       { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
       /*{ label: "Bitácora", icon: ClipboardList, path: "/audit-log", show: profile?.role === "lab_admin" },*/
       { label: "Configuracion", icon: Settings, path: "/settings", show: permissions.canViewSettings },

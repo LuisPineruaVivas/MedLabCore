@@ -1,4 +1,4 @@
-import { computeWac, formatQuantity, getLowStockItems, isLowStock, matchesItemSearch, totalInventoryValue } from "./inventory";
+import { computeWac, formatQuantity, getLowStockItems, isLowStock, matchesItemSearch, toStockUnits, totalInventoryValue } from "./inventory";
 
 describe("inventory calculations", () => {
   it("recalculates the weighted average cost like the plan example", () => {
@@ -39,5 +39,13 @@ describe("inventory calculations", () => {
     expect(matchesItemSearch(item, "r-00")).toBe(true);
     expect(matchesItemSearch(item, "guantes")).toBe(false);
     expect(matchesItemSearch(item, "  ")).toBe(true);
+  });
+
+  it("converts purchases entered by package into stock units", () => {
+    // 2 packs of 10 syringes at $5 per pack = 20 syringes at $0.50 each.
+    expect(toStockUnits(2, 5, 10, true)).toEqual({ quantity: 20, unitCost: 0.5 });
+    expect(toStockUnits(2, 5, 10, false)).toEqual({ quantity: 2, unitCost: 5 });
+    expect(toStockUnits(3, 9, 1, true)).toEqual({ quantity: 3, unitCost: 9 });
+    expect(toStockUnits(1, 10, 3, true)).toEqual({ quantity: 3, unitCost: 3.3333 });
   });
 });

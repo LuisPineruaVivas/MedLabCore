@@ -12,12 +12,20 @@ create function pg_temp.act_as(p_user uuid) returns void language sql as $$
 $$;
 
 create function pg_temp.expect_error(p_sql text, p_pattern text) returns void language plpgsql as $$
+declare v_failed boolean := false;
 begin
-  execute p_sql;
-  raise exception 'Expected error matching "%" but statement succeeded: %', p_pattern, p_sql;
-exception when others then
-  if sqlerrm not like '%' || p_pattern || '%' then
-    raise exception 'Expected error matching "%" but got "%" for: %', p_pattern, sqlerrm, p_sql;
+  -- Run the statement in its own block so its success cannot be caught below
+  -- and mistaken for the expected error.
+  begin
+    execute p_sql;
+  exception when others then
+    v_failed := true;
+    if sqlerrm not like '%' || p_pattern || '%' then
+      raise exception 'Expected error matching "%" but got "%" for: %', p_pattern, sqlerrm, p_sql;
+    end if;
+  end;
+  if not v_failed then
+    raise exception 'Expected error matching "%" but statement succeeded: %', p_pattern, p_sql;
   end if;
 end;
 $$;
@@ -304,7 +312,11 @@ begin
   perform pg_temp.assert_eq((v->'by_test'->0->>'cost_usd')::numeric, 0.53, 'exam cost');
 end $$;
 
+-- Reports are for lab admins only; bioanalysts manage stock from Inventory.
 select pg_temp.act_as(pg_temp.id('bioA'));
+select pg_temp.expect_error(format('select public.get_erp_inventory_summary(%L)', pg_temp.id('orgA')), 'ERP_PERMISSION_DENIED');
+
+select pg_temp.act_as(pg_temp.id('adminA'));
 do $$
 declare v jsonb := public.get_erp_inventory_summary(pg_temp.id('orgA'), current_date, current_date);
 begin

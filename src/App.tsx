@@ -125,6 +125,8 @@ const App = () => (
                   </Route>
                   <Route element={<AllowedRolesGuard roles={["lab_admin", "bioanalyst", "super_admin"]} />}>
                     <Route path="/erp/inventory" element={<InventoryPage />} />
+                  </Route>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
                     <Route path="/erp/reports" element={<FinancialDashboardPage />} />
                   </Route>
                 </Route>

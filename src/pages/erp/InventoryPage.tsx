@@ -176,7 +176,7 @@ export default function InventoryPage() {
       <Dialog open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-auto">
           <DialogHeader><DialogTitle>{editing ? "Editar insumo" : "Nuevo insumo"}</DialogTitle></DialogHeader>
-          <ItemForm item={editing} pending={save.isPending} onSubmit={handleSave} />
+          {editing !== undefined && <ItemForm key={editing?.id ?? "new"} item={editing} pending={save.isPending} onSubmit={handleSave} />}
         </DialogContent>
       </Dialog>
 

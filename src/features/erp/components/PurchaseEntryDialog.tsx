@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { purchaseSchema, type PurchaseFormValues } from "../schemas/inventorySch
 import type { Item } from "../types";
 import { formatCurrency, formatUnitCost } from "../utils/currencyFormatters";
 import { getErpErrorMessage } from "../utils/erpErrors";
-import { computeWac, formatQuantity, UNIT_LABELS } from "../utils/inventory";
+import { computeWac, formatQuantity, toStockUnits, UNIT_LABELS } from "../utils/inventory";
 
 interface PurchaseEntryDialogProps {
   orgId: string | null;
@@ -38,19 +38,31 @@ export function PurchaseEntryDialog({ orgId, items, itemId, open, onOpenChange }
   const register = useRegisterPurchase(orgId);
   const form = useForm<PurchaseFormValues>({ resolver: zodResolver(purchaseSchema), defaultValues: emptyValues(itemId) });
 
+  const [byPackage, setByPackage] = useState(false);
+
   useEffect(() => {
-    if (open) form.reset(emptyValues(itemId));
+    if (open) {
+      form.reset(emptyValues(itemId));
+      setByPackage(false);
+    }
   }, [open, itemId, form]);
 
   const activeItems = items.filter((item) => item.is_active);
   const selected = items.find((item) => item.id === form.watch("item_id"));
-  const quantity = Number(form.watch("quantity")) || 0;
-  const unitCost = Number(form.watch("unit_cost")) || 0;
+  const unitsPerPackage = Number(selected?.units_per_package ?? 1);
+  const canBuyByPackage = unitsPerPackage > 1;
+  const usePackages = canBuyByPackage && byPackage;
+  const enteredQuantity = Number(form.watch("quantity")) || 0;
+  const enteredCost = Number(form.watch("unit_cost")) || 0;
+  // What actually reaches stock: always in the item's unit of measure.
+  const { quantity, unitCost } = toStockUnits(enteredQuantity, enteredCost, unitsPerPackage, usePackages);
+  const unitLabel = selected ? UNIT_LABELS[selected.unit_of_measure] : "";
   const previewWac = selected && quantity > 0 ? computeWac(Number(selected.current_stock), Number(selected.unit_cost), quantity, unitCost) : null;
   const error = (name: keyof PurchaseFormValues) => form.formState.errors[name]?.message;
 
   function onSubmit(values: PurchaseFormValues) {
-    register.mutate(values, {
+    const converted = toStockUnits(values.quantity, values.unit_cost, unitsPerPackage, usePackages);
+    register.mutate({ ...values, quantity: converted.quantity, unit_cost: converted.unitCost }, {
       onSuccess: (result) => {
         toast.success(`Compra registrada. Stock: ${formatQuantity(result?.new_stock, selected?.unit_of_measure)}.`);
         onOpenChange(false);
@@ -79,14 +91,27 @@ export function PurchaseEntryDialog({ orgId, items, itemId, open, onOpenChange }
             </Select>
             <p className="text-xs text-destructive">{error("item_id")}</p>
           </div>
+          {canBuyByPackage && (
+            <div className="space-y-1">
+              <Label>Registrar compra por</Label>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Registrar compra por">
+                <Button type="button" size="sm" role="radio" aria-checked={!usePackages} variant={usePackages ? "outline" : "default"} onClick={() => setByPackage(false)}>
+                  {unitLabel}
+                </Button>
+                <Button type="button" size="sm" role="radio" aria-checked={usePackages} variant={usePackages ? "default" : "outline"} onClick={() => setByPackage(true)}>
+                  Empaques de {formatQuantity(unitsPerPackage)} {unitLabel}
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="purchase-qty">Cantidad {selected ? `(${UNIT_LABELS[selected.unit_of_measure]})` : ""}</Label>
+              <Label htmlFor="purchase-qty">Cantidad {usePackages ? "(empaques)" : selected ? `(${unitLabel})` : ""}</Label>
               <Input id="purchase-qty" type="number" min="0" step="any" {...form.register("quantity")} />
               <p className="text-xs text-destructive">{error("quantity")}</p>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="purchase-cost">Costo unitario USD</Label>
+              <Label htmlFor="purchase-cost">{usePackages ? "Costo por empaque USD" : "Costo unitario USD"}</Label>
               <Input id="purchase-cost" type="number" min="0" step="0.0001" {...form.register("unit_cost")} />
               <p className="text-xs text-destructive">{error("unit_cost")}</p>
             </div>
@@ -114,10 +139,15 @@ export function PurchaseEntryDialog({ orgId, items, itemId, open, onOpenChange }
           {selected && (
             <div className="rounded-lg border bg-muted/40 p-3 text-sm">
               <p>Stock actual: <b>{formatQuantity(selected.current_stock, selected.unit_of_measure)}</b> · Costo promedio: <b>{formatUnitCost(selected.unit_cost)}</b></p>
+              {usePackages && enteredQuantity > 0 && (
+                <p>
+                  {formatQuantity(enteredQuantity)} empaques × {formatQuantity(unitsPerPackage)} = <b>{formatQuantity(quantity, selected.unit_of_measure)}</b> · Costo por {unitLabel}: <b>{formatUnitCost(unitCost)}</b>
+                </p>
+              )}
               {previewWac !== null && (
                 <p>
                   Después de la compra: <b>{formatQuantity(Number(selected.current_stock) + quantity, selected.unit_of_measure)}</b> · Nuevo costo promedio: <b>{formatUnitCost(previewWac)}</b>
-                  {" "}· Total compra: <b>{formatCurrency(quantity * unitCost)}</b>
+                  {" "}· Total compra: <b>{formatCurrency(enteredQuantity * enteredCost)}</b>
                 </p>
               )}
             </div>

@@ -45,6 +45,17 @@ export function computeWac(currentStock: number, currentCost: number, quantity: 
   return round((currentStock * currentCost + quantity * unitCost) / newStock, 4);
 }
 
+/**
+ * Stock and recipes are always counted in the item's unit of measure. A purchase
+ * may be entered by package instead: quantity in packages and cost per package,
+ * converted here to stock units and cost per unit.
+ */
+export function toStockUnits(quantity: number, unitCost: number, unitsPerPackage: number, byPackage: boolean) {
+  const perPackage = Number(unitsPerPackage) > 0 ? Number(unitsPerPackage) : 1;
+  if (!byPackage || perPackage === 1) return { quantity: round(quantity, 4), unitCost: round(unitCost, 4) };
+  return { quantity: round(quantity * perPackage, 4), unitCost: round(unitCost / perPackage, 4) };
+}
+
 export function isLowStock(item: Pick<Item, "current_stock" | "min_stock" | "is_active">) {
   return item.is_active && Number(item.min_stock) > 0 && Number(item.current_stock) <= Number(item.min_stock);
 }

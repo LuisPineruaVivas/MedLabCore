@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -33,31 +32,30 @@ interface ItemFormProps {
   onSubmit: (values: ItemFormValues) => void;
 }
 
+function itemFormValues(item?: Item | null): ItemFormValues {
+  if (!item) return defaults;
+  return {
+    ...defaults,
+    code: item.code ?? "",
+    name: item.name,
+    description: item.description ?? "",
+    category: item.category,
+    unit_of_measure: item.unit_of_measure,
+    units_per_package: Number(item.units_per_package),
+    min_stock: Number(item.min_stock),
+    max_stock: item.max_stock === null ? "" : Number(item.max_stock),
+    storage_condition: item.storage_condition ?? "",
+    is_active: item.is_active,
+    is_trackable: item.is_trackable,
+  };
+}
+
+// Mount with key={item?.id ?? "new"}: values are read once at mount, so the
+// selects always show the saved category and unit when editing.
 export function ItemForm({ item, pending, onSubmit }: ItemFormProps) {
-  const form = useForm<ItemFormValues>({ resolver: zodResolver(itemSchema), defaultValues: defaults });
+  const form = useForm<ItemFormValues>({ resolver: zodResolver(itemSchema), defaultValues: itemFormValues(item) });
   const isNew = !item;
-
-  useEffect(() => {
-    form.reset(
-      item
-        ? {
-            ...defaults,
-            code: item.code ?? "",
-            name: item.name,
-            description: item.description ?? "",
-            category: item.category,
-            unit_of_measure: item.unit_of_measure,
-            units_per_package: Number(item.units_per_package),
-            min_stock: Number(item.min_stock),
-            max_stock: item.max_stock === null ? "" : Number(item.max_stock),
-            storage_condition: item.storage_condition ?? "",
-            is_active: item.is_active,
-            is_trackable: item.is_trackable,
-          }
-        : defaults
-    );
-  }, [item, form]);
-
+  const unitLabel = UNIT_LABELS[form.watch("unit_of_measure")] ?? "";
   const error = (name: keyof ItemFormValues) => form.formState.errors[name]?.message;
 
   return (
@@ -89,10 +87,12 @@ export function ItemForm({ item, pending, onSubmit }: ItemFormProps) {
               {Object.entries(UNIT_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">La unidad en la que lo usas: el stock y las recetas se cuentan así.</p>
         </div>
         <div className="space-y-1">
           <Label htmlFor="item-package">Unidades por empaque</Label>
           <Input id="item-package" type="number" min="0.01" step="0.01" {...form.register("units_per_package")} />
+          <p className="text-xs text-muted-foreground">Cuántos {unitLabel} trae cada caja o paquete. Permite registrar compras por empaque.</p>
           <p className="text-xs text-destructive">{error("units_per_package")}</p>
         </div>
         <div className="space-y-1">
@@ -121,12 +121,12 @@ export function ItemForm({ item, pending, onSubmit }: ItemFormProps) {
           <p className="mb-2 text-xs text-muted-foreground">Se registra en el Kardex como movimiento de inventario inicial.</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="item-initial-stock">Cantidad</Label>
+              <Label htmlFor="item-initial-stock">Cantidad ({unitLabel})</Label>
               <Input id="item-initial-stock" type="number" min="0" step="any" {...form.register("initial_stock")} />
               <p className="text-xs text-destructive">{error("initial_stock")}</p>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="item-initial-cost">Costo unitario USD</Label>
+              <Label htmlFor="item-initial-cost">Costo por {unitLabel} USD</Label>
               <Input id="item-initial-cost" type="number" min="0" step="0.0001" {...form.register("initial_unit_cost")} />
               <p className="text-xs text-destructive">{error("initial_unit_cost")}</p>
             </div>

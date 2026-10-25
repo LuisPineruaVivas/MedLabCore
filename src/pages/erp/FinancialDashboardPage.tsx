@@ -22,17 +22,18 @@ import { InventoryReportPDF } from "@/lib/inventoryReportPDF";
 
 type ReportTab = "finance" | "profitability" | "inventory" | "receivables";
 
-const TABS: { id: ReportTab; label: string; icon: typeof BarChart3; financial: boolean }[] = [
-  { id: "finance", label: "Finanzas", icon: BarChart3, financial: true },
-  { id: "profitability", label: "Rentabilidad", icon: TrendingUp, financial: true },
-  { id: "receivables", label: "Cuentas por cobrar", icon: HandCoins, financial: true },
-  { id: "inventory", label: "Inventario", icon: Boxes, financial: false },
+const TABS: { id: ReportTab; label: string; icon: typeof BarChart3 }[] = [
+  { id: "finance", label: "Finanzas", icon: BarChart3 },
+  { id: "profitability", label: "Rentabilidad", icon: TrendingUp },
+  { id: "receivables", label: "Cuentas por cobrar", icon: HandCoins },
+  { id: "inventory", label: "Inventario", icon: Boxes },
 ];
 
 export default function FinancialDashboardPage() {
   const { orgId, organization } = useCurrentOrgContext();
-  const { canViewFinancialReports, canManageInventory } = useErpModule();
-  const tabs = TABS.filter((tab) => (tab.financial ? canViewFinancialReports : canManageInventory));
+  const { canViewFinancialReports } = useErpModule();
+  // Every report, including inventory, is for lab admins; bioanalysts manage stock from Inventory.
+  const tabs = canViewFinancialReports ? TABS : [];
   const [activeTab, setActiveTab] = useState<ReportTab>(tabs[0]?.id ?? "inventory");
   const [period, setPeriod] = useState<ReportPeriod>(() => buildPeriod("this_month"));
   const [exporting, setExporting] = useState(false);
@@ -44,8 +45,8 @@ export default function FinancialDashboardPage() {
   const profitability = useProfitabilityReport(orgId, period, canViewFinancialReports && (activeTab === "finance" || activeTab === "profitability"));
   const [receivablesLimit, setReceivablesLimit] = useState(200);
   const receivables = useReceivablesReport(orgId, canViewFinancialReports && isFinancialTab, receivablesLimit);
-  const inventory = useInventorySummary(orgId, period, canManageInventory && activeTab === "inventory");
-  const { data: items = [] } = useItems(canManageInventory && activeTab === "inventory" ? orgId : null);
+  const inventory = useInventorySummary(orgId, period, canViewFinancialReports && activeTab === "inventory");
+  const { data: items = [] } = useItems(canViewFinancialReports && activeTab === "inventory" ? orgId : null);
 
   const activeQuery = { finance: financial, profitability, receivables, inventory }[activeTab];
 
