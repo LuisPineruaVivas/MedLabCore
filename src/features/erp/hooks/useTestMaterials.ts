@@ -24,7 +24,7 @@ function useInvalidateRecipe(orgId: string | null, templateId: string | null | u
   const client = useQueryClient();
   return () => {
     client.invalidateQueries({ queryKey: queryKeys.erp.testMaterials(orgId, templateId) });
-    client.invalidateQueries({ queryKey: ["erp", "bom-preview"] });
+    client.invalidateQueries({ queryKey: queryKeys.erp.bomPreviewAll });
   };
 }
 

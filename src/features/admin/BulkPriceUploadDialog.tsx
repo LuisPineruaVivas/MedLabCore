@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -49,7 +50,7 @@ import {
 // ── Global templates query ────────────────────────────────────────
 function useGlobalTemplates() {
   return useQuery({
-    queryKey: ["global-templates-for-bulk"],
+    queryKey: queryKeys.admin.globalTemplatesForBulk,
     queryFn: async (): Promise<GlobalTemplate[]> => {
       const { data, error } = await supabase
         .from("test_templates")

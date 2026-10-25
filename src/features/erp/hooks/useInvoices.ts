@@ -62,7 +62,7 @@ export function useInvoice(invoiceId: string | undefined) {
 /** Orders of the lab that still have no invoice (created before the ERP was enabled). */
 export function useBackfillPreview(orgId: string | null, enabled: boolean) {
   return useQuery({
-    queryKey: ["erp", "backfill-preview", orgId ?? "none"],
+    queryKey: queryKeys.erp.backfillPreview(orgId),
     enabled: enabled && !!orgId,
     queryFn: async (): Promise<number> => {
       const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId, p_from: null, p_dry_run: true });
@@ -81,9 +81,9 @@ export function useBackfillInvoices(orgId: string | null) {
       return Number(data?.orders ?? 0);
     },
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["erp", "backfill-preview", orgId ?? "none"] });
-      client.invalidateQueries({ queryKey: ["erp", "invoices", orgId ?? "none"] });
-      client.invalidateQueries({ queryKey: ["erp", "report"] });
+      client.invalidateQueries({ queryKey: queryKeys.erp.backfillPreview(orgId) });
+      client.invalidateQueries({ queryKey: queryKeys.erp.invoicesAll(orgId) });
+      client.invalidateQueries({ queryKey: queryKeys.erp.reportsAll });
     },
   });
 }

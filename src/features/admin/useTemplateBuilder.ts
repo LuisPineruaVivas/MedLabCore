@@ -67,7 +67,7 @@ export function buildTemplateUpsertPayload(
 
 export function useTemplateById(id: string | undefined) {
   return useQuery({
-    queryKey: ["test-template", id],
+    queryKey: queryKeys.testTemplates.detail(id),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("test_templates")
@@ -123,9 +123,9 @@ export function useSaveTemplate() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.list(variables.orgId, { scope: "admin" }) });
-      queryClient.invalidateQueries({ queryKey: ["test-template", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.detail(variables.id) });
     },
   });
 }

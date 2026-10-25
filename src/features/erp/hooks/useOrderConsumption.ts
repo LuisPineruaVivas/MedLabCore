@@ -40,7 +40,7 @@ export function useConfirmOrderConsumption(orgId: string | null | undefined) {
     onSuccess: (_data, values) => {
       getOrderStatusInvalidationTargets(values.orderId, orgId).forEach((queryKey) => client.invalidateQueries({ queryKey }));
       client.invalidateQueries({ queryKey: queryKeys.erp.items(orgId) });
-      client.invalidateQueries({ queryKey: ["erp", "kardex"] });
+      client.invalidateQueries({ queryKey: queryKeys.erp.kardexAll });
       client.invalidateQueries({ queryKey: queryKeys.erp.bomPreview(values.orderId) });
     },
   });

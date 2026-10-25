@@ -32,7 +32,7 @@ export function useToggleAdminTestTemplate() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.all });
     },
   });
 }
@@ -50,7 +50,7 @@ export function useDeleteAdminTestTemplate() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.all });
     },
   });
 }

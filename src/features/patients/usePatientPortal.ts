@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import type { OrderItemRow } from "@/features/orders/schemas";
 
@@ -87,7 +88,7 @@ export function usePatientSession() {
 
 export function usePatientOrders(patientId: string | null, pin: string | null) {
   return useQuery({
-    queryKey: ["patient-orders", patientId, pin],
+    queryKey: queryKeys.patientPortal.orders(patientId, pin),
     queryFn: async (): Promise<OrderWithItems[]> => {
       if (!patientId) return [];
 

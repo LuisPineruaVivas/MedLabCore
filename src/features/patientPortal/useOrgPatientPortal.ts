@@ -1,6 +1,7 @@
 // Nueva función/hook simple para el portal público
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface PublicOrgBrand {
   name: string;
@@ -22,7 +23,7 @@ const publicRpc = supabase as unknown as {
 
 export function usePublicOrgBrand(orgId: string | null) {
   return useQuery({
-    queryKey: ["public-org", orgId],
+    queryKey: queryKeys.patientPortal.publicOrg(orgId),
     queryFn: async () => {
       if (!orgId) return null;
       // Anonymous visitors cannot read organizations; the RPC returns only branding columns.

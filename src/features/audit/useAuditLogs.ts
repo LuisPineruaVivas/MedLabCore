@@ -103,7 +103,7 @@ export function useOrgUsersForFilter() {
   const { orgId } = useCurrentOrgContext();
 
   return useQuery({
-    queryKey: ["org-users-filter", orgId ?? "none"],
+    queryKey: queryKeys.auditLogs.orgUsers(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")

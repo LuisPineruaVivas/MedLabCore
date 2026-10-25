@@ -53,7 +53,7 @@ function useRefreshCash(orgId: string | null) {
   return () => {
     client.invalidateQueries({ queryKey: queryKeys.erp.cashSession(orgId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.cashSessions(orgId) });
-    client.invalidateQueries({ queryKey: ["erp", "cash-summary"] });
+    client.invalidateQueries({ queryKey: queryKeys.erp.cashSummaryAll });
   };
 }
 

@@ -21,11 +21,11 @@ function useInvalidatePayments(orgId: string | null, invoiceId: string | undefin
   const client = useQueryClient();
   return () => {
     client.invalidateQueries({ queryKey: queryKeys.erp.invoice(invoiceId) });
-    client.invalidateQueries({ queryKey: ["erp", "invoices", orgId ?? "none"] });
+    client.invalidateQueries({ queryKey: queryKeys.erp.invoicesAll(orgId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.payments(invoiceId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.schedules(invoiceId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.receivables(orgId) });
-    client.invalidateQueries({ queryKey: ["erp", "cash-summary"] });
+    client.invalidateQueries({ queryKey: queryKeys.erp.cashSummaryAll });
   };
 }
 

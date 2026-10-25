@@ -173,7 +173,7 @@ export function useBulkUpsertPrices() {
     },
     onSuccess: (_, variables) => {
       // Invalidate templates for this org
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.all });
       queryClient.invalidateQueries({
         queryKey: queryKeys.testTemplates.list(variables.orgId, { scope: "admin" }),
       });
