@@ -82,7 +82,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-07 | Dead code & stale config | Maint | 🟢 | S | ☐ |
 | M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☐ |
 | T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ☐ |
-| T-02 | One command to run the SQL test suites | Tests | 🟠 | S | ☐ |
+| T-02 | One command to run the SQL test suites | Tests | 🟠 | S | ☑ |
 | T-03 | Component tests for critical flows | Tests | 🟢 | M | ☐ |
 
 ### Suggested order (phases)
@@ -631,3 +631,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-08 | ec0208e | Follow-up from preview test: full-name search ("carlos perez", "perez, carlos") now matches word by word via matchAllWords; checked on local PostgREST incl. orders/billing joins |
 | 2026-10-25 | B-01, B-02, P-03 | efe72c0 (+705925d) | ◐ Totals via get_billing_totals / get_affiliate_pending_balance (SECURITY INVOKER, caller's RLS); affiliate orders paginated (50) with selection kept across pages. SQL test: 1,200 / 1,100 orders exact, other lab sees 0. Awaiting db push + preview test |
 | 2026-10-25 | B-03, P-04 | b68116c (+705925d) | ◐ "Guardar todo" = one save_order_results call (one transaction, one refetch); Spanish error messages. SQL test: all-or-nothing, ORDER_RESULTS_LOCKED kept, other lab refused. Awaiting db push + preview test |
+| 2026-10-25 | T-02 | 302f6cd | npm run test:db (scripts/test-db.mjs): 7 suites PASS, auto-prepends unapplied migrations, Caracas tz; negative control (lock trigger dropped) → FAIL. Also npm run dev:local (.env.localdb, not committed) + local DB migrated to 20261025010000 |

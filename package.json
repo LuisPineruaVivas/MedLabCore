@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --mode localdb",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "update-types": "npx supabase gen types typescript --project-id mgeateznuhmhgqemaphj > src/integrations/supabase/types.ts"
+    "update-types": "npx supabase gen types typescript --project-id mgeateznuhmhgqemaphj > src/integrations/supabase/types.ts",
+    "test:db": "node scripts/test-db.mjs"
   },
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
