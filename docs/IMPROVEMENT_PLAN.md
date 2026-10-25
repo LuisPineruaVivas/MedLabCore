@@ -60,7 +60,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | P-05 | Lists use `select("*")` / unbounded fetches | Perf | 🟢 | S | ☐ |
 | P-06 | Main entry chunk 471 KB | Perf | 🟢 | M | ☐ |
 | S-01 | No security headers (CSP, frame-ancestors, …) on the site | Sec | 🔴 | M | ☐ |
-| S-02 | Patient ID number + PIN sent to Sentry in URLs | Sec | 🔴 | S | ☐ |
+| S-02 | Patient ID number + PIN sent to Sentry in URLs | Sec | 🔴 | S | ☑ |
 | S-03 | Portal PIN guessable at scale (no server throttle) and in URLs | Sec | 🟠 | M | ☐ |
 | S-04 | Edge functions: CORS `*`, raw errors, Gemini key in URL | Sec | 🟠 | S | ☐ |
 | S-05 | Remove temporary anon branding grant after `main` release | Sec | 🟠 | S | ☐ |
@@ -395,7 +395,8 @@ Covered by **B-01** and **B-02**: totals move to SQL aggregates, so pages downlo
 - **After:**
   1. Table `portal_attempts(id_number_hash, window_start, count)` plus a check in `portal_authenticate`: refuse after e.g. 10 failures per ID number per hour (`PORTAL_LOCKED`).
   2. New orders get longer PINs (e.g. 10–12 characters from an unambiguous alphabet). Old PINs keep working.
-  3. Share links use the URL **fragment** (`#dni=…&pin=…`), which is never sent to servers or Referer headers, or a short-lived token.
+  3. *(Moved here from S-02.)* After reading `dni`/`pin` from the URL, keep them in state and remove them from the address bar (`setSearchParams(…, { replace: true })`) in both `PatientPortalPage` and `ReportViewerPage`, so they don't stay in browser history.
+  4. Share links use the URL **fragment** (`#dni=…&pin=…`), which is never sent to servers or Referer headers, or a short-lived token.
 - **Tests:** SQL test: 10 wrong PINs → locked; the right PIN afterwards → still locked until the window ends; a different patient is unaffected. Portal links from WhatsApp still open.
 
 ### S-04 🟠 Edge functions: CORS `*`, raw errors, Gemini key in URL
@@ -609,3 +610,4 @@ Create small, tested helpers so fixes are made once:
 |---|---|---|---|
 | 2026-10-25 | — | `716e3c9` | Plan created from code review of `dev`. ERP pilot fixes (B2/B4/E1 from the ERP checklist) and the `expect_error` test-helper fix were already done in `716e3c9` / `95e1807`. |
 | 2026-10-25 | P-01 | _pending_ | ReportViewerPage lazy-loaded. First-load JS ~2.4 MB → 819 KB; react-pdf no longer requested on /login (checked in browser on a production build). |
+| 2026-10-25 | S-02 | _pending_ | beforeSend/beforeSendTransaction/beforeBreadcrumb replace dni/pin with [filtered]; replay explicitly masked; sendDefaultPii false (src/lib/sentryScrub.ts + 3 tests). Address-bar cleanup moved to S-03. |
