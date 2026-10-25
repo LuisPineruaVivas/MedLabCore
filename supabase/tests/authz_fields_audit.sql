@@ -7,12 +7,20 @@
 begin;
 
 create function pg_temp.expect_error(p_sql text, p_pattern text) returns void language plpgsql as $$
+declare v_failed boolean := false;
 begin
-  execute p_sql;
-  raise exception 'Expected error matching "%" but statement succeeded: %', p_pattern, p_sql;
-exception when others then
-  if sqlerrm not like '%' || p_pattern || '%' then
-    raise exception 'Expected error matching "%" but got "%" for: %', p_pattern, sqlerrm, p_sql;
+  -- Run the statement in its own block so its success cannot be caught below
+  -- and mistaken for the expected error.
+  begin
+    execute p_sql;
+  exception when others then
+    v_failed := true;
+    if sqlerrm not like '%' || p_pattern || '%' then
+      raise exception 'Expected error matching "%" but got "%" for: %', p_pattern, sqlerrm, p_sql;
+    end if;
+  end;
+  if not v_failed then
+    raise exception 'Expected error matching "%" but statement succeeded: %', p_pattern, p_sql;
   end if;
 end;
 $$;
