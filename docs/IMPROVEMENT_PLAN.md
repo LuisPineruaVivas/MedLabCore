@@ -22,7 +22,10 @@ This file is the **tracker**: update the status column and the "Log" at the bott
    ```
    SQL changes: run the suites in `supabase/tests/` against the local DB (see T-02).
 4. Database changes are **new migrations** (never edit deployed ones). Production: backup → `supabase db push --dry-run` → `supabase db push` → verify.
-5. Test on the Vercel `dev` preview (it uses the **production database** — use Lab Instumed), then release `dev` → `main`.
+5. **Local-first (decided 2026-10-25):** nothing is pushed to GitHub and nothing goes to the production database until the **whole plan** is done.
+   - Every phase is tested locally: the app runs against the local Supabase (`npm run dev:local`, see T-02), with new migrations applied to the local DB only.
+   - At the end there is one release: backup → `supabase db push --dry-run` → `supabase db push` → push `dev` → test on the preview (Lab Instumed) → `dev` → `main` → S-05.
+   - Items marked ◐ "awaiting db push + preview test" are finished in code and tested locally; they become ☑ after that release.
 
 ### Baseline (2026-10-25, `716e3c9`)
 
@@ -88,12 +91,13 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 |---|---|---|
 | **1 · Quick wins** (≈ 1–2 days) | P-01, S-02, B-04, B-07, B-08 (+M-06 helpers), B-10, S-06, M-04, M-05 | Small, safe, big effect (load time, privacy) |
 | **2 · Money correctness** | B-01, B-02, P-03, B-03, P-04 | Wrong totals are the most harmful bugs |
-| **3 · Release `dev` → `main`**, then S-05 | — | Ship phases 1–2 together with the ERP |
+| ~~3 · Release~~ → moved to the end | — | Decided 2026-10-25: one release after all phases, tested locally first (see §0.5) |
 | **4 · Safety net** | T-01, T-02, M-03 (step 1: fix the 52 errors, typecheck in CI), B-06 | Prevents regressions in the big refactors |
 | **5 · Security hardening** | S-01, S-04, S-03, S-07, S-08 | Needs testing on preview with real flows |
-| **6 · Reports consolidation** | M-01 (+B-05), P-02 | Largest refactor; needs golden tests |
+| **6 · Reports consolidation** ⚠️ | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
 | **7 · Structure & typing** | M-02, S-10, B-09, M-03 (strict steps), M-07, M-08, T-03 | Ongoing |
 | **8 · Verify** | S-09, S-11 | Architecture change + independent re-audit |
+| **9 · Release** | backup, db push, push `dev`, preview test, `dev` → `main`, S-05 | Everything at once, after local testing |
 
 ---
 
@@ -472,6 +476,11 @@ After phases 1–5, run the security audit again as **run-2**. It reuses run-1's
 ## 4. Refactoring for maintainability
 
 ### M-01 🔴 Report generators duplicated three times (≈ 3,200 lines)
+> ⚠️ **Constraint from the owner (2026-10-25):** the differences between the default, Rivalta and Palermo reports were **requested personally by each lab** and **must be kept exactly**, even when they look small. M-01 is only acceptable if every layout's output stays identical.
+> - Before touching anything, list every difference (`diff` the files) and confirm the list with the owner.
+> - Golden PDFs/text for each template must match byte-for-byte in text and visually in layout.
+> - Per-lab differences live in that lab's own layout/config, never as a shared default.
+> - **If identical output can't be guaranteed, mark M-01 ✖ and do only B-05 (safe JSON parsing) in each file.**
 - **Where:** `src/lib/unifiedTestReportPDF.tsx` (750), `UnifiedTestReportRivalta.tsx` (722), `UnifiedTestReportPalermo.tsx` (723), `testReportGenerator.tsx` (273), `testReportRivaltaGenerator.tsx` (388), `testReportPalermoGenerator.tsx` (388), plus `UnifiedTestReportWord.tsx`.
 - **Problem:** Rivalta and Palermo differ in **19 of 722 lines**. Their single-test generators differ in **2 of 388**. Every fix (e.g. B-05, microbiology, ranges) has to be made 3–4 times, and they've already drifted apart.
 - **Why:** each layout was created by copying the previous one.
