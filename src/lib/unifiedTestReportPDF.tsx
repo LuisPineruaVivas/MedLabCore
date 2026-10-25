@@ -38,7 +38,7 @@ interface ReportResultsData {
   hide_table_header?: boolean;
 }
 
-interface ReportOrderItem {
+export interface ReportOrderItem {
   category?: string;
   resolved_sort_order?: number;
   results_data?: string | ReportResultsData | null;
@@ -49,6 +49,8 @@ interface ReportOrderItem {
   } | null;
   test_name: string;
   method_name?: string | null;
+  /** Template schema attached by the caller for microbiology blocks. */
+  template_schema?: unknown;
 }
 
 interface UnifiedProps {
@@ -67,6 +69,7 @@ interface UnifiedProps {
     phone?: string;
     email?: string;
     logo?: string | null;
+    watermark?: string | null;
     primary_color?: string;
     report_footer_text?: string | null;
   };

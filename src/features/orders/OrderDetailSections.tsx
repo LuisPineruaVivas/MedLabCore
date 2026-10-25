@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { isMicrobiologyResult, type MicrobiologyResultsData, type SensitivityValue, type AntibiogramEntry } from '@/features/microbiology/types';
+import { isMicrobiologyResult, type MicrobiologyResultsData, type SensitivityValue, type AntibiogramEntry, type MicrobiologyFieldDef } from '@/features/microbiology/types';
 import { MicrobiologyResultForm } from '@/features/microbiology/MicrobiologyResultForm';
 import { getFieldResultMeta, sanitizeRangeInput } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
@@ -60,6 +60,7 @@ type ItemResultsData = OrderItemResultsState;
 type OrderItem = EditableOrderItem & {
   test_name?: string;
   price_at_order?: number;
+  template_schema?: { microbiology_fields?: MicrobiologyFieldDef[] } | null;
 };
 
 type OrderWithPatient = {

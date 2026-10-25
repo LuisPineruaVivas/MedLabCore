@@ -7,6 +7,8 @@ import { matchAllWords } from "@/lib/postgrest";
 import { pendingRpc } from "@/lib/pendingRpc";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { OrderWithPatient, OrderStatus } from "./schemas";
+import type { EditableOrderItem } from "./useOrderResultsEditor";
+import type { MicrobiologyFieldDef } from "@/features/microbiology/types";
 import { toast } from "@/hooks/use-toast";
 
 export interface CreateOrderItemInput {
@@ -245,10 +247,24 @@ export function useOrder(orderId: string | null) {
   });
 }
 
+/** An order item as loaded by useOrderItems: the selected columns plus derived fields. */
+export interface OrderDetailItem extends EditableOrderItem {
+  order_id: string;
+  template_id: string | null;
+  test_name: string;
+  price_at_order: number;
+  created_at: string;
+  parent_profile_id: string | null;
+  category: string;
+  template_schema: { microbiology_fields?: MicrobiologyFieldDef[] } | null;
+  resolved_sort_order: number;
+  [key: string]: unknown;
+}
+
 export function useOrderItems(orderId: string | null) {
   const { orgId } = useCurrentOrgContext();
 
-  return useQuery<Record<string, unknown>[]>({
+  return useQuery<OrderDetailItem[]>({
     queryKey: queryKeys.orders.items(orderId, orgId),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -299,7 +315,7 @@ export function useOrderItems(orderId: string | null) {
           category: item.test_templates?.category || "Pruebas Especiales",
           template_schema: templateSchema,
           resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
-        };
+        } as OrderDetailItem;
       });
     },
     enabled: !!orderId && !!orgId,

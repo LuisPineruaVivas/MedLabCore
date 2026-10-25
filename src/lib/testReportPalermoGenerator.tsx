@@ -257,7 +257,7 @@ export const TestReportPalermoPDF = ({ template, labData, patientData }: TestTem
 
         {/* Sections & Fields */}
         {template.result_type === "MICROBIOLOGY" ? (
-          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema)} />
+          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema as Parameters<typeof createMicrobiologyPreviewData>[0])} />
         ) : sections.map((section: TemplateSection) => (
           <View key={section.id}>
             {section.name === '' ? null : (

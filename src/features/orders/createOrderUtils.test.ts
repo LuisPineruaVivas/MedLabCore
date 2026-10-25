@@ -117,6 +117,7 @@ describe("createOrderUtils", () => {
 
     const receipt = buildOrderReceiptData({
       orderId: "ord-1",
+      order_seq: 42,
       selectedPatient: {
         first_name: "Ana",
         last_name: "Perez",
@@ -138,6 +139,7 @@ describe("createOrderUtils", () => {
     ]);
     expect(receipt.patientName).toBe("ANA PEREZ");
     expect(receipt.totalBs).toBe(1300);
+    expect(receipt.order_seq).toBe(42);
   });
 
   it("resolves exempted orders to zero without losing non-exempt totals", () => {

@@ -3,7 +3,9 @@ import {
   REPORT_TEMPLATES,
   getTestTemplateReportComponent,
   TEST_TEMPLATE_REPORT_TEMPLATES,
+  type UnifiedReportProps,
 } from "./orderReportDispatcher";
+import type { FC } from "react";
 import { UnifiedTestReportPDF } from "./unifiedTestReportPDF";
 import { UnifiedTestReportRivalta } from "./UnifiedTestReportRivalta";
 import { TestReportPDF } from "./testReportGenerator";
@@ -131,7 +133,7 @@ describe("orderReportDispatcher", () => {
 
       for (const ReportComponent of components) {
         expect(() => {
-          ReportComponent({
+          (ReportComponent as FC<UnifiedReportProps>)({
             orden: dummyOrder,
             orderItems: dummyOrderItems,
             patientData: dummyPatient,

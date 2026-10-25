@@ -5,6 +5,7 @@ import { MicrobiologyReportSection } from './MicrobiologyReportSection';
 import { getFieldResultMeta } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
+import type { ReportOrderItem } from "@/lib/unifiedTestReportPDF";
 
 Font.register({
   family: "Inter",
@@ -18,7 +19,7 @@ Font.registerHyphenationCallback((word) => [word]);
 
 interface UnifiedProps {
   orden: OrderRow;
-  orderItems: Array<Record<string, unknown>>;
+  orderItems: ReportOrderItem[];
   departmentOrder?: string[];
   patientData: {
     name: string;

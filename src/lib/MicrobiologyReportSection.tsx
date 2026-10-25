@@ -121,7 +121,7 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
   const validAntibiotics = isGermsMode ? (data.antibiogram || []).filter((ab) => {
     for (let i = 0; i < germCount; i++) {
       const sens = getGermSensitivity(ab, i);
-      if (sens && sens !== "") return true;
+      if (sens) return true;
     }
     return false;
   }) : [];

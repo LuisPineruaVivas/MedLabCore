@@ -181,7 +181,7 @@ export interface EditableOrderItem {
   is_profile_header?: boolean | null;
   test_method_id?: string | null;
   method_name?: string | null;
-  results_data?: OrderItemResultsState | string | null;
+  results_data?: OrderItemResultsState | MicrobiologyResultsData | string | null;
   test_templates?: {
     result_type?: string | null;
     [key: string]: unknown;
