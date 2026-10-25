@@ -619,3 +619,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | S-06 | 32bb938 | Moved to tools/thermal-debug.html (not served); open locally in Chrome for Web Serial debugging |
 | 2026-10-25 | M-05 | 0be1958 | All 21 ad-hoc keys (14 files) moved to queryKeys.ts with identical shapes; prefix keys for invalidation; queryKeys.test.ts |
 | 2026-10-25 | M-04 | f613157 | ◐ lint 37 errors → 0 (dev-dist ignored, all `any` typed, exhaustive-deps fixed, tailwind import); 18 react-refresh dev-only warnings left for M-01/M-02 (shadcn ui accepted) |
+| 2026-10-25 | B-08 | _pending_ | Follow-up from preview test: full-name search ("carlos perez", "perez, carlos") now matches word by word via matchAllWords; checked on local PostgREST incl. orders/billing joins |

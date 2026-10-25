@@ -1,4 +1,4 @@
-import { ilikeAny, pgrstValue } from "./postgrest";
+import { ilikeAny, matchAllWords, pgrstValue } from "./postgrest";
 
 describe("PostgREST filter helpers", () => {
   it("quotes values so commas and parentheses stay inside the value", () => {
@@ -17,5 +17,13 @@ describe("PostgREST filter helpers", () => {
     // LIKE pattern \%  -> quoted for PostgREST as \\%
     expect(ilikeAny(["action"], "100%")).toBe('action.ilike."%100\\\\%%"');
     expect(ilikeAny(["action"], "a_b")).toBe('action.ilike."%a\\\\_b%"');
+  });
+
+  it("requires every word to match some column", () => {
+    expect(matchAllWords(["first_name", "last_name"], "  carlos ")).toBe(ilikeAny(["first_name", "last_name"], "carlos"));
+    expect(matchAllWords(["first_name"], "perez, carlos")).toBe(matchAllWords(["first_name"], "perez carlos"));
+    expect(matchAllWords(["first_name", "last_name"], "carlos  perez")).toBe(
+      'and(or(first_name.ilike."%carlos%",last_name.ilike."%carlos%"),or(first_name.ilike."%perez%",last_name.ilike."%perez%"))'
+    );
   });
 });

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
-import { ilikeAny } from "@/lib/postgrest";
+import { matchAllWords } from "@/lib/postgrest";
 import type { Database } from "@/integrations/supabase/types";
 
 export type AuditLogRow = Database["public"]["Tables"]["audit_logs"]["Row"];
@@ -78,7 +78,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
 
       // General search filter
       if (filters.search && filters.search.trim()) {
-        query = query.or(ilikeAny(["user_name", "action"], filters.search));
+        query = query.or(matchAllWords(["user_name", "action"], filters.search));
       }
 
       const { data, error, count } = await query.range(offset, offset + pageSize - 1);

@@ -15,3 +15,13 @@ export function ilikeAny(columns: string[], search: string): string {
   const value = pgrstValue(pattern);
   return columns.map((column) => `${column}.ilike.${value}`).join(",");
 }
+
+/**
+ * Filter for `.or()` where every word must appear in at least one column, so
+ * "carlos perez" matches first_name "Carlos" + last_name "Perez" (in any order; commas also separate words).
+ */
+export function matchAllWords(columns: string[], search: string): string {
+  const words = search.split(/[\s,]+/).filter(Boolean);
+  if (words.length <= 1) return ilikeAny(columns, words[0] ?? "");
+  return `and(${words.map((word) => `or(${ilikeAny(columns, word)})`).join(",")})`;
+}
