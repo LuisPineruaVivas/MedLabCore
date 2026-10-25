@@ -15,6 +15,7 @@ import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { ErpGuard } from "./components/ErpGuard";
 import { Analytics } from "@vercel/analytics/react";
+import { isNonRetryableError } from "@/lib/errors";
 // Lazy like every other page: it pulls in react-pdf and all report layouts,
 // which must not be downloaded on the login screen.
 const ReportViewerPage = lazy(() => import("@/pages/ReportViewerPage"));
@@ -48,13 +49,9 @@ const FinancialDashboardPage = lazy(() => import("@/pages/erp/FinancialDashboard
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Don't retry on client errors (4xx): permission denied, not found, etc.
-      // These won't resolve by retrying. Only retry on transient server errors (5xx).
-      retry: (failureCount, error: unknown) => {
-        const status = (error as { status?: number })?.status ?? 0;
-        if (status >= 400 && status < 500) return false;
-        return failureCount < 2;
-      },
+      // Permission denied, not found, app errors from RPCs… fail the same way on retry.
+      // Only retry transient failures (network, timeouts, 5xx).
+      retry: (failureCount, error: unknown) => !isNonRetryableError(error) && failureCount < 2,
       staleTime: 1000 * 60, // 1 minute default cache
     },
     mutations: {

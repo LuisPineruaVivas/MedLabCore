@@ -46,7 +46,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-01 | Billing totals wrong for labs with > 1,000 orders | Bug | 🔴 | M | ☐ |
 | B-02 | Affiliate pending balance / order list truncated at 1,000 | Bug | 🔴 | M | ☐ |
 | B-03 | "Guardar todo" (results) reports failure after partial save | Bug | 🔴 | S | ☐ |
-| B-04 | Global retry rule never detects Supabase permission errors | Bug | 🟠 | S | ☐ |
+| B-04 | Global retry rule never detects Supabase permission errors | Bug | 🟠 | S | ☑ |
 | B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☐ |
 | B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☐ |
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☐ |
@@ -611,3 +611,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | — | `716e3c9` | Plan created from code review of `dev`. ERP pilot fixes (B2/B4/E1 from the ERP checklist) and the `expect_error` test-helper fix were already done in `716e3c9` / `95e1807`. |
 | 2026-10-25 | P-01 | _pending_ | ReportViewerPage lazy-loaded. First-load JS ~2.4 MB → 819 KB; react-pdf no longer requested on /login (checked in browser on a production build). |
 | 2026-10-25 | S-02 | _pending_ | beforeSend/beforeSendTransaction/beforeBreadcrumb replace dni/pin with [filtered]; replay explicitly masked; sendDefaultPii false (src/lib/sentryScrub.ts + 3 tests). Address-bar cleanup moved to S-03. |
+| 2026-10-25 | B-04 | _pending_ | isNonRetryableError in src/lib/errors.ts (HTTP 4xx, PGRST*, P0001 = RPC raise exception, 42*/22*/23*); QueryClient retry uses it. 2 new tests. Note: RPC app codes arrive as code P0001, not their own name. |
