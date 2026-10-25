@@ -609,13 +609,13 @@ Create small, tested helpers so fixes are made once:
 | Date | Item(s) | Commit | Notes |
 |---|---|---|---|
 | 2026-10-25 | — | `716e3c9` | Plan created from code review of `dev`. ERP pilot fixes (B2/B4/E1 from the ERP checklist) and the `expect_error` test-helper fix were already done in `716e3c9` / `95e1807`. |
-| 2026-10-25 | P-01 | _pending_ | ReportViewerPage lazy-loaded. First-load JS ~2.4 MB → 819 KB; react-pdf no longer requested on /login (checked in browser on a production build). |
-| 2026-10-25 | S-02 | _pending_ | beforeSend/beforeSendTransaction/beforeBreadcrumb replace dni/pin with [filtered]; replay explicitly masked; sendDefaultPii false (src/lib/sentryScrub.ts + 3 tests). Address-bar cleanup moved to S-03. |
-| 2026-10-25 | B-04 | _pending_ | isNonRetryableError in src/lib/errors.ts (HTTP 4xx, PGRST*, P0001 = RPC raise exception, 42*/22*/23*); QueryClient retry uses it. 2 new tests. Note: RPC app codes arrive as code P0001, not their own name. |
-| 2026-10-25 | B-07 | _pending_ | PDF built once per order; auth/auto-login effects guarded by refs; patient/lab data memoized |
-| 2026-10-25 | B-08 | _pending_ | Searches quoted via ilikeAny (also useOrders.ts); checked on local PostgREST: comma no longer errors, % and _ literal |
-| 2026-10-25 | M-06 | _pending_ | ◐ postgrest.ts + errors.ts done; json.ts goes with B-05 (Phase 6), form pattern with B-09 |
-| 2026-10-25 | B-10 | _pending_ | Report ranges use erp_local_date(now()); passes with timezone UTC and America/Caracas (evening window not reproducible in daytime) |
-| 2026-10-25 | S-06 | _pending_ | Moved to tools/thermal-debug.html (not served); open locally in Chrome for Web Serial debugging |
-| 2026-10-25 | M-05 | _pending_ | All 21 ad-hoc keys (14 files) moved to queryKeys.ts with identical shapes; prefix keys for invalidation; queryKeys.test.ts |
-| 2026-10-25 | M-04 | _pending_ | ◐ lint 37 errors → 0 (dev-dist ignored, all `any` typed, exhaustive-deps fixed, tailwind import); 18 react-refresh dev-only warnings left for M-01/M-02 (shadcn ui accepted) |
+| 2026-10-25 | P-01 | 8014959 | ReportViewerPage lazy-loaded. First-load JS ~2.4 MB → 819 KB; react-pdf no longer requested on /login (checked in browser on a production build). |
+| 2026-10-25 | S-02 | 118f28d | beforeSend/beforeSendTransaction/beforeBreadcrumb replace dni/pin with [filtered]; replay explicitly masked; sendDefaultPii false (src/lib/sentryScrub.ts + 3 tests). Address-bar cleanup moved to S-03. |
+| 2026-10-25 | B-04 | 2fc69de | isNonRetryableError in src/lib/errors.ts (HTTP 4xx, PGRST*, P0001 = RPC raise exception, 42*/22*/23*); QueryClient retry uses it. 2 new tests. Note: RPC app codes arrive as code P0001, not their own name. |
+| 2026-10-25 | B-07 | 240bc49 | PDF built once per order; auth/auto-login effects guarded by refs; patient/lab data memoized |
+| 2026-10-25 | B-08 | b9ca8e1 | Searches quoted via ilikeAny (also useOrders.ts); checked on local PostgREST: comma no longer errors, % and _ literal |
+| 2026-10-25 | M-06 | b9ca8e1 | ◐ postgrest.ts + errors.ts done; json.ts goes with B-05 (Phase 6), form pattern with B-09 |
+| 2026-10-25 | B-10 | 62959f6 | Report ranges use erp_local_date(now()); passes with timezone UTC and America/Caracas (evening window not reproducible in daytime) |
+| 2026-10-25 | S-06 | 32bb938 | Moved to tools/thermal-debug.html (not served); open locally in Chrome for Web Serial debugging |
+| 2026-10-25 | M-05 | 0be1958 | All 21 ad-hoc keys (14 files) moved to queryKeys.ts with identical shapes; prefix keys for invalidation; queryKeys.test.ts |
+| 2026-10-25 | M-04 | f613157 | ◐ lint 37 errors → 0 (dev-dist ignored, all `any` typed, exhaustive-deps fixed, tailwind import); 18 react-refresh dev-only warnings left for M-01/M-02 (shadcn ui accepted) |
