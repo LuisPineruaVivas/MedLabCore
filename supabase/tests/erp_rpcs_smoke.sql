@@ -284,9 +284,9 @@ select pg_temp.act_as(pg_temp.id('adminB'));
 select pg_temp.expect_error(format('select public.get_erp_financial_summary(%L)', pg_temp.id('orgA')), 'ERP_PERMISSION_DENIED');
 
 select pg_temp.act_as(pg_temp.id('adminA'));
-select pg_temp.expect_error(format('select public.get_erp_financial_summary(%L, current_date, current_date - 1)', pg_temp.id('orgA')), 'INVALID_DATE_RANGE');
+select pg_temp.expect_error(format('select public.get_erp_financial_summary(%L, public.erp_local_date(now()), public.erp_local_date(now()) - 1)', pg_temp.id('orgA')), 'INVALID_DATE_RANGE');
 do $$
-declare v jsonb := public.get_erp_financial_summary(pg_temp.id('orgA'), current_date, current_date);
+declare v jsonb := public.get_erp_financial_summary(pg_temp.id('orgA'), public.erp_local_date(now()), public.erp_local_date(now()));
 begin
   -- $30 cash + Bs 400 ($10); the $20 Zelle was voided.
   perform pg_temp.assert_eq((v->>'collected_usd')::numeric, 40, 'collected');
@@ -301,7 +301,7 @@ begin
 end $$;
 
 do $$
-declare v jsonb := public.get_erp_profitability_report(pg_temp.id('orgA'), current_date, current_date);
+declare v jsonb := public.get_erp_profitability_report(pg_temp.id('orgA'), public.erp_local_date(now()), public.erp_local_date(now()));
 begin
   perform pg_temp.assert_eq((v->>'orders_count')::numeric, 1, 'orders with confirmed consumption');
   perform pg_temp.assert_eq((v->>'revenue_usd')::numeric, 10, 'profitability revenue');
@@ -318,7 +318,7 @@ select pg_temp.expect_error(format('select public.get_erp_inventory_summary(%L)'
 
 select pg_temp.act_as(pg_temp.id('adminA'));
 do $$
-declare v jsonb := public.get_erp_inventory_summary(pg_temp.id('orgA'), current_date, current_date);
+declare v jsonb := public.get_erp_inventory_summary(pg_temp.id('orgA'), public.erp_local_date(now()), public.erp_local_date(now()));
 begin
   perform pg_temp.assert_eq((v->>'active_items')::numeric, 2, 'active items');
   perform pg_temp.assert_eq((v->>'total_value_usd')::numeric, 74.40, 'inventory value');

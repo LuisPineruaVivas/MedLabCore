@@ -52,7 +52,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☑ |
 | B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☑ |
 | B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
-| B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☐ |
+| B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☑ |
 | P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
 | P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ |
 | P-03 | Money totals computed in the browser over all rows | Perf | 🟠 | M | ☐ (with B-01/B-02) |
@@ -615,3 +615,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-07 | _pending_ | PDF built once per order; auth/auto-login effects guarded by refs; patient/lab data memoized |
 | 2026-10-25 | B-08 | _pending_ | Searches quoted via ilikeAny (also useOrders.ts); checked on local PostgREST: comma no longer errors, % and _ literal |
 | 2026-10-25 | M-06 | _pending_ | ◐ postgrest.ts + errors.ts done; json.ts goes with B-05 (Phase 6), form pattern with B-09 |
+| 2026-10-25 | B-10 | _pending_ | Report ranges use erp_local_date(now()); passes with timezone UTC and America/Caracas (evening window not reproducible in daytime) |
