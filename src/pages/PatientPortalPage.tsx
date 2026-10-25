@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,17 +40,23 @@ export default function PatientPortalPage() {
   const { session, authenticate, logout } = usePatientSession();
   const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null, pin);
 
-  // Auto-login if URL has params
+  // Auto-login if URL has params (once per dni/pin pair in the link).
+  // handleAuth is recreated every render; the ref always points at the latest one.
+  const handleAuthRef = useRef<(dniValue?: string, pinValue?: string) => Promise<void>>(async () => {});
+  const autoLoginFor = useRef<string | null>(null);
   useEffect(() => {
     const dniParam = searchParams.get("dni");
     const pinParam = searchParams.get("pin");
-    if (dniParam && pinParam && !session) {
-      setDni(dniParam);
-      setPin(pinParam);
-      handleAuth(dniParam, pinParam);
-    }
-  }, [session]);
+    if (!dniParam || !pinParam || session) return;
+    const attemptKey = `${dniParam}|${pinParam}`;
+    if (autoLoginFor.current === attemptKey) return;
+    autoLoginFor.current = attemptKey;
+    setDni(dniParam);
+    setPin(pinParam);
+    handleAuthRef.current(dniParam, pinParam);
+  }, [searchParams, session]);
 
+  handleAuthRef.current = handleAuth;
   async function handleAuth(dniValue?: string, pinValue?: string) {
     const dniToUse = dniValue || dni;
     const pinToUse = pinValue || pin;
