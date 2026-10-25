@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { format } from "date-fns";
-import { HandCoins, Printer, CheckCheck, ClipboardList } from "lucide-react";
+import { HandCoins, Printer, CheckCheck, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAffiliateOrders, useAffiliatePendingBalance, useAffiliateUsers, useMarkAffiliateOrdersPaid } from "@/features/billing/useAffiliateAccounts";
+import {
+  AFFILIATE_ORDERS_PAGE_SIZE,
+  type AffiliateAccountOrderRow,
+  useAffiliateOrders,
+  useAffiliatePendingBalance,
+  useAffiliateUsers,
+  useMarkAffiliateOrdersPaid,
+} from "@/features/billing/useAffiliateAccounts";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { isMobileDevice } from "@/features/orders/orderDetailUtils";
 import { buildLabData } from "@/features/orders/OrderDetailSections";
@@ -18,7 +25,9 @@ import { AffiliateAccountStatementPDF } from "@/lib/affiliateAccountStatementPDF
 export default function AffiliateAccountsPage() {
   const [selectedAffiliateId, setSelectedAffiliateId] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  // The selected orders themselves (not just ids), so a selection survives page changes.
+  const [selectedOrders, setSelectedOrders] = useState<Record<string, AffiliateAccountOrderRow>>({});
   const [statementOpen, setStatementOpen] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
 
@@ -33,11 +42,15 @@ export default function AffiliateAccountsPage() {
 
   const selectedAffiliate = affiliates.find((affiliate) => affiliate.id === selectedAffiliateId) ?? null;
   const { data: pendingBalance = 0, isLoading: balanceLoading } = useAffiliatePendingBalance(selectedAffiliateId || null);
-  const { data: orders = [], isLoading: ordersLoading } = useAffiliateOrders(selectedAffiliateId || null, paymentStatus);
+  const { data: ordersPage, isLoading: ordersLoading } = useAffiliateOrders(selectedAffiliateId || null, paymentStatus, page);
+  const orders = useMemo(() => ordersPage?.orders ?? [], [ordersPage]);
+  const totalOrders = ordersPage?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalOrders / AFFILIATE_ORDERS_PAGE_SIZE));
   const markPaid = useMarkAffiliateOrdersPaid();
 
   useEffect(() => {
-    setSelectedIds([]);
+    setSelectedOrders({});
+    setPage(1);
   }, [selectedAffiliateId, paymentStatus]);
 
   const selectableOrders = useMemo(
@@ -45,27 +58,29 @@ export default function AffiliateAccountsPage() {
     [orders]
   );
   const allVisiblePendingSelected =
-    selectableOrders.length > 0 && selectableOrders.every((order) => selectedIds.includes(order.id));
+    selectableOrders.length > 0 && selectableOrders.every((order) => order.id in selectedOrders);
 
-  const selectedPendingOrders = useMemo(
-    () => orders.filter((order) => selectedIds.includes(order.id) && order.payment_status === "pending"),
-    [orders, selectedIds]
-  );
+  const selectedPendingOrders = useMemo(() => Object.values(selectedOrders), [selectedOrders]);
   const labData = useMemo(() => buildLabData(organization), [organization]);
 
-  function toggleRow(orderId: string, checked: boolean) {
-    setSelectedIds((current) =>
-      checked ? [...new Set([...current, orderId])] : current.filter((id) => id !== orderId)
-    );
+  function toggleRow(order: AffiliateAccountOrderRow, checked: boolean) {
+    setSelectedOrders((current) => {
+      const next = { ...current };
+      if (checked) next[order.id] = order;
+      else delete next[order.id];
+      return next;
+    });
   }
 
   function toggleAllVisible(checked: boolean) {
-    const visibleIds = selectableOrders.map((order) => order.id);
-    setSelectedIds((current) =>
-      checked
-        ? [...new Set([...current, ...visibleIds])]
-        : current.filter((id) => !visibleIds.includes(id))
-    );
+    setSelectedOrders((current) => {
+      const next = { ...current };
+      for (const order of selectableOrders) {
+        if (checked) next[order.id] = order;
+        else delete next[order.id];
+      }
+      return next;
+    });
   }
 
   async function handlePrintSelection() {
@@ -159,7 +174,13 @@ export default function AffiliateAccountsPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
-              onClick={() => selectedAffiliateId && markPaid.mutate({ affiliateId: selectedAffiliateId, orderIds: selectedPendingOrders.map((order) => order.id) })}
+              onClick={() =>
+                selectedAffiliateId &&
+                markPaid.mutate(
+                  { affiliateId: selectedAffiliateId, orderIds: selectedPendingOrders.map((order) => order.id) },
+                  { onSuccess: () => setSelectedOrders({}) }
+                )
+              }
               disabled={!selectedAffiliateId || selectedPendingOrders.length === 0 || markPaid.isPending}
             >
               <CheckCheck className="mr-2 h-4 w-4" />
@@ -206,9 +227,9 @@ export default function AffiliateAccountsPage() {
                   <TableCell>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(order.id)}
+                      checked={order.id in selectedOrders}
                       disabled={!isPending}
-                      onChange={(event) => toggleRow(order.id, event.target.checked)}
+                      onChange={(event) => toggleRow(order, event.target.checked)}
                       aria-label={`Seleccionar orden ${order.order_seq ?? order.id}`}
                     />
                   </TableCell>
@@ -263,9 +284,9 @@ export default function AffiliateAccountsPage() {
                   </div>
                   <input
                     type="checkbox"
-                    checked={selectedIds.includes(order.id)}
+                    checked={order.id in selectedOrders}
                     disabled={!isPending}
-                    onChange={(event) => toggleRow(order.id, event.target.checked)}
+                    onChange={(event) => toggleRow(order, event.target.checked)}
                     aria-label={`Seleccionar orden ${order.order_seq ?? order.id}`}
                   />
                 </div>
@@ -279,8 +300,21 @@ export default function AffiliateAccountsPage() {
           })}
         </div>
 
-        <CardFooter className="border-t border-border px-6 py-4 text-sm text-muted-foreground">
-          {selectedPendingOrders.length} orden(es) pendientes seleccionadas para conciliacion.
+        <CardFooter className="flex flex-col gap-3 border-t border-border px-6 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>{selectedPendingOrders.length} orden(es) pendientes seleccionadas para conciliacion.</span>
+          {totalOrders > 0 && (
+            <div className="flex items-center gap-2">
+              <span>
+                Mostrando {(page - 1) * AFFILIATE_ORDERS_PAGE_SIZE + 1} a {Math.min(totalOrders, page * AFFILIATE_ORDERS_PAGE_SIZE)} de {totalOrders}
+              </span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1} aria-label="Pagina anterior">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount} aria-label="Pagina siguiente">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </CardFooter>
       </Card>
 

@@ -121,6 +121,7 @@ export const queryKeys = {
       ["affiliate-accounts", "affiliates", orgId ?? "none", role ?? "none"] as const,
     hasAffiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
       ["affiliate-accounts", "has-affiliates", orgId ?? "none", role ?? "none"] as const,
+    ordersAll: (affiliateId: string | null | undefined) => ["affiliate-accounts", "orders", affiliateId ?? "none"] as const,
     orders: (
       affiliateId: string | null | undefined,
       filters: Record<string, string | number | null | undefined>

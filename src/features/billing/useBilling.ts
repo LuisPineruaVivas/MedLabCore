@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import { matchAllWords } from "@/lib/postgrest";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { pendingRpc } from "@/lib/pendingRpc";
+import { parseBillingTotals } from "./billingUtils";
 
 export function useBillingSummary(page: number, search: string, statusFilter: string, monthFilter: string) {
   const { orgId } = useCurrentOrgContext();
@@ -49,18 +51,22 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
         query = query.or(matchAllWords(["first_name", "last_name", "id_number"], search), { foreignTable: "patients" });
       }
 
-      const [{ data: ordersPage, error: pageError, count }, { data: allOrders, error: allError }] = await Promise.all([
+      // Totals are summed in the database: PostgREST returns at most 1,000 rows, so
+      // summing downloaded orders was silently wrong for larger labs.
+      const [{ data: ordersPage, error: pageError, count }, { data: totals, error: totalsError }] = await Promise.all([
         query.range(offset, offset + pageSize - 1),
-        supabase.from("orders").select("total_amount,status,created_at").eq("org_id", orgId),
+        pendingRpc("get_billing_totals", {
+          p_org_id: orgId,
+          p_from: monthFilterStart,
+          p_to: monthFilterEnd,
+          p_month_start: monthStart,
+        }),
       ]);
 
       if (pageError) throw pageError;
-      if (allError) throw allError;
+      if (totalsError) throw totalsError;
 
-      const allOrderList = allOrders ?? [];
-      const filteredOrders = monthFilterStart && monthFilterEnd
-        ? allOrderList.filter((order) => order.created_at >= monthFilterStart! && order.created_at < monthFilterEnd!)
-        : allOrderList;
+      const summary = parseBillingTotals(totals);
 
       return {
         orders: (ordersPage ?? []).map((order) => ({
@@ -71,11 +77,7 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
           created: format(new Date(order.created_at), "yyyy-MM-dd"),
         })),
         total: count ?? 0,
-        totalRevenue: filteredOrders.reduce((acc, order) => acc + Number(order.total_amount ?? 0), 0),
-        thisMonthRevenue: allOrderList
-          .filter((order) => order.created_at >= monthStart)
-          .reduce((acc, order) => acc + Number(order.total_amount ?? 0), 0),
-        pendingCount: filteredOrders.filter((order) => order.status === "pendiente").length,
+        ...summary,
       };
     },
     enabled: !!orgId,
