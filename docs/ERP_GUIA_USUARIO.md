@@ -15,8 +15,8 @@ Esta guía explica, paso a paso, cómo usar el módulo administrativo de MedLabC
 | Inventario: insumos, compras, ajustes | ✅ | | ✅ |
 | Recetas de insumos por examen | ✅ (edita) | | ✅ (consulta) |
 | Confirmar consumo al aprobar una orden | ✅ | | ✅ |
-| Reportes financieros | ✅ | | |
-| Reporte de inventario | ✅ | | ✅ |
+| Reportes (finanzas, rentabilidad, cobranza e inventario) | ✅ | | |
+| Ver inventario y Kardex | ✅ | | ✅ |
 
 ## 1. Primeros pasos (administrador)
 
@@ -45,8 +45,11 @@ Esta guía explica, paso a paso, cómo usar el módulo administrativo de MedLabC
 
 ## 4. Inventario
 
-- **Nuevo insumo:** *Inventario* → *Nuevo insumo*. Indica la unidad (uds, ml, cajas…), el **stock mínimo** para recibir alertas y, opcionalmente, el stock inicial con su costo.
-- **Compras:** *Registrar compra* → cantidad, costo unitario, proveedor, lote y vencimiento. El sistema recalcula el **costo promedio** del insumo.
+- **Nuevo insumo:** *Inventario* → *Nuevo insumo*. Indica:
+  - la **unidad de medida**: la unidad en que se lleva el stock y se gasta en cada examen (uds, ml, tubos…);
+  - las **unidades por empaque**: cuántas de esas unidades trae el empaque en que lo compras (por ejemplo, una caja de 10 inyectadoras = 10). Si lo compras suelto, deja 1;
+  - el **stock mínimo** para recibir alertas y, opcionalmente, el stock inicial con su costo.
+- **Compras:** *Registrar compra* → cantidad, costo, proveedor, lote y vencimiento. Si el insumo tiene más de 1 unidad por empaque, puedes elegir **comprar por empaques**: escribes cuántos empaques compraste y el costo de cada empaque, y el sistema lo convierte a unidades (por ejemplo, 2 empaques de 10 a $5 = 20 uds a $0,50 c/u). El sistema recalcula el **costo promedio** del insumo.
 - **Ajustes:** *Ajuste* → salida (pérdida, vencido, rotura) o entrada (sobrante de conteo), siempre con su motivo.
 - **Kardex:** haz clic en un insumo para ver todos sus movimientos, con el stock y el costo después de cada uno. Los movimientos no se pueden editar ni borrar. Si te equivocas, corrige con un ajuste.
 - El stock y el costo **nunca se escriben a mano**: sólo cambian con compras, ajustes o consumos.
@@ -68,6 +71,8 @@ Al pulsar **Aprobar y Firmar**, se abre la ventana **Confirmar consumo de insumo
 Al confirmar, en un solo paso se descuenta el inventario, se registra el costo y la orden queda **completada y firmada**.
 
 ## 7. Reportes (*Reportes*)
+
+Sólo el administrador ve esta sección.
 
 - **Finanzas:** cobrado en el período (comparado con el período anterior), cobrado hoy, cuentas por cobrar y vencidos, cobros por día, por método y por moneda.
 - **Rentabilidad:** ingresos menos costo de insumos, margen bruto y rentabilidad por examen. Marca los exámenes con margen menor a 50 %. Sólo cuenta órdenes con consumo confirmado.

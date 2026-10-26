@@ -8,7 +8,7 @@
 
 ## Estado de implementación
 
-> Actualizado: 18 de octubre de 2026. Una tarea marcada con `[x]` está implementada en el repositorio; `[~]` significa código terminado pero pendiente de desplegar en Supabase (producción). Los criterios de aceptación de cada fase se marcan cuando se validan con las migraciones aplicadas.
+> Actualizado: 26 de octubre de 2026 (ver "Piloto" más abajo); estado de fases del 18 de octubre. Una tarea marcada con `[x]` está implementada en el repositorio; `[~]` significa código terminado pero pendiente de desplegar en Supabase (producción). Los criterios de aceptación de cada fase se marcan cuando se validan con las migraciones aplicadas.
 
 - [x] Fase 1 — Infraestructura y feature flagging.
 - [x] Fase 2 — Código terminado; migraciones aplicadas en producción (18 oct).
@@ -31,7 +31,13 @@ Proyecto `mgeateznuhmhgqemaphj` (plan Free: el panel no ofrece respaldos descarg
 6. Prueba en la app publicada (`main`): inicio de sesión como secretaria y creación de órdenes, **sin problemas**.
 7. `npm run update-types` regenerado contra producción (ya incluye las tablas ERP).
 
-**Importante:** las carpetas de migraciones de `main` y `dev` todavía tienen la serie `20260531…`. No ejecutar `supabase db push` desde esas ramas hasta fusionar esta línea base, porque intentaría reaplicarlas.
+**Importante:** `dev` ya tiene la línea base nueva (sin la serie `20260531…`), así que `supabase db push` es seguro desde `dev` (siempre con `--dry-run` primero). `main` todavía tiene la serie antigua hasta el próximo release: no ejecutar `db push` desde `main`.
+
+### Piloto (25 oct 2026)
+
+- Probado en línea con **Lab Instumed** (ERP activado) desde la vista previa de `dev`, con los roles administrador, secretaria y bioanalista. Resultados en `docs/ERP_PRUEBA_CHECKLIST.md` (todo ✅ tras las correcciones).
+- Correcciones del piloto (`716e3c9`): moneda USD/VES y edición de métodos de cobro, compras **por empaque** (`unidades por empaque`), y reportes sólo para administradores (migración `20261025000000`, desplegada).
+- Pendiente: reemplazar `erpDb` por el cliente tipado (plan de mejoras S-10) y el release `dev` → `main`.
 
 ### Pendiente (acción del equipo)
 
