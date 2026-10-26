@@ -50,14 +50,14 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-02 | Affiliate pending balance / order list truncated at 1,000 | Bug | 🔴 | M | ◐ |
 | B-03 | "Guardar todo" (results) reports failure after partial save | Bug | 🔴 | S | ◐ |
 | B-04 | Global retry rule never detects Supabase permission errors | Bug | 🟠 | S | ☑ |
-| B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☐ |
+| B-05 | One malformed `results_data` crashes the whole PDF | Bug | 🟠 | S | ☑ |
 | B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☑ |
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☑ |
 | B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☑ |
 | B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
 | B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☑ |
 | P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
-| P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ |
+| P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ (deferred) |
 | P-03 | Money totals computed in the browser over all rows | Perf | 🟠 | M | ◐ |
 | P-04 | "Guardar todo" fires N requests and N refetches | Perf | 🟠 | S | ◐ |
 | P-05 | Lists use `select("*")` / unbounded fetches | Perf | 🟢 | S | ☐ |
@@ -73,7 +73,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ☐ |
 | S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☐ |
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
-| M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ |
+| M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☐ |
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ◐ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
@@ -94,7 +94,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | ~~3 · Release~~ → moved to the end | — | Decided 2026-10-25: one release after all phases, tested locally first (see §0.5) |
 | **4 · Safety net** | T-01, T-02, M-03 (step 1: fix the 52 errors, typecheck in CI), B-06 | Prevents regressions in the big refactors |
 | **5 · Security hardening** | S-01, S-04, S-03, S-07, S-08 | Needs testing on preview with real flows |
-| **6 · Reports consolidation** ⚠️ | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
+| **6 · Reports consolidation** ⚠️ — *deferred 2026-10-26 by the owner (only B-05 done)* | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
 | **7 · Structure & typing** | M-02, S-10, B-09, M-03 (strict steps), M-07, M-08, T-03 | Ongoing |
 | **8 · Verify** | S-09, S-11 | Architecture change + independent re-audit |
 | **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), Supabase dashboard → Auth: min password 10 + letters/digits + secure password change (S-08; leaked-password protection needs the Pro plan), `dev` → `main`, S-05 | Everything at once, after local testing |
@@ -639,3 +639,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | S-03 | 22a6785 | ◐ Migration 20261025020000 (applied locally) + `portal_pin_protection.sql` (fails without the migration). Tested in the browser on local QA data: new #-link and old ?-link auto-login and clean the address bar, refresh keeps working (tab memory), manual 10-char PIN works, 10 wrong PINs via the API → portal shows the lock message even with the right PIN. **Bug fixed:** PIN field maxLength 6 vs 8-char PINs (manual login impossible). Check at release: a WhatsApp link with `#` opens correctly on a real phone. |
 | 2026-10-25 | S-07 | e512635 | ◐ Migration 20261025030000 (applied locally) + `db_hardening.sql` (allowed/refused per item; fails without the migration); all 9 SQL suites pass. Antibiotic writes kept for secretaries (they enter microbiology results). Local smoke as QA admin: dashboard, Tests (view), Orders, order detail → all requests 200. Not tested in the UI: an affiliate's Orders page (now sees only its own profile — expected). |
 | 2026-10-25 | S-08 | ab64134 | ◐ Rule: ≥10 chars with letters and digits, in forms + the 3 user-creating functions + local Auth config. Tested locally: function refuses "abc123" / "abcdefghijkl" with Spanish messages and accepts a strong one; Auth refuses a weak password change (422 weak_password); existing accounts still log in; team form shows the rule and disables the button. Release: set the same in the Supabase dashboard (leaked-password check is Pro-only). |
+| 2026-10-26 | B-05 | ec21e51 | `parseJsonObject` in the 3 PDF layouts (results + schema); compiled JS differs only in those lines. Test: each layout renders with a broken exam (fails on the old code). Word keeps its explicit error (staff tool). |
+| 2026-10-26 | M-01, P-02 | — | Deferred by the owner: per-lab report differences must be kept; revisit only with a confirmed list of differences and golden outputs. |
