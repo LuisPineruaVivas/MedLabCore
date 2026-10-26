@@ -65,7 +65,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-01 | No security headers (CSP, frame-ancestors, …) on the site | Sec | 🔴 | M | ◐ |
 | S-02 | Patient ID number + PIN sent to Sentry in URLs | Sec | 🔴 | S | ☑ |
 | S-03 | Portal PIN guessable at scale (no server throttle) and in URLs | Sec | 🟠 | M | ☐ |
-| S-04 | Edge functions: CORS `*`, raw errors, Gemini key in URL | Sec | 🟠 | S | ☐ |
+| S-04 | Edge functions: CORS `*`, raw errors, Gemini key in URL | Sec | 🟠 | S | ◐ |
 | S-05 | Remove temporary anon branding grant after `main` release | Sec | 🟠 | S | ☐ |
 | S-06 | Public `thermal-debug.html` shipped to production | Sec | 🟢 | S | ☑ |
 | S-07 | Database hardening batch (audit hardening notes) | Sec | 🟠 | M | ☐ |
@@ -97,7 +97,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | **6 · Reports consolidation** ⚠️ | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
 | **7 · Structure & typing** | M-02, S-10, B-09, M-03 (strict steps), M-07, M-08, T-03 | Ongoing |
 | **8 · Verify** | S-09, S-11 | Architecture change + independent re-audit |
-| **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `dev` → `main`, S-05 | Everything at once, after local testing |
+| **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), `dev` → `main`, S-05 | Everything at once, after local testing |
 
 ---
 
@@ -635,3 +635,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | B-06, M-03 (step 1) | 9ff6869 | tsc 52 → 0 errors; `npm run typecheck` added. All PDF layouts + single-test generators compile to identical JS (type-only). Real bug found: Word report images had no `type` (docx v9) → saved as `.undefined`; now `type: "png"` — **check a Word report with logo/signature/stamp in local testing**. M-03 steps 2–4 (noImplicitAny, strictNullChecks, strict) still to do in Phase 7. |
 | 2026-10-25 | T-01 | ae8a50d | ◐ `.github/workflows/ci.yml`: web job (npm ci, lint, typecheck, test, build) + database job (`supabase start` + `npm run test:db`). Every step passes locally; clean `npm ci` works without --legacy-peer-deps (plugin-react-swc 4.3.3). @swc/core pinned ~1.15.47 (1.16 refuses to load on this PC: cache-folder permission check) — revisit later. Becomes ☑ when the first push shows green checks (release). |
 | 2026-10-25 | S-01 | 341e851 | ◐ Headers in vercel.json (CSP report-only). `npm run preview:local` enforces the CSP locally: logged in as local QA admin, dashboard + Settings report preview PDF render with 0 app violations. Policy needed: Google Fonts, 'wasm-unsafe-eval' + data: (react-pdf WebAssembly), blob: frames/workers. `frame-ancestors 'none'` blocks embedding the app/portal in other sites — confirm no lab embeds the portal. Enforce at release (Phase 9). |
+| 2026-10-25 | S-04 | 5bcc0cb | ◐ `_shared/http.ts` used by all 6 functions: CORS echoes only production, `med-lab-core-*-luis-pineruas-projects.vercel.app` previews and localhost (`ALLOWED_ORIGINS` secret adds more); unexpected errors → generic message, details in logs; Gemini key moved to header. Tested on local edge runtime directly (local Kong adds its own CORS, hosted Supabase does not). Needs `supabase functions deploy` at release. |
