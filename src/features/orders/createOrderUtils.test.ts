@@ -18,7 +18,7 @@ const templates = [
     name: "Hemograma",
     category: "Hematologia",
     base_price: "12.5",
-    schema: { sections: [] },
+    schema: { sections: [] as unknown[] },
   },
 ];
 
@@ -35,7 +35,7 @@ const profiles = [
           name: "Glucosa",
           category: "Quimica",
           base_price: "8",
-          schema: { sections: [] },
+          schema: { sections: [] as unknown[] },
         },
       },
       {
@@ -44,7 +44,7 @@ const profiles = [
           name: "Urea",
           category: "Quimica",
           base_price: "7",
-          schema: { sections: [] },
+          schema: { sections: [] as unknown[] },
         },
       },
     ],

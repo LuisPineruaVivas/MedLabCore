@@ -27,7 +27,7 @@ if (typeof window !== "undefined") {
     value: (query: string) => ({
       matches: false,
       media: query,
-      onchange: null,
+      onchange: null as unknown,
       addListener: () => {},
       removeListener: () => {},
       addEventListener: () => {},

@@ -6,6 +6,7 @@ import {
   type UnifiedReportProps,
 } from "./orderReportDispatcher";
 import type { FC } from "react";
+import type { OrderRow } from "@/features/orders/schemas";
 import { UnifiedTestReportPDF } from "./unifiedTestReportPDF";
 import { UnifiedTestReportRivalta } from "./UnifiedTestReportRivalta";
 import { TestReportPDF } from "./testReportGenerator";
@@ -57,7 +58,7 @@ describe("orderReportDispatcher", () => {
   });
 
   describe("Rendering reports with hide_table_header", () => {
-    const dummyOrder = {
+    const dummyOrder: OrderRow = {
       id: "order-1",
       org_id: "org-1",
       patient_id: "patient-1",

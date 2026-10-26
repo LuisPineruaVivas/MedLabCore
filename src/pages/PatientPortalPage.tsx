@@ -131,7 +131,7 @@ export default function PatientPortalPage() {
     setPdfOpen(false);
   }
 
-  async function handleViewReport(order) {
+  async function handleViewReport(order: (typeof orders)[number]) {
     const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     if (isMobile) {

@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/queryKeys";
-import type { TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
+import type { TemplateField, TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
 
-export function createEmptyTemplateField() {
+export function createEmptyTemplateField(): TemplateField {
   return {
     id: crypto.randomUUID(),
     label: "",

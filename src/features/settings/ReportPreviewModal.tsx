@@ -42,8 +42,8 @@ export const DUMMY_ORDER_ITEMS = [
     test_name: "Glucosa",
     category: "QUÍMICA SANGUÍNEA",
     resolved_sort_order: 1,
-    method_name: null,
-    test_templates: { category: "QUÍMICA SANGUÍNEA", result_type: "STANDARD", schema: null },
+    method_name: null as string | null,
+    test_templates: { category: "QUÍMICA SANGUÍNEA", result_type: "STANDARD", schema: null as string | null },
     results_data: {
       sections: [
         {
@@ -55,7 +55,7 @@ export const DUMMY_ORDER_ITEMS = [
               type: "number",
               value: "95",
               unit: "mg/dL",
-              reference_ranges: [{ min: 70, max: 110, label: "70 - 110", gender: null, age_min: null, age_max: null }],
+              reference_ranges: [{ min: 70, max: 110, label: "70 - 110", gender: null as string | null, age_min: null as number | null, age_max: null as number | null }],
             },
           ],
         },
@@ -66,7 +66,7 @@ export const DUMMY_ORDER_ITEMS = [
     test_name: "Hemoglobina",
     category: "HEMATOLOGÍA",
     resolved_sort_order: 1,
-    method_name: null,
+    method_name: null as string | null,
     test_templates: { category: "HEMATOLOGÍA", result_type: "STANDARD", schema: null },
     results_data: {
       sections: [
@@ -79,7 +79,7 @@ export const DUMMY_ORDER_ITEMS = [
               type: "number",
               value: "14.5",
               unit: "g/dL",
-              reference_ranges: [{ min: 12, max: 18, label: "12 - 18", gender: null, age_min: null, age_max: null }],
+              reference_ranges: [{ min: 12, max: 18, label: "12 - 18", gender: null as string | null, age_min: null as number | null, age_max: null as number | null }],
             },
             {
               id: "hct",
@@ -87,7 +87,7 @@ export const DUMMY_ORDER_ITEMS = [
               type: "number",
               value: "43",
               unit: "%",
-              reference_ranges: [{ min: 36, max: 54, label: "36 - 54", gender: null, age_min: null, age_max: null }],
+              reference_ranges: [{ min: 36, max: 54, label: "36 - 54", gender: null as string | null, age_min: null as number | null, age_max: null as number | null }],
             },
           ],
         },
@@ -98,7 +98,7 @@ export const DUMMY_ORDER_ITEMS = [
     test_name: "Observaciones clínicas",
     category: "HEMATOLOGÍA",
     resolved_sort_order: 2,
-    method_name: null,
+    method_name: null as string | null,
     test_templates: { category: "HEMATOLOGÍA", result_type: "STANDARD", schema: { hide_table_header: true } },
     results_data: {
       hide_table_header: true,
@@ -111,8 +111,8 @@ export const DUMMY_ORDER_ITEMS = [
               label: "Observaciones",
               type: "text",
               value: "Sin hallazgos significativos.",
-              unit: null,
-              reference_ranges: [],
+              unit: null as string | null,
+              reference_ranges: [] as unknown[],
             },
           ],
         },

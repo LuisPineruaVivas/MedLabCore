@@ -25,7 +25,7 @@ describe("microbiology results data and state helpers", () => {
     };
 
     const standardData = {
-      sections: [{ id: "1", name: "General", fields: [] }],
+      sections: [{ id: "1", name: "General", fields: [] as unknown[] }],
     };
 
     expect(isMicrobiologyResult(microData)).toBe(true);
@@ -141,7 +141,7 @@ describe("microbiology results data and state helpers", () => {
       name: "Cultivo de Orina",
       category: "Microbiologia",
       base_price: 25,
-      schema: { sections: [] },
+      schema: { sections: [] as unknown[] },
       result_type: "MICROBIOLOGY" as const,
     };
 

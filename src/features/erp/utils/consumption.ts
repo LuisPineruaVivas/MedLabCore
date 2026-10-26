@@ -51,7 +51,7 @@ export function buildConsumptionDraft(preview: BomPreviewLine[]): ConsumptionDra
 export function duplicateExamLines(lines: ConsumptionDraftLine[], orderItemId: string, keySuffix: string | number) {
   const copies = lines
     .filter((line) => line.order_item_id === orderItemId && !line.is_extra)
-    .map((line) => ({ ...line, key: `${line.key}:repeat:${keySuffix}`, recipe_quantity: null, is_extra: true, reason: "Repetición de examen" }));
+    .map((line): ConsumptionDraftLine => ({ ...line, key: `${line.key}:repeat:${keySuffix}`, recipe_quantity: null, is_extra: true, reason: "Repetición de examen" }));
   return [...lines, ...copies];
 }
 

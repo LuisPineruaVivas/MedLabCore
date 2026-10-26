@@ -20,7 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({
         auth.listener = cb;
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
-      getSession: async () => ({ data: { session: null } }),
+      getSession: async () => ({ data: { session: null as unknown } }),
       signOut: auth.signOut,
     },
     functions: { invoke: vi.fn() },
@@ -63,7 +63,7 @@ describe("impersonation state lifetime", () => {
     const { ImpersonationProvider, useImpersonation } = await import("@/contexts/ImpersonationContext");
     const queryClient = new QueryClient();
     const result = { current: null as unknown as ReturnType<typeof useImpersonation> };
-    function Probe() {
+    function Probe(): null {
       result.current = useImpersonation();
       return null;
     }
@@ -103,7 +103,7 @@ describe("impersonation state lifetime", () => {
     vi.resetModules();
     const { AuthProvider, useAuth } = await import("@/hooks/useAuth");
     let signOut: () => Promise<void> = async () => {};
-    function Probe() {
+    function Probe(): null {
       signOut = useAuth().signOut;
       return null;
     }

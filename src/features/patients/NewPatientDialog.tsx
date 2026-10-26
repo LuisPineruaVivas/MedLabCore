@@ -146,7 +146,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
                     <FormControl>
                       <DatePicker
                         selected={field.value}
-                        onChange={(date) => field.onChange(date)}
+                        onChange={(date: Date | null) => field.onChange(date)}
                         dateFormat="dd/MM/yyyy"
                         locale={es}
                         showMonthDropdown

@@ -119,7 +119,8 @@ export default function TemplateBuilderPage() {
     setValue,
   } = form;
 
-  const sections = watch("schema.sections");
+  // schema is z.any() in the form schema; its sections follow TemplateSection.
+  const sections = watch("schema.sections") as TemplateSection[];
   const currentFormData = watch();
 
   // ── Section CRUD ────────────────────────────────────────────
