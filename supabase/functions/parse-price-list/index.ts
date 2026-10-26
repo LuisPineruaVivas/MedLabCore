@@ -1,9 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { buildCorsHeaders, internalError } from "../_shared/http.ts";
 
 /**
  * Edge Function: parse-price-list
@@ -20,6 +17,7 @@ const corsHeaders = {
  *   { items: Array<{ name: string; price: number }> }
  */
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -116,11 +114,12 @@ Reglas importantes:
     }
 
     // ── Call Gemini Flash ────────────────────────────────────────────
+    // The key goes in a header, not the URL, so it never ends up in URL logs.
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: {
@@ -133,7 +132,8 @@ Reglas importantes:
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      throw new Error(`Gemini API error: ${errText}`);
+      return internalError(corsHeaders, "parse-price-list gemini " + geminiRes.status, errText,
+        "No se pudo procesar el archivo. Intenta nuevamente.");
     }
 
     const geminiData = await geminiRes.json();
@@ -165,11 +165,6 @@ Reglas importantes:
     });
 
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("parse-price-list error:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return internalError(corsHeaders, "parse-price-list", err);
   }
 });

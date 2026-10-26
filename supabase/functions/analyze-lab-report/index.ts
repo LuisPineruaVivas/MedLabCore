@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { buildCorsHeaders, internalError } from "../_shared/http.ts";
 
 // Roles del personal que ingresa resultados (canEnterResults); lab_affiliate queda fuera
 const OCR_ROLES = ['lab_admin', 'bioanalyst', 'secretary']
@@ -13,7 +10,7 @@ const MAX_FIELDS = 150
 const MAX_FIELD_LENGTH = 120
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
-function badRequest(message: string, status = 400) {
+function badRequest(corsHeaders: Record<string, string>, message: string, status = 400) {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -21,6 +18,7 @@ function badRequest(message: string, status = 400) {
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   // 1. Manejar CORS (Preflight)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -28,7 +26,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No hay header de Autorización');
+    if (!authHeader) return badRequest(corsHeaders, 'No autorizado', 401);
 
     // RECOMENDACIÓN: Usa las variables de entorno internas de Supabase que ya vienen inyectadas
     const supabaseClient = createClient(
@@ -67,20 +65,20 @@ serve(async (req) => {
     const { image, fields } = await req.json();
     const apiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!image || typeof image !== 'string') return badRequest("No se recibió imagen");
-    if (!fields || !Array.isArray(fields)) return badRequest("Los campos a extraer deben ser un arreglo");
-    if (fields.length === 0 || fields.length > MAX_FIELDS) return badRequest(`Se permiten entre 1 y ${MAX_FIELDS} campos`);
+    if (!image || typeof image !== 'string') return badRequest(corsHeaders, "No se recibió imagen");
+    if (!fields || !Array.isArray(fields)) return badRequest(corsHeaders, "Los campos a extraer deben ser un arreglo");
+    if (fields.length === 0 || fields.length > MAX_FIELDS) return badRequest(corsHeaders, `Se permiten entre 1 y ${MAX_FIELDS} campos`);
     if (fields.some((f) => typeof f !== 'string' || f.length === 0 || f.length > MAX_FIELD_LENGTH)) {
-      return badRequest(`Cada campo debe ser texto de hasta ${MAX_FIELD_LENGTH} caracteres`);
+      return badRequest(corsHeaders, `Cada campo debe ser texto de hasta ${MAX_FIELD_LENGTH} caracteres`);
     }
 
     const dataUrlMatch = image.match(/^data:([^;,]+);base64,/);
     const mimeType = dataUrlMatch?.[1] ?? 'image/jpeg';
-    if (!ALLOWED_MIME_TYPES.includes(mimeType)) return badRequest("Formato de imagen no soportado");
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) return badRequest(corsHeaders, "Formato de imagen no soportado");
     const imageData = dataUrlMatch ? image.slice(dataUrlMatch[0].length) : image;
     // base64 ocupa 4 caracteres por cada 3 bytes
     if (Math.floor(imageData.length * 3 / 4) > MAX_IMAGE_BYTES) {
-      return badRequest(`La imagen supera el máximo de ${MAX_IMAGE_BYTES / (1024 * 1024)} MB`, 413);
+      return badRequest(corsHeaders, `La imagen supera el máximo de ${MAX_IMAGE_BYTES / (1024 * 1024)} MB`, 413);
     }
 
     if (!apiKey) throw new Error("Falta la configuración de GEMINI_API_KEY en el servidor");
@@ -112,7 +110,8 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Error en la API de Gemini: ${errText}`);
+      return internalError(corsHeaders, "analyze-lab-report gemini " + response.status, errText,
+        "No se pudo analizar la imagen. Intenta nuevamente.");
     }
 
     const result = await response.json();
@@ -127,10 +126,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
 
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  } catch (error: unknown) {
+    return internalError(corsHeaders, "analyze-lab-report", error);
   }
 })
