@@ -7,9 +7,10 @@ interface UrlCarryingEvent {
 }
 
 /**
- * Query parameters that identify a patient or unlock their results. Portal and
- * report links carry them (`/informe-pdf?dni=…&pin=…`), so they must never
- * reach Sentry in event URLs, breadcrumbs or transaction names.
+ * Parameters that identify a patient or unlock their results. Portal and report
+ * links carry them in the fragment (`/informe-pdf?org=…#dni=…&pin=…`), and links
+ * sent before 2026-10 in the query (`?dni=…&pin=…`), so they must never reach
+ * Sentry in event URLs, breadcrumbs or transaction names.
  */
 export const SENSITIVE_QUERY_PARAMS = ["dni", "pin"] as const;
 const FILTERED = "[filtered]";
@@ -24,10 +25,17 @@ export function scrubUrl(url: string | undefined): string | undefined {
     for (const param of SENSITIVE_QUERY_PARAMS) {
       if (parsed.searchParams.has(param)) parsed.searchParams.set(param, FILTERED);
     }
+    const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ""));
+    if (SENSITIVE_QUERY_PARAMS.some((param) => fragment.has(param))) {
+      for (const param of SENSITIVE_QUERY_PARAMS) {
+        if (fragment.has(param)) fragment.set(param, FILTERED);
+      }
+      parsed.hash = fragment.toString();
+    }
     if (isAbsolute) return parsed.toString();
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return url.replace(new RegExp(`([?&](?:${SENSITIVE_QUERY_PARAMS.join("|")})=)[^&#]*`, "gi"), `$1${FILTERED}`);
+    return url.replace(new RegExp(`([?&#](?:${SENSITIVE_QUERY_PARAMS.join("|")})=)[^&#]*`, "gi"), `$1${FILTERED}`);
   }
 }
 

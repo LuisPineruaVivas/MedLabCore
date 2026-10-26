@@ -41,15 +41,23 @@ interface OrderWithItems {
 export function usePatientSession() {
   const [session, setSession] = useState<PatientSession | null>(null);
 
-  const authenticate = async (dni: string, pin: string): Promise<{ success: boolean; error?: string }> => {
+  const authenticate = async (dni: string, pin: string): Promise<{ success: boolean; locked?: boolean; error?: string }> => {
     try {
       // Use the SECURITY DEFINER RPC — no direct table access as anon.
       // Only returns data if both DNI and PIN match an existing order.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)("portal_authenticate", {
+      const { data, error } = await supabase.rpc("portal_authenticate", {
         p_dni: dni.trim(),
         p_pin: pin.trim().toUpperCase(),
       });
+
+      // The server refuses a document ID for an hour after 10 wrong PINs (S-03).
+      if (error?.message?.includes("PORTAL_LOCKED")) {
+        return {
+          success: false,
+          locked: true,
+          error: "Por seguridad, este documento quedo bloqueado por una hora despues de varios intentos fallidos. Intenta mas tarde o contacta al laboratorio.",
+        };
+      }
 
       if (error || !data || (Array.isArray(data) && data.length === 0)) {
         return {

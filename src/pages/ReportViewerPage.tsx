@@ -4,15 +4,23 @@ import { PDFViewer, pdf } from "@react-pdf/renderer";
 import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
+import { hasCredentialsInUrl, resolvePortalCredentials, withoutCredentials } from "@/features/patientPortal/portalLink";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInYears, differenceInMonths } from "date-fns";
 
 export default function ReportViewerPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
-  const dni = searchParams.get("dni") || "";
-  const pin = searchParams.get("pin") || "";
+  // Read once from the link (#dni=…&pin=…, or ?dni=…&pin=… in older links; remembered
+  // for this tab so a refresh works), then
+  // removed from the address bar so they don't stay in the browser history.
+  const [{ dni, pin }] = useState(() => resolvePortalCredentials(window.location.search, window.location.hash));
+  useEffect(() => {
+    if (hasCredentialsInUrl(window.location.search, window.location.hash)) {
+      setSearchParams(withoutCredentials(window.location.search), { replace: true });
+    }
+  }, [setSearchParams]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

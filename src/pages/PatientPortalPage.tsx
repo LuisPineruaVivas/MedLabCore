@@ -13,12 +13,22 @@ import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogO
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
+import { forgetPortalCredentials, hasCredentialsInUrl, resolvePortalCredentials, withoutCredentials } from "@/features/patientPortal/portalLink";
 
 export default function PatientPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
-  const [dni, setDni] = useState(searchParams.get("dni") || "");
-  const [pin, setPin] = useState(searchParams.get("pin") || "");
+  // Read once from the link (#dni=…&pin=…, or ?dni=…&pin=… in older links; remembered
+  // for this tab so a refresh works), then
+  // removed from the address bar so they don't stay in the browser history.
+  const [linkCredentials] = useState(() => resolvePortalCredentials(window.location.search, window.location.hash));
+  const [dni, setDni] = useState(linkCredentials.dni);
+  const [pin, setPin] = useState(linkCredentials.pin);
+  useEffect(() => {
+    if (hasCredentialsInUrl(window.location.search, window.location.hash)) {
+      setSearchParams(withoutCredentials(window.location.search), { replace: true });
+    }
+  }, [setSearchParams]);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,21 +50,18 @@ export default function PatientPortalPage() {
   const { session, authenticate, logout } = usePatientSession();
   const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null, pin);
 
-  // Auto-login if URL has params (once per dni/pin pair in the link).
+  // Auto-login if the link had credentials (once per dni/pin pair in the link).
   // handleAuth is recreated every render; the ref always points at the latest one.
   const handleAuthRef = useRef<(dniValue?: string, pinValue?: string) => Promise<void>>(async () => {});
   const autoLoginFor = useRef<string | null>(null);
   useEffect(() => {
-    const dniParam = searchParams.get("dni");
-    const pinParam = searchParams.get("pin");
+    const { dni: dniParam, pin: pinParam } = linkCredentials;
     if (!dniParam || !pinParam || session) return;
     const attemptKey = `${dniParam}|${pinParam}`;
     if (autoLoginFor.current === attemptKey) return;
     autoLoginFor.current = attemptKey;
-    setDni(dniParam);
-    setPin(pinParam);
     handleAuthRef.current(dniParam, pinParam);
-  }, [searchParams, session]);
+  }, [linkCredentials, session]);
 
   handleAuthRef.current = handleAuth;
   async function handleAuth(dniValue?: string, pinValue?: string) {
@@ -80,8 +87,11 @@ export default function PatientPortalPage() {
     setError(null);
 
     const result = await authenticate(dniToUse, pinToUse);
-    
-    if (!result.success) {
+
+    if (result.locked) {
+      // Locked by the server (10 wrong PINs in an hour): don't count it again here.
+      setError(result.error ?? null);
+    } else if (!result.success) {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
       
@@ -112,6 +122,7 @@ export default function PatientPortalPage() {
     newParams.delete("pdf");
 
     setSearchParams(newParams, { replace: true });
+    forgetPortalCredentials();
     logout();
     setDni("");
     setPin("");
@@ -231,10 +242,10 @@ export default function PatientPortalPage() {
                   <Label htmlFor="pin">PIN de Acceso</Label>
                   <Input
                     id="pin"
-                    placeholder="Ej: A3F2B1"
+                    placeholder="Ej: 7KQ2M9XH4P"
                     value={pin}
                     onChange={(e) => setPin(e.target.value.toUpperCase())}
-                    maxLength={6}
+                    maxLength={12}
                     className="font-mono tracking-widest text-center text-lg"
                     required
                   />

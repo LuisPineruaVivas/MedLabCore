@@ -27,6 +27,7 @@ import { OrderThermalReceiptPDF } from "@/lib/orderReceiptThermalPrinter";
 import { printThermalReceipt } from "@/lib/thermalPrinter";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { buildPortalLink } from "@/features/patientPortal/portalLink";
 import { LetterHeadPDF } from "@/lib/letterhead";
 import { LetterHeadPreviewDialog } from "@/features/orders/LetterHeadDialog";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
@@ -479,7 +480,7 @@ export default function OrderDetailPage() {
     }
 
     // 2. Construir la URL del portal incluyendo el parámetro 'dni' para el auto-login
-    const portalUrl = `${window.location.origin}/portal-paciente?org=${order.org_id}&pin=${order.access_pin}&dni=${encodeURIComponent(patientDni)}`;
+    const portalUrl = buildPortalLink(window.location.origin, "/portal-paciente", { orgId: order.org_id, dni: patientDni, pin: order.access_pin });
     
     // 3. Obtener y limpiar el número telefónico
     const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
@@ -497,7 +498,7 @@ export default function OrderDetailPage() {
       const patientDni = order.patients?.id_number || order.patients?.id_number || "";
       
       // Apunta directamente a la nueva ruta /informe-pdf
-      const pdfUrl = `${window.location.origin}/informe-pdf?org=${order.org_id}&pin=${order.access_pin}&dni=${encodeURIComponent(patientDni)}`;
+      const pdfUrl = buildPortalLink(window.location.origin, "/informe-pdf", { orgId: order.org_id, dni: patientDni, pin: order.access_pin });
       
       const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
       const text = encodeURIComponent(`Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`);

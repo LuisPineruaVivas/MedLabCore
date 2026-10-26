@@ -8,6 +8,14 @@ describe("Sentry URL scrubbing", () => {
     );
   });
 
+  it("filters them from the fragment of new links too", () => {
+    expect(scrubUrl("https://med-lab-core.vercel.app/informe-pdf?org=abc#dni=V12345678&pin=7KQ2M9XH4P")).toBe(
+      "https://med-lab-core.vercel.app/informe-pdf?org=abc#dni=%5Bfiltered%5D&pin=%5Bfiltered%5D"
+    );
+    expect(scrubUrl("/portal-paciente?org=abc#pin=XYZ")).toBe("/portal-paciente?org=abc#pin=%5Bfiltered%5D");
+    expect(scrubUrl("/orders/123#results")).toBe("/orders/123#results");
+  });
+
   it("keeps relative URLs relative and leaves other params alone", () => {
     expect(scrubUrl("/portal-paciente?org=abc&pin=XYZ")).toBe("/portal-paciente?org=abc&pin=%5Bfiltered%5D");
     expect(scrubUrl("/orders/123?tab=results")).toBe("/orders/123?tab=results");
