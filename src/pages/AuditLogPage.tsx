@@ -123,6 +123,12 @@ export default function AuditLogPage() {
             <RefreshCw className="w-3 h-3" /> Cambio de Estado
           </Badge>
         );
+      case "ORDER_RESULTS_UPDATED":
+        return (
+          <Badge variant="secondary" className="bg-sky-50 text-sky-700 border-sky-200 flex items-center gap-1 font-medium">
+            <RefreshCw className="w-3 h-3" /> Resultados Editados
+          </Badge>
+        );
       case "ORDER_PAYMENT_CHANGED":
         return (
           <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 font-medium">
