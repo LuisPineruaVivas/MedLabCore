@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Invoice, InvoiceStatus } from "../types";
 
@@ -67,7 +67,7 @@ export function useBackfillPreview(orgId: string | null, enabled: boolean) {
     queryFn: async (): Promise<number> => {
       const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId, p_from: null, p_dry_run: true });
       if (error) throw error;
-      return Number(data?.orders ?? 0);
+      return Number((data as { orders?: number } | null)?.orders ?? 0);
     },
   });
 }
@@ -78,7 +78,7 @@ export function useBackfillInvoices(orgId: string | null) {
     mutationFn: async (): Promise<number> => {
       const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId, p_from: null, p_dry_run: false });
       if (error) throw error;
-      return Number(data?.orders ?? 0);
+      return Number((data as { orders?: number } | null)?.orders ?? 0);
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: queryKeys.erp.backfillPreview(orgId) });

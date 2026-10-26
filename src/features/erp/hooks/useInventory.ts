@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { InventoryTransaction, Item } from "../types";
 import type { AdjustmentFormValues, ItemFormValues, PurchaseFormValues } from "../schemas/inventorySchemas";

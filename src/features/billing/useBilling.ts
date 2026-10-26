@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import { matchAllWords } from "@/lib/postgrest";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
-import { pendingRpc } from "@/lib/pendingRpc";
 import { parseBillingTotals } from "./billingUtils";
 
 export function useBillingSummary(page: number, search: string, statusFilter: string, monthFilter: string) {
@@ -55,7 +54,7 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
       // summing downloaded orders was silently wrong for larger labs.
       const [{ data: ordersPage, error: pageError, count }, { data: totals, error: totalsError }] = await Promise.all([
         query.range(offset, offset + pageSize - 1),
-        pendingRpc("get_billing_totals", {
+        supabase.rpc("get_billing_totals", {
           p_org_id: orgId,
           p_from: monthFilterStart,
           p_to: monthFilterEnd,

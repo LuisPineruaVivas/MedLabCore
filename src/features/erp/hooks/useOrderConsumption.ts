@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import { getOrderStatusInvalidationTargets } from "@/features/orders/useOrders";
 import type { BomPreviewLine, ConsumptionInput } from "../types";
+import type { Json } from "@/integrations/supabase/types";
 
 export function useOrderBomPreview(orderId: string | null | undefined, enabled: boolean) {
   return useQuery({
@@ -12,7 +13,7 @@ export function useOrderBomPreview(orderId: string | null | undefined, enabled: 
     queryFn: async (): Promise<BomPreviewLine[]> => {
       const { data, error } = await db.rpc("get_order_bom_preview", { p_order_id: orderId });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as BomPreviewLine[];
     },
   });
 }
@@ -31,8 +32,8 @@ export function useConfirmOrderConsumption(orgId: string | null | undefined) {
     mutationFn: async (values: { orderId: string; consumptions: ConsumptionInput[]; signature: OrderSignature }) => {
       const { data, error } = await db.rpc("confirm_order_consumption", {
         p_order_id: values.orderId,
-        p_consumptions: values.consumptions,
-        p_signature: values.signature,
+        p_consumptions: values.consumptions as unknown as Json,
+        p_signature: values.signature as unknown as Json,
       });
       if (error) throw error;
       return data as { lines: number; total_cost: number };

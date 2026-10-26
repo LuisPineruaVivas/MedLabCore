@@ -1322,6 +1322,24 @@ export type Database = {
           },
         ]
       }
+      portal_login_attempts: {
+        Row: {
+          failures: number
+          id_number_hash: string
+          window_start: string
+        }
+        Insert: {
+          failures?: number
+          id_number_hash: string
+          window_start?: string
+        }
+        Update: {
+          failures?: number
+          id_number_hash?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       profile_templates_junction: {
         Row: {
           id: string
@@ -1684,6 +1702,7 @@ export type Database = {
       }
     }
     Functions: {
+      assert_org_member: { Args: { p_org_id: string }; Returns: undefined }
       bulk_upsert_org_prices: {
         Args: { p_items: Json; p_org_id: string }
         Returns: Json
@@ -1762,6 +1781,19 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_org_id: string }
         Returns: Json
       }
+      get_affiliate_pending_balance: {
+        Args: { p_affiliate_id: string }
+        Returns: number
+      }
+      get_billing_totals: {
+        Args: {
+          p_from?: string
+          p_month_start?: string
+          p_org_id: string
+          p_to?: string
+        }
+        Returns: Json
+      }
       get_cash_session_summary: {
         Args: { p_session_id: string }
         Returns: Json
@@ -1797,7 +1829,24 @@ export type Database = {
         Returns: number
       }
       get_my_org_id: { Args: never; Returns: string }
+      get_my_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_order_bom_preview: { Args: { p_order_id: string }; Returns: Json }
+      get_public_org_brand: {
+        Args: { p_org_id: string }
+        Returns: {
+          address: string
+          email: string
+          logo_url: string
+          name: string
+          phone: string
+          primary_color: string
+          report_template: string
+          secondary_color: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -1805,6 +1854,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_api_caller: { Args: never; Returns: boolean }
       mark_overdue_invoices: { Args: never; Returns: Json }
       open_cash_session: {
         Args: {
@@ -1878,6 +1928,10 @@ export type Database = {
       review_cash_session: {
         Args: { p_notes?: string; p_session_id: string }
         Returns: Json
+      }
+      save_order_results: {
+        Args: { p_items: Json; p_order_id: string }
+        Returns: number
       }
       upsert_exam_profile: {
         Args: {
@@ -2161,3 +2215,4 @@ export const Constants = {
     },
   },
 } as const
+

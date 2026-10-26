@@ -4,7 +4,6 @@ import type { Json } from "@/integrations/supabase/types";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { matchAllWords } from "@/lib/postgrest";
-import { pendingRpc } from "@/lib/pendingRpc";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { OrderWithPatient, OrderStatus } from "./schemas";
 import type { EditableOrderItem } from "./useOrderResultsEditor";
@@ -389,7 +388,7 @@ export function useSaveResults() {
       orgId: string | null | undefined;
       items: SaveResultsItem[];
     }) => {
-      const { error } = await pendingRpc("save_order_results", {
+      const { error } = await supabase.rpc("save_order_results", {
         p_order_id: orderId,
         p_items: items.map((item) => ({
           item_id: item.itemId,

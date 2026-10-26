@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { BankAccount } from "../types";
 import type { BankAccountFormValues } from "../schemas/bankAccountSchema";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 export function useBankAccounts(orgId: string | null, activeOnly = false) {
   return useQuery({ queryKey: queryKeys.erp.bankAccounts(orgId, activeOnly), enabled: !!orgId, queryFn: async (): Promise<BankAccount[]> => {
@@ -18,7 +19,8 @@ export function useSaveBankAccount(orgId: string | null) {
   const client = useQueryClient();
   return useMutation({ mutationFn: async ({ id, values }: { id?: string; values: BankAccountFormValues }) => {
     if (!orgId) throw new Error("No hay organización seleccionada.");
-    const payload = { ...values, org_id: orgId, description: values.description || null, bank_name: values.bank_name || null, account_number: values.account_number || null, phone_number: values.phone_number || null, email: values.email || null };
+    // zod marks every field optional without strictNullChecks; the schema guarantees name/method/currency.
+    const payload = { ...values, org_id: orgId, description: values.description || null, bank_name: values.bank_name || null, account_number: values.account_number || null, phone_number: values.phone_number || null, email: values.email || null } as TablesInsert<"bank_accounts">;
     const request = id ? db.from("bank_accounts").update(payload).eq("id", id) : db.from("bank_accounts").insert(payload);
     const { error } = await request;
     if (error) throw error;

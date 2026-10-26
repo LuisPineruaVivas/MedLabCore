@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { CashSession, CashSessionTotals } from "../types";
 
@@ -10,7 +10,8 @@ export function useOpenCashSession(orgId: string | null) {
     queryFn: async (): Promise<CashSession | null> => {
       const { data, error } = await db.from("cash_register_sessions").select("*").eq("org_id", orgId).eq("status", "open").maybeSingle();
       if (error) throw error;
-      return data;
+      // The *_totals JSON columns follow CashSessionTotals (written by the cash RPCs).
+      return data as unknown as CashSession | null;
     },
   });
 }
@@ -29,7 +30,7 @@ export function useCashSessions(orgId: string | null, limit = 30) {
         .order("opened_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as CashSession[];
     },
   });
 }
@@ -43,7 +44,7 @@ export function useCashSessionSummary(sessionId: string | null | undefined) {
     queryFn: async (): Promise<CashSessionTotals> => {
       const { data, error } = await db.rpc("get_cash_session_summary", { p_session_id: sessionId });
       if (error) throw error;
-      return data ?? {};
+      return (data ?? {}) as unknown as CashSessionTotals;
     },
   });
 }

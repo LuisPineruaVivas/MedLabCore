@@ -1,12 +1,19 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { erpDb as db } from "../utils/erpDb";
+import { supabase as db } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { FinancialSummary, InventorySummary, ProfitabilityReport, ReceivablesReport } from "../types";
 import { isValidPeriod, type ReportPeriod } from "../utils/reports";
+import type { Database } from "@/integrations/supabase/types";
 
 const REPORT_STALE_TIME = 1000 * 60 * 2;
 
-async function callReport<T>(name: string, args: Record<string, unknown>): Promise<T> {
+type ReportFunction =
+  | "get_erp_financial_summary"
+  | "get_erp_profitability_report"
+  | "get_erp_inventory_summary"
+  | "get_accounts_receivable_report";
+
+async function callReport<T>(name: ReportFunction, args: Database["public"]["Functions"][ReportFunction]["Args"]): Promise<T> {
   const { data, error } = await db.rpc(name, args);
   if (error) throw error;
   return data as T;
