@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
-import { pendingRpc } from "@/lib/pendingRpc";
 import { parseAmount } from "./billingUtils";
 import { toast } from "sonner";
 
@@ -75,7 +74,7 @@ export function useAffiliatePendingBalance(affiliateId: string | null) {
     queryKey: queryKeys.affiliateAccounts.pendingBalance(affiliateId),
     queryFn: async () => {
       // Summed in the database: downloading the orders stopped at 1,000 rows.
-      const { data, error } = await pendingRpc("get_affiliate_pending_balance", { p_affiliate_id: affiliateId });
+      const { data, error } = await supabase.rpc("get_affiliate_pending_balance", { p_affiliate_id: affiliateId });
       if (error) throw error;
       return parseAmount(data);
     },
@@ -105,6 +104,9 @@ export function useAffiliateOrders(affiliateId: string | null, paymentStatus: st
       }
 
       const { data, error, count } = await query.range(offset, offset + AFFILIATE_ORDERS_PAGE_SIZE - 1);
+      // PGRST103 (HTTP 416): the page is past the end, e.g. after its orders were marked
+      // paid. Report it as empty; the page then moves back to a page that exists.
+      if (error?.code === "PGRST103") return { orders: [] as AffiliateAccountOrderRow[], total: 0 };
       if (error) throw error;
       return { orders: (data ?? []) as AffiliateAccountOrderRow[], total: count ?? 0 };
     },

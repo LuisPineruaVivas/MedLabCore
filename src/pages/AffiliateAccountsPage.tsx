@@ -53,6 +53,11 @@ export default function AffiliateAccountsPage() {
     setPage(1);
   }, [selectedAffiliateId, paymentStatus]);
 
+  // The list can shrink (orders marked paid): never stay on a page past the end.
+  useEffect(() => {
+    if (ordersPage && page > pageCount) setPage(pageCount);
+  }, [ordersPage, page, pageCount]);
+
   const selectableOrders = useMemo(
     () => orders.filter((order) => order.payment_status === "pending"),
     [orders]
@@ -178,7 +183,12 @@ export default function AffiliateAccountsPage() {
                 selectedAffiliateId &&
                 markPaid.mutate(
                   { affiliateId: selectedAffiliateId, orderIds: selectedPendingOrders.map((order) => order.id) },
-                  { onSuccess: () => setSelectedOrders({}) }
+                  {
+                    onSuccess: () => {
+                      setSelectedOrders({});
+                      setPage(1);
+                    },
+                  }
                 )
               }
               disabled={!selectedAffiliateId || selectedPendingOrders.length === 0 || markPaid.isPending}
