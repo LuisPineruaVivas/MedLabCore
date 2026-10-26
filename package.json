@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "preview": "vite preview",
+    "preview:local": "vite build --mode localdb && vite preview --mode localdb --port 4173 --strictPort",
     "test": "vitest run",
     "test:watch": "vitest",
     "update-types": "npx supabase gen types typescript --project-id mgeateznuhmhgqemaphj > src/integrations/supabase/types.ts",
