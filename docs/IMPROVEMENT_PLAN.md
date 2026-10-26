@@ -54,7 +54,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | B-06 | 52 TypeScript errors (missing fields in types hide real bugs) | Bug | 🟠 | M | ☑ |
 | B-07 | Report viewer regenerates the PDF on every render (mobile) | Bug | 🟠 | S | ☑ |
 | B-08 | Searching with commas / parentheses breaks the query | Bug | 🟠 | S | ☑ |
-| B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☐ |
+| B-09 | Other forms may show empty selects when editing | Bug | 🟢 | S | ☑ |
 | B-10 | ERP smoke test fails every evening (UTC vs Caracas date) | Bug | 🟢 | S | ☑ |
 | P-01 | PDF library (1.5 MB) downloaded on the login page | Perf | 🔴 | S | ☑ |
 | P-02 | PDF / Word generators bundled into pages instead of loaded on click | Perf | 🟠 | M | ☐ (deferred) |
@@ -78,9 +78,9 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ◐ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☑ |
-| M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ◐ |
-| M-07 | Dead code & stale config | Maint | 🟢 | S | ☐ |
-| M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☐ |
+| M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ☑ |
+| M-07 | Dead code & stale config | Maint | 🟢 | S | ☑ |
+| M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☑ |
 | T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ◐ |
 | T-02 | One command to run the SQL test suites | Tests | 🟠 | S | ☑ |
 | T-03 | Component tests for critical flows | Tests | 🟢 | M | ☐ |
@@ -641,3 +641,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | S-08 | ab64134 | ◐ Rule: ≥10 chars with letters and digits, in forms + the 3 user-creating functions + local Auth config. Tested locally: function refuses "abc123" / "abcdefghijkl" with Spanish messages and accepts a strong one; Auth refuses a weak password change (422 weak_password); existing accounts still log in; team form shows the rule and disables the button. Release: set the same in the Supabase dashboard (leaked-password check is Pro-only). |
 | 2026-10-26 | B-05 | ec21e51 | `parseJsonObject` in the 3 PDF layouts (results + schema); compiled JS differs only in those lines. Test: each layout renders with a broken exam (fails on the old code). Word keeps its explicit error (staff tool). |
 | 2026-10-26 | M-01, P-02 | — | Deferred by the owner: per-lab report differences must be kept; revisit only with a confirmed list of differences and golden outputs. |
+| 2026-10-26 | B-09 | 17aeb0a | Checked in the browser on local QA data (patient gender "femenino" + date, org settings fields): no empty selects. OrganizationSettings has no Radix Select; AdjustmentDialog binds selects with watch(). No code change; pattern documented in CLAUDE.md. |
+| 2026-10-26 | M-06, M-07, M-08 | 17aeb0a | M-06 complete (json.ts in B-05, form pattern documented). M-07: unused ExchangeRateHistoryPanel + hooks removed; stale schema snapshots moved to MedLabCore-backups/removed-from-git/repo-snapshots-2026-10-26; HANDOFF doc archived; /sw-push.js rule already removed in S-01; PurchaseEntryDialog left as is (works). M-08: CLAUDE.md, ERP.md, ERP_GUIA_USUARIO.md updated. |
