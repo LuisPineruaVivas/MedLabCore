@@ -71,7 +71,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-07 | Database hardening batch (audit hardening notes) | Sec | 🟠 | M | ◐ |
 | S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ◐ |
 | S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ☐ |
-| S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☐ |
+| S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☑ |
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☐ |
@@ -643,3 +643,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | M-01, P-02 | — | Deferred by the owner: per-lab report differences must be kept; revisit only with a confirmed list of differences and golden outputs. |
 | 2026-10-26 | B-09 | 17aeb0a | Checked in the browser on local QA data (patient gender "femenino" + date, org settings fields): no empty selects. OrganizationSettings has no Radix Select; AdjustmentDialog binds selects with watch(). No code change; pattern documented in CLAUDE.md. |
 | 2026-10-26 | M-06, M-07, M-08 | 17aeb0a | M-06 complete (json.ts in B-05, form pattern documented). M-07: unused ExchangeRateHistoryPanel + hooks removed; stale schema snapshots moved to MedLabCore-backups/removed-from-git/repo-snapshots-2026-10-26; HANDOFF doc archived; /sw-push.js rule already removed in S-01; PurchaseEntryDialog left as is (works). M-08: CLAUDE.md, ERP.md, ERP_GUIA_USUARIO.md updated. |
+| 2026-10-26 | S-10 | 737127f | erpDb + pendingRpc removed; types.ts regenerated from the local DB (= production + pending migrations, additions only). ERP hooks compile to the same JS. Browser-tested locally (QA lab with ERP on): all ERP pages, report RPCs, new payment method (201). |
+| 2026-10-26 | B-01, B-02, B-03, P-04 | fed68f3 | Browser-tested locally (were SQL-only): billing cards from get_billing_totals ($25 = 10 + 15); "Guardar todo" = 1 save_order_results call, values saved, 2 audit entries; affiliate page: $60 balance, pages 50 + 10, selection kept across pages, mark 60 paid → $0. **Bug found and fixed:** after paying the last page the list kept stale rows (HTTP 416 on a page past the end). Still ◐ until db push + preview test. |
