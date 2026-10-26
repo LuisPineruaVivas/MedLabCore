@@ -69,7 +69,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-05 | Remove temporary anon branding grant after `main` release | Sec | 🟠 | S | ☐ |
 | S-06 | Public `thermal-debug.html` shipped to production | Sec | 🟢 | S | ☑ |
 | S-07 | Database hardening batch (audit hardening notes) | Sec | 🟠 | M | ◐ |
-| S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ☐ |
+| S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ◐ |
 | S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ☐ |
 | S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☐ |
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
@@ -97,7 +97,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | **6 · Reports consolidation** ⚠️ | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
 | **7 · Structure & typing** | M-02, S-10, B-09, M-03 (strict steps), M-07, M-08, T-03 | Ongoing |
 | **8 · Verify** | S-09, S-11 | Architecture change + independent re-audit |
-| **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), `dev` → `main`, S-05 | Everything at once, after local testing |
+| **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), Supabase dashboard → Auth: min password 10 + letters/digits + secure password change (S-08; leaked-password protection needs the Pro plan), `dev` → `main`, S-05 | Everything at once, after local testing |
 
 ---
 
@@ -638,3 +638,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-25 | S-04 | 5bcc0cb | ◐ `_shared/http.ts` used by all 6 functions: CORS echoes only production, `med-lab-core-*-luis-pineruas-projects.vercel.app` previews and localhost (`ALLOWED_ORIGINS` secret adds more); unexpected errors → generic message, details in logs; Gemini key moved to header. Tested on local edge runtime directly (local Kong adds its own CORS, hosted Supabase does not). Needs `supabase functions deploy` at release. |
 | 2026-10-25 | S-03 | 22a6785 | ◐ Migration 20261025020000 (applied locally) + `portal_pin_protection.sql` (fails without the migration). Tested in the browser on local QA data: new #-link and old ?-link auto-login and clean the address bar, refresh keeps working (tab memory), manual 10-char PIN works, 10 wrong PINs via the API → portal shows the lock message even with the right PIN. **Bug fixed:** PIN field maxLength 6 vs 8-char PINs (manual login impossible). Check at release: a WhatsApp link with `#` opens correctly on a real phone. |
 | 2026-10-25 | S-07 | e512635 | ◐ Migration 20261025030000 (applied locally) + `db_hardening.sql` (allowed/refused per item; fails without the migration); all 9 SQL suites pass. Antibiotic writes kept for secretaries (they enter microbiology results). Local smoke as QA admin: dashboard, Tests (view), Orders, order detail → all requests 200. Not tested in the UI: an affiliate's Orders page (now sees only its own profile — expected). |
+| 2026-10-25 | S-08 | ab64134 | ◐ Rule: ≥10 chars with letters and digits, in forms + the 3 user-creating functions + local Auth config. Tested locally: function refuses "abc123" / "abcdefghijkl" with Spanish messages and accepts a strong one; Auth refuses a weak password change (422 weak_password); existing accounts still log in; team form shows the rule and disables the button. Release: set the same in the Supabase dashboard (leaked-password check is Pro-only). |
