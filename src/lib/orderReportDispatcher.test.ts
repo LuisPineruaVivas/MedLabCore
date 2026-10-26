@@ -142,5 +142,19 @@ describe("orderReportDispatcher", () => {
         }).not.toThrow();
       }
     });
+
+    it("still renders when one exam has malformed stored results (B-05)", () => {
+      const brokenItem = { ...dummyOrderItems[0], id: "broken-item", results_data: "{not valid json", test_templates: { schema: "{also broken" } };
+      for (const ReportComponent of [REPORT_TEMPLATES.default, REPORT_TEMPLATES.palermo, REPORT_TEMPLATES.rivalta]) {
+        expect(() => {
+          (ReportComponent as FC<UnifiedReportProps>)({
+            orden: dummyOrder,
+            orderItems: [...dummyOrderItems, brokenItem],
+            patientData: dummyPatient,
+            labData: dummyLab,
+          });
+        }).not.toThrow();
+      }
+    });
   });
 });

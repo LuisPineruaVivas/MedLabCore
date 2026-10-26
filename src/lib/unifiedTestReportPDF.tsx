@@ -5,6 +5,7 @@ import { MicrobiologyReportSection } from './MicrobiologyReportSection';
 import { getFieldResultMeta, type TemplateField } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
+import { parseJsonObject } from "@/lib/json";
 
 Font.register({
   family: "Inter",
@@ -27,7 +28,7 @@ interface ReportResultField {
   options?: string[];
 }
 
-interface ReportResultsData {
+export interface ReportResultsData {
   category?: string;
   result_type?: string;
   sample_type?: string;
@@ -425,12 +426,9 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const resultsData: ReportResultsData = typeof item.results_data === "string"
-      ? JSON.parse(item.results_data || "{}") as ReportResultsData
-      : item.results_data || {};
-    const templateSchema = typeof item.test_templates?.schema === "string"
-      ? JSON.parse(item.test_templates.schema || "{}") as { hide_table_header?: boolean }
-      : item.test_templates?.schema || {};
+    // B-05: a malformed value gives {} instead of failing the whole report.
+    const resultsData = parseJsonObject(item.results_data) as ReportResultsData;
+    const templateSchema = parseJsonObject(item.test_templates?.schema) as { hide_table_header?: boolean };
 
     const category = item.category || resultsData?.category || item.test_templates?.category || "Pruebas Especiales";
     const isMicrobiology =

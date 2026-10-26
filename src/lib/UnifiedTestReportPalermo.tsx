@@ -6,7 +6,8 @@ import { getFieldResultMeta } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
 import { enhanceSignatureImage } from "./enhanceSignatureImage";
-import type { ReportOrderItem } from "@/lib/unifiedTestReportPDF";
+import type { ReportOrderItem, ReportResultsData } from "@/lib/unifiedTestReportPDF";
+import { parseJsonObject } from "@/lib/json";
 
 Font.register({
   family: "Inter",
@@ -396,8 +397,9 @@ export const UnifiedTestReportPalermo = ({ orden, orderItems, departmentOrder = 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const resultsData = typeof item.results_data === "string" ? JSON.parse(item.results_data || "{}") : (item.results_data || {});
-    const templateSchema = typeof item.test_templates?.schema === "string" ? JSON.parse(item.test_templates.schema || "{}") : (item.test_templates?.schema || {});
+    // B-05: a malformed value gives {} instead of failing the whole report.
+    const resultsData = parseJsonObject(item.results_data) as ReportResultsData;
+    const templateSchema = parseJsonObject(item.test_templates?.schema) as { hide_table_header?: boolean };
 
     const category = item.category || resultsData?.category || item.test_templates?.category || "Pruebas Especiales";
     const isMicrobiology =
@@ -475,7 +477,7 @@ export const UnifiedTestReportPalermo = ({ orden, orderItems, departmentOrder = 
         sectionRows.push({
           fieldLabel: isMultiField ? field.label : item.test_name,
           value: field.value !== undefined && field.value !== null && String(field.value).trim() !== ""
-            ? field.value
+            ? field.value as string
             : "........",
           unit: field.unit || "",
           rangeDisplay,
