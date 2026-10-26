@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { buildCorsHeaders, internalError } from "../_shared/http.ts";
+import { getPasswordError } from "../_shared/password.ts";
 
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
@@ -43,6 +44,11 @@ Deno.serve(async (req) => {
 
     if (!email || !password || !full_name || !role) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return new Response(JSON.stringify({ error: passwordError }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Only allow creating bioanalyst or secretary roles

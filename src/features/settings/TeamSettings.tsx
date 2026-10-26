@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { UserPlus, Users, Shield, FlaskConical, ClipboardList } from "lucide-react";
 import { useCreateTeamMember, useTeamMembers } from "./useTeamSettings";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 
 const roleLabels: Record<string, string> = {
   lab_admin: "Administrador",
@@ -131,6 +132,9 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
               />
+              <p className={`text-xs ${form.password && getPasswordError(form.password) ? "text-destructive" : "text-muted-foreground"}`}>
+                {(form.password && getPasswordError(form.password)) || PASSWORD_RULE_TEXT}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Rol</Label>
@@ -174,7 +178,7 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
             </Button>
             <Button
               onClick={handleCreateUser}
-              disabled={!form.email || !form.password || !form.full_name || createUser.isPending}
+              disabled={!form.email || !!getPasswordError(form.password) || !form.full_name || createUser.isPending}
             >
               {createUser.isPending ? "Creando..." : "Crear Usuario"}
             </Button>

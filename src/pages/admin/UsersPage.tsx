@@ -13,6 +13,7 @@ import type { UserRole } from "@/hooks/useUserRole";
 import { getAdminUserError, useAdminOrganizationsList, useAdminUsers, useCreateAdminUser } from "@/features/admin/useAdminUsers";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useAuth } from "@/hooks/useAuth";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 
 export default function UsersPage() {
   const [open, setOpen] = useState(false);
@@ -145,6 +146,9 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label>Password</Label>
               <Input type="password" placeholder="••••••••" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <p className={`text-xs ${form.password && getPasswordError(form.password) ? "text-destructive" : "text-muted-foreground"}`}>
+                {(form.password && getPasswordError(form.password)) || PASSWORD_RULE_TEXT}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Organization</Label>
@@ -183,7 +187,7 @@ export default function UsersPage() {
                   onError: (error) => toast.error(getAdminUserError(error, "No se pudo crear el usuario")),
                 })
               }
-              disabled={!form.email || !form.password || !form.full_name || !form.org_id || createUser.isPending}
+              disabled={!form.email || !!getPasswordError(form.password) || !form.full_name || !form.org_id || createUser.isPending}
             >
               {createUser.isPending ? "Creando..." : "Crear Usuario"}
             </Button>

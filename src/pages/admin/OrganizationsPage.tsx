@@ -10,6 +10,7 @@ import { Plus, Building2, ToggleLeft, ToggleRight, Eye, EyeOff, MapPin, Upload, 
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { BulkPriceUploadDialog } from "@/features/admin/BulkPriceUploadDialog";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 import {
   getOrganizationMutationError,
   useCreateOrganization,
@@ -66,8 +67,7 @@ export default function OrganizationsPage() {
     form.org_name.trim() &&
     form.admin_full_name.trim() &&
     form.admin_email.trim() &&
-    form.admin_password.trim() &&
-    form.admin_password.length >= 6;
+    !getPasswordError(form.admin_password);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -265,7 +265,7 @@ export default function OrganizationsPage() {
                 <Input type="email" placeholder="admin@lab.com" value={form.admin_email} onChange={set("admin_email")} />
               </div>
               <div className="space-y-2">
-                <Label>Contraseña * (6+ caracteres)</Label>
+                <Label>Contraseña *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -281,6 +281,9 @@ export default function OrganizationsPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className={`text-xs ${form.admin_password && getPasswordError(form.admin_password) ? "text-destructive" : "text-muted-foreground"}`}>
+                  {(form.admin_password && getPasswordError(form.admin_password)) || PASSWORD_RULE_TEXT}
+                </p>
               </div>
             </div>
           </div>
