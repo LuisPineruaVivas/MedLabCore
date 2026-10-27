@@ -75,7 +75,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☑ |
-| M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ◐ |
+| M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ☑ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☑ |
 | M-06 | Shared helpers: safe JSON parse, PostgREST filter escaping, form init | Maint | 🟠 | S | ☑ |
@@ -649,3 +649,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | T-03 | 120d2b0 | 14 component tests (bank account edit, purchase by package, portal PIN/lockout/link, OrderDetailPage render/save/permissions). Old code fails the portal + save tests. Gotcha documented in setup.ts: with isolate:false use `within(document.body)`, not `screen`. |
 | 2026-10-26 | M-02 | f4a7733, 6f5a78e, f02879c, 4a763dd | OrderDetailPage 775→226, OrderDetailSections 770→5 files, CreateOrderDialog 737→175, TemplateBuilderPage 1158→386. Each with a component safety net written first (passes before and after) and checked in the browser on local data. AuditLogPage (589) left as is: its route and menu entry are disabled. |
 | 2026-10-26 | — | 37625a3 | **Bug found while testing M-02:** "Ver Nota" crashed the order page (white screen) for orders with a Bs total of 0 — exempted orders; 220 of 1,189 in the local copy of production. Fixed. Also noted: `orders.total_bs` is stored with float noise (e.g. 2658.6812999999997) because the browser multiplies USD × rate; round to 2 decimals in `create_lab_order` in a future migration. |
+| 2026-10-26 | M-03 (steps 3–4) | 6d3c510 | `strict: true` with 0 errors (95 strictNullChecks + 4 strict fixed). Report files: type-only, compiled JS identical. Small real fixes: order lists no longer crash on a missing order number, stat cards show "—" on failure, null form values render empty. **Owner decision pending:** `parseReferenceBounds` (features/tests/schemas.ts) treats a missing range limit as 0, so a range like "> 10" (no upper limit) gets bounds 0–10 and a value of 50 could be flagged out of range in reports. Kept as is because it changes report output for every lab. |
