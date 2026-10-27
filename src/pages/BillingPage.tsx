@@ -109,7 +109,7 @@ export default function BillingPage() {
                   </TableCell>
                   <TableCell>
                     <span className="font-mono font-bold text-primary">
-                      #{order.order_seq.toString().padStart(4, "0")}
+                      #{String(order.order_seq ?? "").padStart(4, "0")}
                     </span>
                   </TableCell>
                 </TableRow>

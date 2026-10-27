@@ -65,19 +65,19 @@ export default function PatientsPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <StatCard
           title="Total Pacientes Registrados"
-          value={statsLoading ? "..." : stats?.total.toLocaleString()}
+          value={statsLoading ? "..." : stats?.total.toLocaleString() ?? "—"}
           icon={Users}
           className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
         <StatCard
           title="Registrados este Mes"
-          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString()}
+          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString() ?? "—"}
           icon={Calendar}
           className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
         <StatCard
           title="Registrados Hoy"
-          value={statsLoading ? "..." : stats?.today.toLocaleString()}
+          value={statsLoading ? "..." : stats?.today.toLocaleString() ?? "—"}
           icon={Plus}
           className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
@@ -273,10 +273,11 @@ export default function PatientsPage() {
             await createMutation.mutateAsync(data);
             toast.success("Paciente creado correctamente");
           } catch (error) {
-            if (error.message.includes("patients_id_number_org_unique") || error.message.includes("duplicate key value")) {
+            const message = (error as { message?: string } | null)?.message ?? String(error);
+            if (message.includes("patients_id_number_org_unique") || message.includes("duplicate key value")) {
               toast.error("Ya existe un paciente con ese número de cédula en el laboratorio");
             } else {
-              toast.error(error.message);
+              toast.error(message);
             }
             throw error;
           }

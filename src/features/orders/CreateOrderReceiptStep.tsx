@@ -33,7 +33,7 @@ export function CreateOrderReceiptStep({
       <div className="h-[calc(100dvh-12rem)] min-h-80 w-full overflow-hidden rounded-lg border border-border sm:h-[65vh]">
         <PDFViewer width="100%" height="100%" showToolbar>
           <OrderThermalReceiptPDF
-            orderId={receiptData.order_seq}
+            orderId={receiptData.order_seq ?? ""}
             orderDate={receiptData.orderDate}
             patientName={receiptData.patientName}
             patientId={receiptData.patientId}

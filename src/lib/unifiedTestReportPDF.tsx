@@ -486,7 +486,7 @@ export const UnifiedTestReportPDF = ({ orden, orderItems, departmentOrder = [], 
 
       if (section.name !== "") {
         sectionRows.push({
-          fieldLabel: section.name,
+          fieldLabel: section.name!,
           value: "",
           unit: "",
           rangeDisplay: "",

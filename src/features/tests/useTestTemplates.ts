@@ -4,7 +4,7 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import type { TestTemplateRow } from "./schemas";
 
 type ExamOrderItem = {
@@ -360,7 +360,11 @@ export function useSaveExamProfile() {
       total_price: number;
       template_ids: string[];
     }) => {
-      const { data, error } = await supabase.rpc("upsert_exam_profile", buildUpsertExamProfilePayload(orgId!, payload));
+      const { data, error } = await supabase.rpc(
+        "upsert_exam_profile",
+        // The generated Args mark every parameter non-null; the function accepts NULL profile id/description.
+        buildUpsertExamProfilePayload(orgId!, payload) as Database["public"]["Functions"]["upsert_exam_profile"]["Args"]
+      );
 
       if (error) throw error;
       return data;

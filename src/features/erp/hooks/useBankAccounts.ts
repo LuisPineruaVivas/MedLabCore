@@ -7,7 +7,7 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 
 export function useBankAccounts(orgId: string | null, activeOnly = false) {
   return useQuery({ queryKey: queryKeys.erp.bankAccounts(orgId, activeOnly), enabled: !!orgId, queryFn: async (): Promise<BankAccount[]> => {
-    let request = db.from("bank_accounts").select("*").eq("org_id", orgId).order("sort_order").order("name");
+    let request = db.from("bank_accounts").select("*").eq("org_id", orgId!).order("sort_order").order("name");
     if (activeOnly) request = request.eq("is_active", true);
     const { data, error } = await request;
     if (error) throw error;

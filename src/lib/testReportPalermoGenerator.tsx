@@ -285,7 +285,7 @@ export const TestReportPalermoPDF = ({ template, labData, patientData }: TestTem
 
               const parsedValue = parseNumericResult(rawValue);
               const resultColor = Number.isFinite(parsedValue)
-                ? getCategoryStyle(parsedValue, matchedRange)
+                ? getCategoryStyle(parsedValue!, matchedRange)
                 : "black";
 
               const fieldMethodName = field.method_name || (!methodRendered ? templateMethodName : undefined);

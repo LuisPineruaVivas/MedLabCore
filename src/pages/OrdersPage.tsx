@@ -73,19 +73,19 @@ export default function OrdersPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <StatCard
           title="Total Ordenes Creadas"
-          value={statsLoading ? "..." : stats?.total.toLocaleString()}
+          value={statsLoading ? "..." : stats?.total.toLocaleString() ?? "—"}
           icon={ClipboardList}
           className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
         <StatCard
           title="Creadas este Mes"
-          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString()}
+          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString() ?? "—"}
           icon={Calendar}
           className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
         <StatCard
           title="Creadas Hoy"
-          value={statsLoading ? "..." : stats?.today.toLocaleString()}
+          value={statsLoading ? "..." : stats?.today.toLocaleString() ?? "—"}
           icon={Plus}
           className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
         />
@@ -189,7 +189,7 @@ export default function OrdersPage() {
                   </TableCell>
                   <TableCell>
                     <span className="font-mono font-bold text-primary">
-                      #{order.order_seq.toString().padStart(4, "0")}
+                      #{String(order.order_seq ?? "").padStart(4, "0")}
                     </span>
                   </TableCell>
                 </TableRow>

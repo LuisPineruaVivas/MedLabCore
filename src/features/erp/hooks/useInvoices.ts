@@ -14,12 +14,13 @@ export function useInvoices(orgId: string | null, status?: InvoiceStatus | Invoi
     queryKey: queryKeys.erp.invoices(orgId, statusKey),
     enabled: !!orgId,
     queryFn: async (): Promise<Invoice[]> => {
-      let request = db.from("invoices").select(INVOICE_SELECT).eq("org_id", orgId).order("issued_at", { ascending: false });
+      let request = db.from("invoices").select(INVOICE_SELECT).eq("org_id", orgId!).order("issued_at", { ascending: false });
       if (Array.isArray(status)) request = request.in("status", status);
       else if (status && status !== "all") request = request.eq("status", status);
       const { data, error } = await request;
       if (error) throw error;
-      return data ?? [];
+      // status and the joined patient/order follow the hand-written Invoice type.
+      return (data ?? []) as unknown as Invoice[];
     },
   });
 }
@@ -35,14 +36,14 @@ export function useInvoicesPage(orgId: string | null, status: InvoiceStatus | "a
       let request = db
         .from("invoices")
         .select(INVOICE_SELECT, { count: "exact" })
-        .eq("org_id", orgId)
+        .eq("org_id", orgId!)
         .order("issued_at", { ascending: false })
         .order("invoice_seq", { ascending: false })
         .range(from, from + pageSize - 1);
       if (status !== "all") request = request.eq("status", status);
       const { data, error, count } = await request;
       if (error) throw error;
-      return { items: data ?? [], total: count ?? 0 };
+      return { items: (data ?? []) as unknown as Invoice[], total: count ?? 0 };
     },
   });
 }
@@ -52,9 +53,9 @@ export function useInvoice(invoiceId: string | undefined) {
     queryKey: queryKeys.erp.invoice(invoiceId),
     enabled: !!invoiceId,
     queryFn: async (): Promise<Invoice> => {
-      const { data, error } = await db.from("invoices").select(INVOICE_SELECT).eq("id", invoiceId).single();
+      const { data, error } = await db.from("invoices").select(INVOICE_SELECT).eq("id", invoiceId!).single();
       if (error) throw error;
-      return data;
+      return data as unknown as Invoice;
     },
   });
 }
@@ -65,7 +66,7 @@ export function useBackfillPreview(orgId: string | null, enabled: boolean) {
     queryKey: queryKeys.erp.backfillPreview(orgId),
     enabled: enabled && !!orgId,
     queryFn: async (): Promise<number> => {
-      const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId, p_from: null, p_dry_run: true });
+      const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId!, p_dry_run: true });
       if (error) throw error;
       return Number((data as { orders?: number } | null)?.orders ?? 0);
     },
@@ -76,7 +77,7 @@ export function useBackfillInvoices(orgId: string | null) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: async (): Promise<number> => {
-      const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId, p_from: null, p_dry_run: false });
+      const { data, error } = await db.rpc("erp_backfill_invoices", { p_org_id: orgId!, p_dry_run: false });
       if (error) throw error;
       return Number((data as { orders?: number } | null)?.orders ?? 0);
     },

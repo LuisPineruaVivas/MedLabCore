@@ -24,6 +24,7 @@ import {
   calculateCartTotal,
   calculateCartTotalBs,
   type CartItem,
+  type OrderTemplateSearchRecord,
   filterSearchItems,
   removeCartItem,
   resolveOrderTotals,
@@ -93,7 +94,8 @@ export function useCreateOrderDialog({
   const canExemptOrder = role !== "lab_affiliate";
 
   const allSearchItems = useMemo(
-    () => buildSearchItems(templates, examProfiles),
+    // The view types every column as nullable; templates always have id/name/price.
+    () => buildSearchItems(templates as OrderTemplateSearchRecord[], examProfiles),
     [templates, examProfiles]
   );
   const filteredItems = useMemo(
@@ -175,7 +177,7 @@ export function useCreateOrderDialog({
 
       const generatedReceiptData = buildOrderReceiptData({
         orderId: String((order as { orderId?: string }).orderId),
-        order_seq: (order as { order_seq?: number | null }).order_seq,
+        order_seq: (order as { order_seq?: number | null }).order_seq ?? null,
         selectedPatient,
         cart,
         total: effectiveTotals.total,

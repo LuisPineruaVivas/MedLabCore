@@ -250,7 +250,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
                   <FormItem>
                     <FormLabel>Numero de Contacto</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -263,7 +263,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
                   <FormItem>
                     <FormLabel>Email de Contacto</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

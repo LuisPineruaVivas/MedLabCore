@@ -12,7 +12,7 @@ export function useItems(orgId: string | null) {
     enabled: !!orgId,
     staleTime: 1000 * 60 * 5,
     queryFn: async (): Promise<Item[]> => {
-      const { data, error } = await db.from("items").select("*").eq("org_id", orgId).order("name");
+      const { data, error } = await db.from("items").select("*").eq("org_id", orgId!).order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -28,7 +28,7 @@ export function useKardex(itemId: string | null | undefined, limit = 200) {
       const { data, error } = await db
         .from("inventory_transactions")
         .select("*")
-        .eq("item_id", itemId)
+        .eq("item_id", itemId!)
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -101,16 +101,18 @@ export function useRegisterPurchase(orgId: string | null) {
   const invalidate = useInvalidateInventory(orgId);
   return useMutation({
     mutationFn: async (values: PurchaseFormValues) => {
+      if (!orgId) throw new Error("No hay organización seleccionada.");
       const { data, error } = await db.rpc("register_purchase", {
         p_org_id: orgId,
         p_item_id: values.item_id,
         p_quantity: values.quantity,
         p_unit_cost: values.unit_cost,
-        p_supplier_name: emptyToNull(values.supplier_name),
-        p_purchase_invoice_ref: emptyToNull(values.purchase_invoice_ref),
-        p_lot_number: emptyToNull(values.lot_number),
-        p_expiration_date: emptyToNull(values.expiration_date),
-        p_notes: emptyToNull(values.notes),
+        // Optional RPC params: undefined = SQL default (NULL), same as sending null.
+        p_supplier_name: emptyToNull(values.supplier_name) ?? undefined,
+        p_purchase_invoice_ref: emptyToNull(values.purchase_invoice_ref) ?? undefined,
+        p_lot_number: emptyToNull(values.lot_number) ?? undefined,
+        p_expiration_date: emptyToNull(values.expiration_date) ?? undefined,
+        p_notes: emptyToNull(values.notes) ?? undefined,
         p_is_initial: false,
       });
       if (error) throw error;
@@ -124,6 +126,7 @@ export function useRegisterAdjustment(orgId: string | null) {
   const invalidate = useInvalidateInventory(orgId);
   return useMutation({
     mutationFn: async (values: AdjustmentFormValues) => {
+      if (!orgId) throw new Error("No hay organización seleccionada.");
       const { data, error } = await db.rpc("register_adjustment", {
         p_org_id: orgId,
         p_item_id: values.item_id,

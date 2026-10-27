@@ -18,7 +18,7 @@ interface PdfLabData {
   address?: string;
   phone?: string;
   email?: string;
-  logo?: string;
+  logo?: string | null;
   primary_color?: string;
   secondary_color?: string;
 }

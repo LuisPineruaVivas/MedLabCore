@@ -195,7 +195,7 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                   <Input
                     className="h-7 text-xs"
                     type="number"
-                    value={range.min_value}
+                    value={range.min_value ?? ""}
                     onChange={(e) =>
                       updateRange(idx, { min_value: Number(e.target.value) })
                     }
@@ -206,7 +206,7 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
                   <Input
                     className="h-7 text-xs"
                     type="number"
-                    value={range.max_value}
+                    value={range.max_value ?? ""}
                     onChange={(e) =>
                       updateRange(idx, { max_value: Number(e.target.value) })
                     }

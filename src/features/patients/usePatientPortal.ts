@@ -22,7 +22,7 @@ interface PatientSession {
   };
 }
 
-interface OrderWithItems {
+export interface OrderWithItems {
   id: string;
   created_at: string;
   status: string;
@@ -102,7 +102,7 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
 
       const { data, error } = await supabase.rpc("portal_get_patient_orders", {
         p_patient_id: patientId,
-        p_pin: pin.trim().toUpperCase()
+        p_pin: pin!.trim().toUpperCase()
       });
 
       if (error) throw error;

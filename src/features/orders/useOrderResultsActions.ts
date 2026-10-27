@@ -6,7 +6,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { OrderItemResultsState, SelectedMethod, useOrderResultsEditor } from "./useOrderResultsEditor";
 import { useSaveResults, useUpdateOrderStatus } from "./useOrders";
-import type { OrderDetailItem } from "./useOrders";
+import type { OrderItem } from "./orderDetailTypes";
 import { applyOcrResultsToState, canApproveAndSignOrder, collectOcrFieldLabels, getSaveResultsErrorMessage } from "./orderDetailUtils";
 import { getOrderStatusAction } from "./orderWorkflow";
 
@@ -119,7 +119,7 @@ export function useOrderResultsActions({
 
   async function handleFileUploadForOCR(
     event: ChangeEvent<HTMLInputElement>,
-    categoryItems: OrderDetailItem[],
+    categoryItems: OrderItem[],
     categoryName: string
   ) {
     const file = event.target.files?.[0];

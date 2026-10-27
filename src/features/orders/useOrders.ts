@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { matchAllWords } from "@/lib/postgrest";
@@ -344,6 +344,7 @@ export function useCreateOrder() {
       totalBs?: number | null;
       isExempted?: boolean;
     }) => {
+      // The generated Args mark every parameter non-null; the function accepts NULL notes/rate/total.
       const { data, error } = await supabase.rpc("create_lab_order", buildCreateLabOrderPayload({
         orgId,
         patientId,
@@ -353,7 +354,7 @@ export function useCreateOrder() {
         exchangeRate,
         totalBs,
         isExempted,
-      }));
+      }) as Database["public"]["Functions"]["create_lab_order"]["Args"]);
 
       if (error) throw error;
       return data as unknown as CreateLabOrderResponse;

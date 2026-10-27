@@ -11,8 +11,8 @@ export function useTestMaterials(orgId: string | null, templateId: string | null
       const { data, error } = await db
         .from("test_materials")
         .select("*, items(id, name, code, unit_of_measure, unit_cost, is_active)")
-        .eq("org_id", orgId)
-        .eq("template_id", templateId)
+        .eq("org_id", orgId!)
+        .eq("template_id", templateId!)
         .order("created_at");
       if (error) throw error;
       return data ?? [];

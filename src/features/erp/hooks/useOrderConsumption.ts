@@ -11,7 +11,7 @@ export function useOrderBomPreview(orderId: string | null | undefined, enabled: 
     enabled: enabled && !!orderId,
     staleTime: 0,
     queryFn: async (): Promise<BomPreviewLine[]> => {
-      const { data, error } = await db.rpc("get_order_bom_preview", { p_order_id: orderId });
+      const { data, error } = await db.rpc("get_order_bom_preview", { p_order_id: orderId! });
       if (error) throw error;
       return (data ?? []) as unknown as BomPreviewLine[];
     },

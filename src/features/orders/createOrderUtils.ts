@@ -232,7 +232,7 @@ export function buildOrderReceiptData(params: {
     age: differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? "")) > 0 
       ? `${differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Años`
       : `${differenceInMonths(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Meses`,
-    gender: selectedPatient.gender,
+    gender: selectedPatient.gender ?? "",
     items: cart
       .filter((item) => item.price > 0)
       .map((item) => ({ test_name: item.test_name, price: item.price })),

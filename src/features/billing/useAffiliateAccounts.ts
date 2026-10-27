@@ -74,7 +74,7 @@ export function useAffiliatePendingBalance(affiliateId: string | null) {
     queryKey: queryKeys.affiliateAccounts.pendingBalance(affiliateId),
     queryFn: async () => {
       // Summed in the database: downloading the orders stopped at 1,000 rows.
-      const { data, error } = await supabase.rpc("get_affiliate_pending_balance", { p_affiliate_id: affiliateId });
+      const { data, error } = await supabase.rpc("get_affiliate_pending_balance", { p_affiliate_id: affiliateId! });
       if (error) throw error;
       return parseAmount(data);
     },

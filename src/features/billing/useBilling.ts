@@ -56,8 +56,8 @@ export function useBillingSummary(page: number, search: string, statusFilter: st
         query.range(offset, offset + pageSize - 1),
         supabase.rpc("get_billing_totals", {
           p_org_id: orgId,
-          p_from: monthFilterStart,
-          p_to: monthFilterEnd,
+          p_from: monthFilterStart ?? undefined,
+          p_to: monthFilterEnd ?? undefined,
           p_month_start: monthStart,
         }),
       ]);

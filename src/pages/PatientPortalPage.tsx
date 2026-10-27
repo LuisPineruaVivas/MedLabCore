@@ -11,7 +11,7 @@ import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
+import { usePatientSession, usePatientOrders, type OrderWithItems } from "@/features/patients/usePatientPortal";
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
 import { forgetPortalCredentials, hasCredentialsInUrl, resolvePortalCredentials, withoutCredentials } from "@/features/patientPortal/portalLink";
 
@@ -33,7 +33,7 @@ export default function PatientPortalPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   const { data: brand, isLoading: isBrandLoading } = usePublicOrgBrand(orgId);
   const headerStyle = brand ? {
@@ -417,7 +417,7 @@ export default function PatientPortalPage() {
                         phone: brand?.phone || "",
                         email: brand?.email || "",
                         logo: selectedOrder.org_logo_url || null,
-                        primary_color: brand?.primary_color,
+                        primary_color: brand?.primary_color ?? undefined,
                       }}
                     />
                   </PDFViewer>

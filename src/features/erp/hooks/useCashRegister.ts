@@ -8,7 +8,7 @@ export function useOpenCashSession(orgId: string | null) {
     queryKey: queryKeys.erp.cashSession(orgId),
     enabled: !!orgId,
     queryFn: async (): Promise<CashSession | null> => {
-      const { data, error } = await db.from("cash_register_sessions").select("*").eq("org_id", orgId).eq("status", "open").maybeSingle();
+      const { data, error } = await db.from("cash_register_sessions").select("*").eq("org_id", orgId!).eq("status", "open").maybeSingle();
       if (error) throw error;
       // The *_totals JSON columns follow CashSessionTotals (written by the cash RPCs).
       return data as unknown as CashSession | null;
@@ -25,7 +25,7 @@ export function useCashSessions(orgId: string | null, limit = 30) {
       const { data, error } = await db
         .from("cash_register_sessions")
         .select("*")
-        .eq("org_id", orgId)
+        .eq("org_id", orgId!)
         .neq("status", "open")
         .order("opened_at", { ascending: false })
         .limit(limit);
@@ -42,7 +42,7 @@ export function useCashSessionSummary(sessionId: string | null | undefined) {
     enabled: !!sessionId,
     refetchInterval: 60_000,
     queryFn: async (): Promise<CashSessionTotals> => {
-      const { data, error } = await db.rpc("get_cash_session_summary", { p_session_id: sessionId });
+      const { data, error } = await db.rpc("get_cash_session_summary", { p_session_id: sessionId! });
       if (error) throw error;
       return (data ?? {}) as unknown as CashSessionTotals;
     },
@@ -62,6 +62,7 @@ export function useOpenCash(orgId: string | null) {
   const refresh = useRefreshCash(orgId);
   return useMutation({
     mutationFn: async (values: { usd: number; ves: number; notes: string }) => {
+      if (!orgId) throw new Error("No hay organización seleccionada.");
       const { error } = await db.rpc("open_cash_session", {
         p_org_id: orgId,
         p_opening_usd: values.usd,
@@ -93,7 +94,7 @@ export function useReviewCash(orgId: string | null) {
   const refresh = useRefreshCash(orgId);
   return useMutation({
     mutationFn: async (values: { sessionId: string; notes?: string }) => {
-      const { error } = await db.rpc("review_cash_session", { p_session_id: values.sessionId, p_notes: values.notes ?? null });
+      const { error } = await db.rpc("review_cash_session", { p_session_id: values.sessionId, p_notes: values.notes ?? undefined });
       if (error) throw error;
     },
     onSuccess: refresh,

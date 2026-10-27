@@ -50,7 +50,8 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       id_number: "",
       first_name: "",
       last_name: "",
-      date_of_birth: null,
+      // No date until the user picks one; zod requires it on submit.
+      date_of_birth: null as unknown as Date,
       gender: "masculino",
       phone: "",
       email: "",

@@ -95,7 +95,7 @@ export function ProfileBuilderDialog({
   }
 
   const individualTotal = templates
-    .filter((t) => selectedTemplateIds.includes(t.id))
+    .filter((t) => selectedTemplateIds.includes(t.id!))
     .reduce((sum, t) => sum + Number(t.base_price), 0);
 
   return (
@@ -201,7 +201,7 @@ export function ProfileBuilderDialog({
                 </p>
               ) : (
                 filteredTemplates.map((tpl) => {
-                  const isSelected = selectedTemplateIds.includes(tpl.id);
+                  const isSelected = selectedTemplateIds.includes(tpl.id!);
                   return (
                     <button
                       key={tpl.id}
@@ -212,7 +212,7 @@ export function ProfileBuilderDialog({
                           ? "bg-primary/5"
                           : "hover:bg-muted/50"
                       )}
-                      onClick={() => toggleTemplate(tpl.id)}
+                      onClick={() => toggleTemplate(tpl.id!)}
                     >
                       <div className="flex items-center gap-2">
                         <div

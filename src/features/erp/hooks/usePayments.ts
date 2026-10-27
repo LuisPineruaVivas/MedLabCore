@@ -10,7 +10,7 @@ export function usePayments(invoiceId: string | undefined) {
     queryKey: queryKeys.erp.payments(invoiceId),
     enabled: !!invoiceId,
     queryFn: async (): Promise<Payment[]> => {
-      const { data, error } = await db.from("payments").select("*").eq("invoice_id", invoiceId).order("payment_date", { ascending: false });
+      const { data, error } = await db.from("payments").select("*").eq("invoice_id", invoiceId!).order("payment_date", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

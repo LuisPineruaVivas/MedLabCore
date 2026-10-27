@@ -457,7 +457,7 @@ export const UnifiedTestReportPalermo = ({ orden, orderItems, departmentOrder = 
 
       if (section.name !== "") {
         sectionRows.push({
-          fieldLabel: section.name,
+          fieldLabel: section.name!,
           value: "",
           unit: "",
           rangeDisplay: "",
@@ -471,7 +471,7 @@ export const UnifiedTestReportPalermo = ({ orden, orderItems, departmentOrder = 
         const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(field, patientGender, patientAge);
         const parsedValue = parseNumericResult(field.value);
         const resultColor = Number.isFinite(parsedValue)
-          ? getCategoryStyle(parsedValue, matchedRange)
+          ? getCategoryStyle(parsedValue!, matchedRange)
           : "black";
 
         sectionRows.push({

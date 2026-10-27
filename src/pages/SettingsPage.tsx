@@ -72,7 +72,7 @@ export default function SettingsPage() {
               <BadgeCheck className="h-5 w-5 text-primary" />
             </div>
             <h3 className="mb-1 text-sm font-semibold">Usuario: {user?.email || "email no disponible"}</h3>
-            <p className="text-xs text-muted-foreground">Rol: {mapRoles(role) || "desconocido"}</p>
+            <p className="text-xs text-muted-foreground">Rol: {mapRoles(role ?? "") || "desconocido"}</p>
             <div className="mt-2 md:mt-8">
               <button
                 onClick={signOut}
