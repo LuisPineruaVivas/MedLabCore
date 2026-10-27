@@ -74,7 +74,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☑ |
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
-| M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☐ |
+| M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☑ |
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ◐ |
 | M-04 | ESLint: lints generated files; `any`; fast-refresh warnings | Maint | 🟢 | S | ◐ |
 | M-05 | Query keys defined outside `queryKeys.ts` | Maint | 🟢 | S | ☑ |
@@ -647,3 +647,5 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | B-01, B-02, B-03, P-04 | fed68f3 | Browser-tested locally (were SQL-only): billing cards from get_billing_totals ($25 = 10 + 15); "Guardar todo" = 1 save_order_results call, values saved, 2 audit entries; affiliate page: $60 balance, pages 50 + 10, selection kept across pages, mark 60 paid → $0. **Bug found and fixed:** after paying the last page the list kept stale rows (HTTP 416 on a page past the end). Still ◐ until db push + preview test. |
 | 2026-10-26 | M-03 (step 2) | ac49820 | `noImplicitAny: true` with 0 errors (40 fixed with type-only annotations). Remaining: step 3 (strictNullChecks folder by folder), step 4 (strict). |
 | 2026-10-26 | T-03 | 120d2b0 | 14 component tests (bank account edit, purchase by package, portal PIN/lockout/link, OrderDetailPage render/save/permissions). Old code fails the portal + save tests. Gotcha documented in setup.ts: with isolate:false use `within(document.body)`, not `screen`. |
+| 2026-10-26 | M-02 | f4a7733, 6f5a78e, f02879c, 4a763dd | OrderDetailPage 775→226, OrderDetailSections 770→5 files, CreateOrderDialog 737→175, TemplateBuilderPage 1158→386. Each with a component safety net written first (passes before and after) and checked in the browser on local data. AuditLogPage (589) left as is: its route and menu entry are disabled. |
+| 2026-10-26 | — | 37625a3 | **Bug found while testing M-02:** "Ver Nota" crashed the order page (white screen) for orders with a Bs total of 0 — exempted orders; 220 of 1,189 in the local copy of production. Fixed. Also noted: `orders.total_bs` is stored with float noise (e.g. 2658.6812999999997) because the browser multiplies USD × rate; round to 2 decimals in `create_lab_order` in a future migration. |
