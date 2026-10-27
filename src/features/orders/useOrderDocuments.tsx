@@ -16,7 +16,7 @@ import type { OrderItemResultsState } from "./useOrderResultsEditor";
 import { buildOrderPatientInfo, buildThermalReceiptData, isMobileDevice } from "./orderDetailUtils";
 import type { OrderDetailItem } from "./useOrders";
 import type { OrderWithPatient } from "./schemas";
-import type { buildLabData } from "./OrderDetailSections";
+import type { buildLabData } from "./orderSectionsUtils";
 
 type Order = OrderWithPatient;
 type LabData = ReturnType<typeof buildLabData>;

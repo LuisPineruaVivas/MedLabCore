@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useErpModule } from "@/hooks/useErpModule";
-import { buildLabData } from "@/features/orders/OrderDetailSections";
+import { buildLabData } from "@/features/orders/orderSectionsUtils";
 import { CloseCashDialog } from "@/features/erp/components/CloseCashDialog";
 import { OpenCashDialog } from "@/features/erp/components/OpenCashDialog";
 import { useCashSessions, useCashSessionSummary, useOpenCashSession, useReviewCash } from "@/features/erp/hooks/useCashRegister";

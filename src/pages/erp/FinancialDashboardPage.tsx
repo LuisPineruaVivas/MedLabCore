@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useErpModule } from "@/hooks/useErpModule";
 import { cn } from "@/lib/utils";
-import { buildLabData } from "@/features/orders/OrderDetailSections";
+import { buildLabData } from "@/features/orders/orderSectionsUtils";
 import { AccountsReceivableReport } from "@/features/erp/components/AccountsReceivableReport";
 import { FinancialOverview } from "@/features/erp/components/FinancialOverview";
 import { InventoryDashboard } from "@/features/erp/components/InventoryDashboard";

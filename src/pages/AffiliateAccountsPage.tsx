@@ -19,7 +19,7 @@ import {
 } from "@/features/billing/useAffiliateAccounts";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { isMobileDevice } from "@/features/orders/orderDetailUtils";
-import { buildLabData } from "@/features/orders/OrderDetailSections";
+import { buildLabData } from "@/features/orders/orderSectionsUtils";
 import { AffiliateAccountStatementPDF } from "@/lib/affiliateAccountStatementPDF";
 
 export default function AffiliateAccountsPage() {

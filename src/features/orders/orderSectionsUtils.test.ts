@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLabData, getCategoryStats } from "./OrderDetailSections";
+import { buildLabData, getCategoryStats } from "./orderSectionsUtils";
 
 describe("Order detail helpers", () => {
   it("buildLabData returns safe defaults when organization data is missing", () => {
