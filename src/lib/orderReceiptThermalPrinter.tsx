@@ -147,7 +147,7 @@ export const OrderThermalReceiptPDF = ({ orderId, orderDate, patientName, patien
                     </View>
                     <View style={thermalStyles.totalRow}>
                         <Text style={{ fontWeight: 'bold' }}>TOTAL Bs:</Text>
-                        <Text style={{ fontWeight: 'bold' }}>Bs {totalBs.toFixed(2)}</Text>
+                        <Text style={{ fontWeight: 'bold' }}>{totalBs != null ? `Bs ${totalBs.toFixed(2)}` : "—"}</Text>
                     </View>
                 </View>
 

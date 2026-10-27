@@ -142,6 +142,28 @@ describe("order detail utils", () => {
     expect(receipt.portalUrl).toBe("https://app.test/portal-paciente");
   });
 
+  it("keeps a zero Bs total as 0 (exempted orders made the receipt crash)", () => {
+    const receipt = buildThermalReceiptData(
+      {
+        id: "order-2",
+        order_seq: 13,
+        created_at: "2026-03-30T10:00:00.000Z",
+        total_amount: 0,
+        access_pin: "1234",
+        exchange_rate: 40,
+        total_bs: 0,
+        patients: { first_name: "Ana", last_name: "Perez", id_number: "V123", date_of_birth: "1990-03-30", gender: "femenino" },
+      },
+      [],
+      { name: "ANA PEREZ", id: "V123", age: "36 Años", gender: "femenino" },
+      { name: "Lab", primary_color: "#000" },
+      "https://app.test"
+    );
+
+    expect(receipt.totalBs).toBe(0);
+    expect(receipt.exchangeRate).toBe(40);
+  });
+
   describe("canApproveAndSignOrder", () => {
     it("returns false if profile is null or undefined", () => {
       expect(canApproveAndSignOrder(null)).toBe(false);

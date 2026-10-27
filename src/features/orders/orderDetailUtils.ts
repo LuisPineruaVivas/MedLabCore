@@ -65,8 +65,9 @@ export function buildThermalReceiptData(
     total: Number(order.total_amount),
     accessPin: order.access_pin,
     portalUrl: `${origin}/portal-paciente`,
-    exchangeRate: order.exchange_rate ? Number(order.exchange_rate) : null,
-    totalBs: order.total_bs ? Number(order.total_bs) : null,
+    // != null keeps 0 (exempted orders) as 0 instead of turning it into "unknown".
+    exchangeRate: order.exchange_rate != null ? Number(order.exchange_rate) : null,
+    totalBs: order.total_bs != null ? Number(order.total_bs) : null,
     labData,
   };
 }
