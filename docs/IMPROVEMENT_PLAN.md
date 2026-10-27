@@ -70,7 +70,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-06 | Public `thermal-debug.html` shipped to production | Sec | 🟢 | S | ☑ |
 | S-07 | Database hardening batch (audit hardening notes) | Sec | 🟠 | M | ◐ |
 | S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ◐ |
-| S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ☐ |
+| S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ◐ |
 | S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☑ |
 | S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
@@ -97,7 +97,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | **6 · Reports consolidation** ⚠️ — *deferred 2026-10-26 by the owner (only B-05 done)* | M-01 (+B-05), P-02 | Largest refactor; needs golden tests. **Each lab's report differences must be kept exactly** (see M-01); skip M-01 if that can't be guaranteed |
 | **7 · Structure & typing** | M-02, S-10, B-09, M-03 (strict steps), M-07, M-08, T-03 | Ongoing |
 | **8 · Verify** | S-09, S-11 | Architecture change + independent re-audit |
-| **9 · Release** | backup, db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), Supabase dashboard → Auth: min password 10 + letters/digits + secure password change (S-08; leaked-password protection needs the Pro plan), `dev` → `main`, S-05 | Everything at once, after local testing |
+| **9 · Release** | backup, run `supabase/tests/roles_drift_report.sql` on production (S-09: who gains/loses a role), db push, push `dev`, preview test (check console for CSP reports), switch S-01 CSP from `-Report-Only` to enforcing, `supabase functions deploy` (S-04), Supabase dashboard → Auth: min password 10 + letters/digits + secure password change (S-08; leaked-password protection needs the Pro plan), `dev` → `main`, S-05 | Everything at once, after local testing |
 
 ---
 
@@ -461,6 +461,14 @@ One migration with the low-risk items from the audit report (`security-audit-ski
   3. Migrate policies gradually.
   Keep `super_admin` behind its own check.
 - **Tests:** a SQL test that creates users by every path (`create-organization`, `lab-create-user`, `admin-create-user`) and asserts both sources agree. All existing suites stay green.
+- **Done (2026-10-27, local):** migration `20261027000000_roles_single_source.sql`.
+  - `has_role()` reads `profiles.role` for lab roles and `user_roles` only for `super_admin`. That one change fixes every caller (5 policies, the role-change trigger, the edge functions), so no policy needed rewriting.
+  - `user_roles` now holds only super-admin rows (CHECK constraint; stale lab rows deleted).
+  - The user-creation functions stopped writing it. Their write had been a silent no-op since `handle_new_user` stopped creating the row, which is how the drift began.
+  - `admin-create-user` now refuses any role that is not a lab role.
+  - Test: `supabase/tests/roles_single_source.sql` (fails on the old function).
+  - Before the production push, run `supabase/tests/roles_drift_report.sql` there to see who gains or loses access. Locally, 15 of 33 users had no row (they were denied, for example, editing exchange rates as lab admin), and 2 had a stale, different role.
+  - ◐ until the release.
 
 ### S-10 🟠 ERP uses an untyped database client
 - **Where:** `src/features/erp/utils/erpDb.ts`, used in 11 files.
@@ -650,3 +658,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | M-02 | f4a7733, 6f5a78e, f02879c, 4a763dd | OrderDetailPage 775→226, OrderDetailSections 770→5 files, CreateOrderDialog 737→175, TemplateBuilderPage 1158→386. Each with a component safety net written first (passes before and after) and checked in the browser on local data. AuditLogPage (589) left as is: its route and menu entry are disabled. |
 | 2026-10-26 | — | 37625a3 | **Bug found while testing M-02:** "Ver Nota" crashed the order page (white screen) for orders with a Bs total of 0 — exempted orders; 220 of 1,189 in the local copy of production. Fixed. Also noted: `orders.total_bs` is stored with float noise (e.g. 2658.6812999999997) because the browser multiplies USD × rate; round to 2 decimals in `create_lab_order` in a future migration. |
 | 2026-10-26 | M-03 (steps 3–4) | 6d3c510 | `strict: true` with 0 errors (95 strictNullChecks + 4 strict fixed). Report files: type-only, compiled JS identical. Small real fixes: order lists no longer crash on a missing order number, stat cards show "—" on failure, null form values render empty. **Owner decision pending:** `parseReferenceBounds` (features/tests/schemas.ts) treats a missing range limit as 0, so a range like "> 10" (no upper limit) gets bounds 0–10 and a value of 50 could be flagged out of range in reports. Kept as is because it changes report output for every lab. |
+| 2026-10-27 | S-09 | (this commit) | Roles single source: `has_role()` follows `profiles.role` for lab roles; `user_roles` = super admins only. Real bug fixed: lab admins created since 2026-10-19 had no `user_roles` row and were denied on exchange rates, exam profiles, profile↔template links, department order and audit logs; stale rows granted roles the app no longer showed. Run `roles_drift_report.sql` on production before the push. |

@@ -84,9 +84,7 @@ insert into public.profiles (id, org_id, role, full_name, email) values
 on conflict (id) do update set org_id = excluded.org_id, role = excluded.role, full_name = excluded.full_name, email = excluded.email;
 
 delete from public.user_roles where user_id in (select v from ids);
-insert into public.user_roles (user_id, role) values
-  (pg_temp.id('adminA'), 'lab_admin'), (pg_temp.id('bioA'), 'bioanalyst'), (pg_temp.id('secA'), 'secretary'),
-  (pg_temp.id('affA'), 'lab_affiliate'), (pg_temp.id('adminB'), 'lab_admin');
+-- Lab roles come from profiles.role (S-09); user_roles holds super admins only.
 
 insert into public.test_templates (id, org_id, name, category, base_price, is_active) values
   (pg_temp.id('templateA'), pg_temp.id('orgA'), 'Hardening A Test', 'Hardening', 10, true),

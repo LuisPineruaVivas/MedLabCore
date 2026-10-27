@@ -75,14 +75,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Update the role (trigger sets 'secretary' by default)
-    if (role !== "secretary") {
-      await supabaseAdmin
-        .from("user_roles")
-        .update({ role })
-        .eq("user_id", newUser.user.id);
-    }
-
+    // Lab roles live only in profiles.role (S-09); user_roles holds super admins only.
     // Update profile role and org (service role; also covers an older handle_new_user)
     await supabaseAdmin
       .from("profiles")

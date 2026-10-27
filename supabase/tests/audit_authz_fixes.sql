@@ -121,10 +121,8 @@ insert into public.profiles (id, org_id, role, full_name, email, firma_url, sell
 on conflict (id) do update set org_id = excluded.org_id, role = excluded.role, full_name = excluded.full_name,
   firma_url = excluded.firma_url, sello_url = excluded.sello_url;
 
-insert into public.user_roles (user_id, role) values
-  (pg_temp.id('adminA'), 'lab_admin'), (pg_temp.id('secA'), 'secretary'), (pg_temp.id('bioA'), 'bioanalyst'),
-  (pg_temp.id('affA'), 'lab_affiliate'), (pg_temp.id('adminB'), 'lab_admin'), (pg_temp.id('secB'), 'secretary'),
-  (pg_temp.id('bioB'), 'bioanalyst'), (pg_temp.id('superAdmin'), 'super_admin');
+-- Lab roles come from profiles.role (S-09); user_roles holds super admins only.
+insert into public.user_roles (user_id, role) values (pg_temp.id('superAdmin'), 'super_admin');
 
 insert into public.patients (id, org_id, id_number, first_name, last_name, date_of_birth, gender, created_by) values
   (pg_temp.id('patientA'), pg_temp.id('orgA'), 'AUDIT-A-1', 'Paciente', 'A', '1990-01-01', 'femenino', pg_temp.id('adminA')),

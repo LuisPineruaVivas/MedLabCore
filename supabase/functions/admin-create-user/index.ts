@@ -37,6 +37,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Lab roles only: super_admin is granted through user_roles, never by this function.
+    if (!["lab_admin", "bioanalyst", "secretary", "lab_affiliate"].includes(role)) {
+      return new Response(JSON.stringify({ error: "Invalid role" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const passwordError = getPasswordError(password);
     if (passwordError) {
       return new Response(JSON.stringify({ error: passwordError }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -56,14 +61,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Update the role (trigger sets 'secretary' by default, so update it)
-    if (role !== "secretary") {
-      await supabaseAdmin
-        .from("user_roles")
-        .update({ role })
-        .eq("user_id", newUser.user.id);
-    }
-
+    // Lab roles live only in profiles.role (S-09); user_roles holds super admins only.
     // Also update profile role and org columns (also covers an older handle_new_user)
     await supabaseAdmin
       .from("profiles")

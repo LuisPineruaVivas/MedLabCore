@@ -98,9 +98,7 @@ insert into public.profiles (id, org_id, role, full_name, email) values
 on conflict (id) do update set org_id = excluded.org_id, role = excluded.role, full_name = excluded.full_name, email = excluded.email;
 
 delete from public.user_roles where user_id in (select v from ids);
-insert into public.user_roles (user_id, role) values
-  (pg_temp.id('adminA'), 'lab_admin'), (pg_temp.id('bioA'), 'bioanalyst'), (pg_temp.id('affA'), 'lab_affiliate'),
-  (pg_temp.id('adminB'), 'lab_admin'), (pg_temp.id('bioB'), 'bioanalyst');
+-- Lab roles come from profiles.role (S-09); user_roles holds super admins only.
 
 insert into public.patients (id, org_id, id_number, first_name, last_name, date_of_birth, gender, created_by) values
   (pg_temp.id('patientA'), pg_temp.id('orgA'), 'MONEY-A-1', 'Paciente', 'A', '1990-01-01', 'femenino', pg_temp.id('adminA'));

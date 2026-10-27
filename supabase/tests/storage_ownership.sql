@@ -119,9 +119,8 @@ insert into public.profiles (id, org_id, role, full_name, email) values
   (pg_temp.id('superAdmin'), null, 'super_admin', 'Super Admin', 'super@storage-test.local')
 on conflict (id) do update set org_id = excluded.org_id, role = excluded.role;
 
-insert into public.user_roles (user_id, role) values
-  (pg_temp.id('adminA'), 'lab_admin'), (pg_temp.id('secA'), 'secretary'), (pg_temp.id('bioA'), 'bioanalyst'),
-  (pg_temp.id('adminB'), 'lab_admin'), (pg_temp.id('bioB'), 'bioanalyst'), (pg_temp.id('superAdmin'), 'super_admin')
+-- Lab roles come from profiles.role (S-09); user_roles holds super admins only.
+insert into public.user_roles (user_id, role) values (pg_temp.id('superAdmin'), 'super_admin')
 on conflict do nothing;
 
 insert into storage.objects (bucket_id, name) values
