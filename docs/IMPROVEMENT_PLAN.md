@@ -83,7 +83,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | M-08 | Docs out of date (CLAUDE.md, ERP.md, user guide) | Maint | 🟢 | S | ☑ |
 | T-01 | Continuous integration (lint, types, tests, build) | Tests | 🔴 | M | ◐ |
 | T-02 | One command to run the SQL test suites | Tests | 🟠 | S | ☑ |
-| T-03 | Component tests for critical flows | Tests | 🟢 | M | ☐ |
+| T-03 | Component tests for critical flows | Tests | 🟢 | M | ☑ |
 
 ### Suggested order (phases)
 
@@ -646,3 +646,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | S-10 | 737127f | erpDb + pendingRpc removed; types.ts regenerated from the local DB (= production + pending migrations, additions only). ERP hooks compile to the same JS. Browser-tested locally (QA lab with ERP on): all ERP pages, report RPCs, new payment method (201). |
 | 2026-10-26 | B-01, B-02, B-03, P-04 | fed68f3 | Browser-tested locally (were SQL-only): billing cards from get_billing_totals ($25 = 10 + 15); "Guardar todo" = 1 save_order_results call, values saved, 2 audit entries; affiliate page: $60 balance, pages 50 + 10, selection kept across pages, mark 60 paid → $0. **Bug found and fixed:** after paying the last page the list kept stale rows (HTTP 416 on a page past the end). Still ◐ until db push + preview test. |
 | 2026-10-26 | M-03 (step 2) | ac49820 | `noImplicitAny: true` with 0 errors (40 fixed with type-only annotations). Remaining: step 3 (strictNullChecks folder by folder), step 4 (strict). |
+| 2026-10-26 | T-03 | 120d2b0 | 14 component tests (bank account edit, purchase by package, portal PIN/lockout/link, OrderDetailPage render/save/permissions). Old code fails the portal + save tests. Gotcha documented in setup.ts: with isolate:false use `within(document.body)`, not `screen`. |
