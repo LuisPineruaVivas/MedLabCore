@@ -72,7 +72,7 @@ This file is the **tracker**: update the status column and the "Log" at the bott
 | S-08 | Weak password policy (min 6) | Sec | 🟠 | S | ◐ |
 | S-09 | Two sources of truth for roles (`profiles.role` vs `user_roles`) | Sec | 🟠 | L | ◐ |
 | S-10 | ERP uses an untyped DB client (`erpDb`) | Sec/Maint | 🟠 | M | ☑ |
-| S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☐ |
+| S-11 | Second security audit (covers skipped Wildcard/Injection) | Sec | 🟠 | L | ☑ |
 | M-01 | Report generators duplicated 3× (≈ 3,200 lines) | Maint | 🔴 | L | ☐ (deferred) |
 | M-02 | Very large components (TemplateBuilder, OrderDetail, CreateOrder) | Maint | 🟠 | L | ☑ |
 | M-03 | TypeScript not strict + build never type-checks | Maint | 🟠 | M→L | ☑ |
@@ -478,6 +478,11 @@ One migration with the low-risk items from the audit report (`security-audit-ski
 
 ### S-11 🟠 Second security audit
 After phases 1–5, run the security audit again as **run-2**. It reuses run-1's ledger and re-checks every fix. It also covers the two units skipped in run-1 (Wildcard and Injection).
+- **Done (2026-10-28):** run-2 at ce9cc87, report in `C:/Users/piner/security-audit-skill/MedLabCore/run-2/REPORT.md` (outside the repo).
+  - 37 coverage units, all closed; 16 of run-1's 23 records are fixed.
+  - **11 confirmed:** 1 high (order_items INSERT bypasses the signed-results lock), 6 medium, 4 low.
+  - **11 needs validation:** deployment facts (Sentry, storage read policies, provision-lab still deployed?, old git objects, Gemini quota).
+  - Fixes are the next step (local, one migration + test each).
 
 ---
 
@@ -659,3 +664,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | — | 37625a3 | **Bug found while testing M-02:** "Ver Nota" crashed the order page (white screen) for orders with a Bs total of 0 — exempted orders; 220 of 1,189 in the local copy of production. Fixed. Also noted: `orders.total_bs` is stored with float noise (e.g. 2658.6812999999997) because the browser multiplies USD × rate; round to 2 decimals in `create_lab_order` in a future migration. |
 | 2026-10-26 | M-03 (steps 3–4) | 6d3c510 | `strict: true` with 0 errors (95 strictNullChecks + 4 strict fixed). Report files: type-only, compiled JS identical. Small real fixes: order lists no longer crash on a missing order number, stat cards show "—" on failure, null form values render empty. **Owner decision pending:** `parseReferenceBounds` (features/tests/schemas.ts) treats a missing range limit as 0, so a range like "> 10" (no upper limit) gets bounds 0–10 and a value of 50 could be flagged out of range in reports. Kept as is because it changes report output for every lab. |
 | 2026-10-27 | S-09 | (this commit) | Roles single source: `has_role()` follows `profiles.role` for lab roles; `user_roles` = super admins only. Real bug fixed: lab admins created since 2026-10-19 had no `user_roles` row and were denied on exchange rates, exam profiles, profile↔template links, department order and audit logs; stale rows granted roles the app no longer showed. Run `roles_drift_report.sql` on production before the push. |
+| 2026-10-28 | S-11 | — | Security audit run-2 complete: 11 confirmed (1 high, 6 medium, 4 low), 11 needs validation, coverage clean after 4 waves and a final-clean critic. Wildcard/Injection units covered (no injection sinks found). Fixes pending. |
