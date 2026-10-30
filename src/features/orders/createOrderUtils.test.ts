@@ -8,6 +8,7 @@ import {
   calculateCartTotal,
   calculateCartTotalBs,
   filterSearchItems,
+  getCreateOrderErrorMessage,
   removeCartItem,
   resolveOrderTotals,
 } from "./createOrderUtils";
@@ -204,5 +205,17 @@ describe("createOrderUtils", () => {
 
     expect(budgetPublic.patientName).toBe("PÚBLICO GENERAL");
     expect(budgetPublic.patientId).toBe("N/A");
+  });
+});
+
+describe("getCreateOrderErrorMessage", () => {
+  it("maps create_lab_order error codes to Spanish messages", () => {
+    expect(getCreateOrderErrorMessage({ message: "INVALID_TEMPLATE" }, "x")).toMatch(/lista de precios/);
+    expect(getCreateOrderErrorMessage({ message: "INVALID_PATIENT" }, "x")).toMatch(/paciente/);
+  });
+
+  it("falls back for unknown errors", () => {
+    expect(getCreateOrderErrorMessage(new Error("network"), "No se pudo crear la orden")).toBe("No se pudo crear la orden");
+    expect(getCreateOrderErrorMessage(null, "fallback")).toBe("fallback");
   });
 });

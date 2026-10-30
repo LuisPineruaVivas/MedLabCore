@@ -73,6 +73,12 @@ insert into public.patients (id, org_id, id_number, first_name, last_name, date_
 values (gen_random_uuid(), pg_temp.id('orgA'), 'V-0001', 'Paciente', 'Prueba', '1990-01-01', 'femenino', pg_temp.id('adminA'));
 insert into ids select 'patientA', id from public.patients where org_id = pg_temp.id('orgA');
 
+-- create_lab_order prices lines from the lab's templates (audit run-2).
+insert into ids values ('tplHema100', gen_random_uuid()), ('tplPrev15', gen_random_uuid());
+insert into public.test_templates (id, org_id, name, category, base_price) values
+  (pg_temp.id('tplHema100'), pg_temp.id('orgA'), 'Hematología', 'Hematología', 100),
+  (pg_temp.id('tplPrev15'), pg_temp.id('orgA'), 'Orden previa al ERP', 'General', 15);
+
 insert into public.exchange_rate_history (org_id, from_currency, to_currency, rate, effective_date)
 values (pg_temp.id('orgA'), 'USD', 'VES', 40, current_date);
 
@@ -86,7 +92,7 @@ insert into ids select 'acc:' || name, id from public.bank_accounts where org_id
 select pg_temp.act_as(pg_temp.id('secA'));
 select public.create_lab_order(
   pg_temp.id('orgA'), pg_temp.id('patientA'), null, 40, 4000, false,
-  '[{"test_name":"Hematología","price":100}]'::jsonb, pg_temp.id('secA'));
+  jsonb_build_array(jsonb_build_object('test_name', 'Hematología', 'price', 100, 'template_id', pg_temp.id('tplHema100'))), pg_temp.id('secA'));
 insert into ids select 'invoiceA', id from public.invoices where org_id = pg_temp.id('orgA');
 select pg_temp.assert_eq((select balance_due_usd from public.invoices where id = pg_temp.id('invoiceA')), 100, 'invoice created with full balance');
 
@@ -375,7 +381,7 @@ select pg_temp.assert_eq((select count(*) from public.invoices where order_id = 
 -- Retroactive invoices for an order created while the module was off.
 update public.organizations set has_erp_module = false where id = pg_temp.id('orgA');
 select public.create_lab_order(pg_temp.id('orgA'), pg_temp.id('patientA'), null, 40, 600, false,
-  '[{"test_name":"Orden previa al ERP","price":15}]'::jsonb, pg_temp.id('secA'));
+  jsonb_build_array(jsonb_build_object('test_name', 'Orden previa al ERP', 'price', 15, 'template_id', pg_temp.id('tplPrev15'))), pg_temp.id('secA'));
 update public.organizations set has_erp_module = true where id = pg_temp.id('orgA');
 insert into ids select 'legacyOrder', o.id from public.orders o
   where o.org_id = pg_temp.id('orgA') and not exists (select 1 from public.invoices i where i.order_id = o.id);

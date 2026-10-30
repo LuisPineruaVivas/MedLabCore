@@ -139,22 +139,35 @@ insert into public.profile_templates_junction (profile_id, template_id) values (
 insert into public.bank_accounts (id, org_id, name, method_type, currency)
 values (pg_temp.id('accZelle'), pg_temp.id('orgA'), 'Zelle', 'zelle', 'USD');
 
+-- create_lab_order prices lines from the lab's templates (audit run-2), so the orders
+-- below use priced templates; the affiliate orders for a patient it registered itself.
+insert into ids values ('tplA10', gen_random_uuid()), ('tplA100', gen_random_uuid()), ('tplA5', gen_random_uuid()),
+  ('tplG777', gen_random_uuid()), ('tplG10', gen_random_uuid()), ('patientAff', gen_random_uuid());
+insert into public.test_templates (id, org_id, name, category, base_price) values
+  (pg_temp.id('tplA10'), pg_temp.id('orgA'), 'Audit A', 'Audit', 10),
+  (pg_temp.id('tplA100'), pg_temp.id('orgA'), 'Perfil caro', 'Audit', 100),
+  (pg_temp.id('tplA5'), pg_temp.id('orgA'), 'Cortesia', 'Audit', 5),
+  (pg_temp.id('tplG777'), null, 'Audit B Dummy Test 77', 'Audit', 77.70),
+  (pg_temp.id('tplG10'), null, 'Audit B Dummy Test 10', 'Audit', 10);
+insert into public.patients (id, org_id, id_number, first_name, last_name, date_of_birth, gender, created_by) values
+  (pg_temp.id('patientAff'), pg_temp.id('orgA'), 'AUDIT-AFF-1', 'Paciente', 'Afiliado', '1990-01-01', 'femenino', pg_temp.id('affA'));
+
 -- Orders: A (ERP, invoiced) and three in B (non-ERP).
 select pg_temp.claims(pg_temp.id('secA'));
 insert into ids select 'orderA', (public.create_lab_order(pg_temp.id('orgA'), pg_temp.id('patientA'), null, 40, null, false,
-  '[{"test_name":"Audit A","price":10}]'::jsonb, pg_temp.id('secA'))->>'orderId')::uuid;
+  jsonb_build_array(jsonb_build_object('test_name', 'Audit A', 'price', 10, 'template_id', pg_temp.id('tplA10'))), pg_temp.id('secA'))->>'orderId')::uuid;
 insert into ids select 'invoiceA', id from public.invoices where order_id = pg_temp.id('orderA');
 select pg_temp.claims(pg_temp.id('secB'));
 insert into ids select 'orderB1', (public.create_lab_order(pg_temp.id('orgB'), pg_temp.id('patientB'), null, 40, null, false,
-  '[{"test_name":"Audit B Dummy Test","price":77.70}]'::jsonb, pg_temp.id('secB'))->>'orderId')::uuid;
+  jsonb_build_array(jsonb_build_object('test_name', 'Audit B Dummy Test', 'price', 77.7, 'template_id', pg_temp.id('tplG777'))), pg_temp.id('secB'))->>'orderId')::uuid;
 insert into ids select 'orderB2', (public.create_lab_order(pg_temp.id('orgB'), pg_temp.id('patientB'), null, 40, null, false,
-  '[{"test_name":"Audit B Dummy Test","price":10}]'::jsonb, pg_temp.id('secB'))->>'orderId')::uuid;
+  jsonb_build_array(jsonb_build_object('test_name', 'Audit B Dummy Test', 'price', 10, 'template_id', pg_temp.id('tplG10'))), pg_temp.id('secB'))->>'orderId')::uuid;
 insert into ids select 'itemB1', id from public.order_items where order_id = pg_temp.id('orderB1');
 update public.orders set status = 'por_aprobar' where id in (pg_temp.id('orderB1'), pg_temp.id('orderB2'));
 -- An affiliate order in B is not possible (B has no affiliate); use an A affiliate order for settlement.
 select pg_temp.claims(pg_temp.id('affA'));
-insert into ids select 'orderAff', (public.create_lab_order(pg_temp.id('orgA'), pg_temp.id('patientA'), null, 40, null, false,
-  '[{"test_name":"Perfil caro","price":100}]'::jsonb, pg_temp.id('affA'))->>'orderId')::uuid;
+insert into ids select 'orderAff', (public.create_lab_order(pg_temp.id('orgA'), pg_temp.id('patientAff'), null, 40, null, false,
+  jsonb_build_array(jsonb_build_object('test_name', 'Perfil caro', 'price', 100, 'template_id', pg_temp.id('tplA100'))), pg_temp.id('affA'))->>'orderId')::uuid;
 select set_config('request.jwt.claims', '', true);
 
 -- ===========================================================================
@@ -259,9 +272,9 @@ select pg_temp.expect_error(format('select public.create_lab_order(%L, %L, null,
   pg_temp.id('orgA'), pg_temp.id('patientB'), '[{"test_name":"x","price":1}]', pg_temp.id('adminA')), 'INVALID_PATIENT');
 select pg_temp.act_as(pg_temp.id('affA'));
 select pg_temp.expect_error(format('select public.create_lab_order(%L, %L, null, 40, 200, true, %L::jsonb, %L)',
-  pg_temp.id('orgA'), pg_temp.id('patientA'), '[{"test_name":"Perfil caro","price":100}]', pg_temp.id('affA')), 'EXEMPTION_NOT_ALLOWED');
+  pg_temp.id('orgA'), pg_temp.id('patientAff'), jsonb_build_array(jsonb_build_object('test_name', 'Perfil caro', 'price', 100, 'template_id', pg_temp.id('tplA100')))::text, pg_temp.id('affA')), 'EXEMPTION_NOT_ALLOWED');
 select pg_temp.expect_error(format('select public.create_lab_order(%L, %L, null, 40, null, false, %L::jsonb, %L)',
-  pg_temp.id('orgA'), pg_temp.id('patientA'), '[{"test_name":"Perfil caro","price":100},{"test_name":"Descuento","price":-100}]', pg_temp.id('affA')), 'INVALID_PRICE');
+  pg_temp.id('orgA'), pg_temp.id('patientAff'), '[{"test_name":"Perfil caro","price":100},{"test_name":"Descuento","price":-100}]', pg_temp.id('affA')), 'INVALID_PRICE');
 -- Direct INSERT path is closed for staff and affiliates alike.
 select pg_temp.expect_error(format('insert into public.orders (org_id, patient_id, payment_status, total_amount, is_exempted, created_by) values (%L, %L, %L, 0, true, %L)',
   pg_temp.id('orgA'), pg_temp.id('patientA'), 'paid', pg_temp.id('affA')), 'row-level security');
@@ -270,7 +283,7 @@ select pg_temp.expect_error(format('insert into public.orders (org_id, patient_i
   pg_temp.id('orgA'), pg_temp.id('patientA'), pg_temp.id('secA')), 'row-level security');
 -- Staff can still exempt; affiliates can still order normally.
 select pg_temp.assert_true((public.create_lab_order(pg_temp.id('orgA'), pg_temp.id('patientA'), null, 40, null, true,
-  '[{"test_name":"Cortesia","price":5}]'::jsonb, pg_temp.id('secA'))->>'technicalCode') = 'ORDER_CREATED', 'staff exemption works');
+  jsonb_build_array(jsonb_build_object('test_name', 'Cortesia', 'price', 5, 'template_id', pg_temp.id('tplA5'))), pg_temp.id('secA'))->>'technicalCode') = 'ORDER_CREATED', 'staff exemption works');
 reset role;
 select pg_temp.assert_true((select payment_status = 'pending' and total_amount = 100 and not is_exempted from public.orders where id = pg_temp.id('orderAff')), 'affiliate order is pending at full price');
 rollback to savepoint s;

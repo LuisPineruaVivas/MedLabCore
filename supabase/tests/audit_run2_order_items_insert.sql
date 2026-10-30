@@ -92,10 +92,12 @@ reset role;
 drop policy "run2 test insert" on public.order_items;
 
 -- 4. Orders created through create_lab_order still get their items.
+insert into ids values ('tpl', gen_random_uuid());
+insert into public.test_templates (id, org_id, name, category, base_price) values (pg_temp.id('tpl'), pg_temp.id('org'), 'Run2 Test', 'General', 5);
 select pg_temp.act_as(pg_temp.id('sec'));
 create temp table created as
 select public.create_lab_order(pg_temp.id('org'), pg_temp.id('patient'), null, null, null, false,
-  '[{"test_name":"Run2 Test","price":5}]'::jsonb, pg_temp.id('sec')) as r;
+  jsonb_build_array(jsonb_build_object('test_name', 'Run2 Test', 'price', 5, 'template_id', pg_temp.id('tpl'))), pg_temp.id('sec')) as r;
 reset role;
 select pg_temp.assert_true(
   (select count(*) from public.order_items where order_id = ((select r from created)->>'orderId')::uuid) = 1,

@@ -26,6 +26,7 @@ import {
   type CartItem,
   type OrderTemplateSearchRecord,
   filterSearchItems,
+  getCreateOrderErrorMessage,
   removeCartItem,
   resolveOrderTotals,
   type SearchItem,
@@ -220,7 +221,7 @@ export function useCreateOrderDialog({
 
       onSuccess?.();
     } catch (error) {
-      toast.error(getUserFacingErrorMessage(error, "No se pudo crear la orden"));
+      toast.error(getCreateOrderErrorMessage(error, getUserFacingErrorMessage(error, "No se pudo crear la orden")));
     }
   }
 
