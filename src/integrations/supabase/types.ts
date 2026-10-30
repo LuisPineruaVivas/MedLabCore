@@ -869,6 +869,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           sello_url: string | null
           signature_footer_text: string | null
+          signed_by: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
           total_bs: number | null
@@ -894,6 +895,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
           signature_footer_text?: string | null
+          signed_by?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -919,6 +921,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
           signature_footer_text?: string | null
+          signed_by?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -1753,6 +1756,10 @@ export type Database = {
         Returns: number
       }
       erp_local_date: { Args: { p_ts: string }; Returns: string }
+      erp_reference_rate: {
+        Args: { p_currency: string; p_org_id: string }
+        Returns: number
+      }
       erp_report_range: {
         Args: { p_date_from: string; p_date_to: string }
         Returns: {
@@ -1865,6 +1872,13 @@ export type Database = {
         }
         Returns: Json
       }
+      order_template_for_org: {
+        Args: { p_org_id: string; p_template_id: string }
+        Returns: {
+          base_price: number
+          schema: Json
+        }[]
+      }
       portal_authenticate: {
         Args: { p_dni: string; p_pin: string }
         Returns: {
@@ -1878,6 +1892,7 @@ export type Database = {
           phone: string
         }[]
       }
+      portal_client_key: { Args: never; Returns: string }
       portal_get_patient_orders: {
         Args: { p_patient_id: string; p_pin: string }
         Returns: {

@@ -482,7 +482,8 @@ After phases 1–5, run the security audit again as **run-2**. It reuses run-1's
   - 37 coverage units, all closed; 16 of run-1's 23 records are fixed.
   - **11 confirmed:** 1 high (order_items INSERT bypasses the signed-results lock), 6 medium, 4 low.
   - **11 needs validation:** deployment facts (Sentry, storage read policies, provision-lab still deployed?, old git objects, Gemini quota).
-  - Fixes are the next step (local, one migration + test each).
+  - **Fixes (2026-10-30, local):** 9 of 11 confirmed fixed, each with a rolled-back test that fails on the old schema (migrations 20261028100000–106000). The two left were deferred by the owner: anon org listing stays S-05 (after the release, the live main client still reads that table), and suspension enforcement goes with the subscription work on the Admin_refactor branch. The read-only portal lockout bypass lead was closed too.
+  - Release: run the new migrations with the others, and confirm which client-address header (cf-connecting-ip / x-forwarded-for) the hosted stack sets for the portal lockout.
 
 ---
 
@@ -665,3 +666,4 @@ Create small, tested helpers so fixes are made once:
 | 2026-10-26 | M-03 (steps 3–4) | 6d3c510 | `strict: true` with 0 errors (95 strictNullChecks + 4 strict fixed). Report files: type-only, compiled JS identical. Small real fixes: order lists no longer crash on a missing order number, stat cards show "—" on failure, null form values render empty. **Owner decision pending:** `parseReferenceBounds` (features/tests/schemas.ts) treats a missing range limit as 0, so a range like "> 10" (no upper limit) gets bounds 0–10 and a value of 50 could be flagged out of range in reports. Kept as is because it changes report output for every lab. |
 | 2026-10-27 | S-09 | (this commit) | Roles single source: `has_role()` follows `profiles.role` for lab roles; `user_roles` = super admins only. Real bug fixed: lab admins created since 2026-10-19 had no `user_roles` row and were denied on exchange rates, exam profiles, profile↔template links, department order and audit logs; stale rows granted roles the app no longer showed. Run `roles_drift_report.sql` on production before the push. |
 | 2026-10-28 | S-11 | — | Security audit run-2 complete: 11 confirmed (1 high, 6 medium, 4 low), 11 needs validation, coverage clean after 4 waves and a final-clean critic. Wildcard/Injection units covered (no injection sinks found). Fixes pending. |
+| 2026-10-30 | S-11 fixes | db345ee, c369b65, 9ffa968, 8deece4, 5b083db | Audit run-2 fixes: order_items INSERT guard (high); completed-order identity lock, same-org patient + portal org binding, server-side create_lab_order prices + affiliate patient scope, register_payment rate floor, signature URL/name binding + orders.signed_by (mediums); dashboard staff-only, per-client portal lockout + read-only refusal (lows). Anon org listing (S-05) and suspension enforcement deferred by the owner. |
