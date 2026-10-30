@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Footer } from "./Footer";
 import { PWAInstallBanner } from "../InstallPWA";
 import { ImpersonationBanner } from "./ImpersonationBanner";
+import { SubscriptionBanner } from "@/features/subscription/SubscriptionBanner";
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
@@ -14,6 +15,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-background">
       <ImpersonationBanner />
+      <SubscriptionBanner />
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <AppSidebar />
@@ -31,7 +33,7 @@ export function AppLayout() {
           <Outlet />
         </main>
         <footer className="mb-14 md:mb-0">
-            <Footer />
+          <Footer />
         </footer>
       </div>
       <PWAInstallBanner />

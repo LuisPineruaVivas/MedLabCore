@@ -13,7 +13,7 @@ export function RoleRouter() {
   }
 
   if (role === "super_admin") {
-    return <Navigate to="/admin/organizations" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   if (role === "lab_affiliate") {

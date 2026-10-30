@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   User,
   ClipboardList,
+  CreditCard,
 } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useHasAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
 
 const adminNavItems = [
+  { label: "Métricas Globales", icon: LayoutDashboard, path: "/admin/dashboard" },
+  { label: "Validar Pagos", icon: CreditCard, path: "/admin/subscriptions" },
   { label: "Laboratorios", icon: Building2, path: "/admin/organizations" },
   { label: "Usuarios", icon: UserCog, path: "/admin/users" },
   { label: "Examenes Templates", icon: FlaskConical, path: "/admin/tests-templates" },
@@ -123,33 +126,42 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="mb-4 space-y-1 px-3">
-        <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/60 px-3 py-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent">
-            <User className="h-5 w-5 text-sidebar-foreground" />
+      <div className="border-t border-sidebar-border p-3">
+        <div
+          className={cn(
+            "flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-2.5 transition-all",
+            sidebarCollapsed && "justify-center p-2"
+          )}
+        >
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary">
+            <User className="h-4 w-4" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">{displayName}</p>
-            <p className="truncate text-[10px] font-semibold uppercase text-sidebar-foreground/60">
-              {roleLabel}
-            </p>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="min-w-0 flex-1 animate-fade-in">
+              <p className="truncate text-xs font-medium text-sidebar-accent-foreground">
+                {displayName}
+              </p>
+              <p className="truncate text-[10px] text-sidebar-muted">{roleLabel}</p>
+            </div>
+          )}
         </div>
 
-        <button
-          onClick={signOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
-        >
-          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
-          {!sidebarCollapsed && <span className="animate-fade-in">Cerrar Sesion</span>}
-        </button>
-
-        <button
-          onClick={toggleSidebar}
-          className="flex h-9 w-full items-center justify-center rounded-lg border border-sidebar-border text-sidebar-muted transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-        >
-          {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        <div className="mt-2 flex items-center justify-between gap-1">
+          <button
+            onClick={toggleSidebar}
+            className="flex h-8 flex-1 items-center justify-center rounded-lg text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            title={sidebarCollapsed ? "Expandir" : "Colapsar"}
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={signOut}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title="Cerrar sesion"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );

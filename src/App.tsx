@@ -13,6 +13,7 @@ import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
 import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { Analytics } from "@vercel/analytics/react";
 import ReportViewerPage from "./pages/ReportViewerPage";
 
@@ -34,6 +35,8 @@ const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
 const AuditLogPage = lazy(() => import("@/pages/AuditLogPage"));
+const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
+const PaymentValidationPage = lazy(() => import("@/pages/admin/PaymentValidationPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,50 +75,66 @@ const App = () => (
               <Route path="/portal-paciente" element={<PatientPortalPage />} />
               <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
-              <Route element={<ProtectedRoute><ImpersonationProvider><BrandProvider><AppLayout /></BrandProvider></ImpersonationProvider></ProtectedRoute>}>
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <ImpersonationProvider>
+                      <BrandProvider>
+                        <AppLayout />
+                      </BrandProvider>
+                    </ImpersonationProvider>
+                  </ProtectedRoute>
+                }
+              >
                 <Route path="/" element={<RoleRouter />} />
-                <Route path="/patients" element={<PatientsPage />} />
-                <Route path="/patients/:id" element={<PatientDetailPage />} />
-                <Route path="/orders" element={<OrdersPage />} />
-                <Route path="/orders/:id" element={<OrderDetailPage />} />
 
-                <Route element={<AllowedRolesGuard roles={["super_admin", "lab_admin", "bioanalyst", "secretary"]} />}>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                </Route>
-
-                <Route element={<RoleGuard permission="canViewTests" />}>
-                  <Route path="/tests" element={<TestsPage />} />
-                  <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
-                  <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
-                </Route>
-
-                <Route element={<RoleGuard permission="canViewVisits" />}>
-                  <Route path="/visits" element={<VisitsPage />} />
-                </Route>
-
-                <Route element={<RoleGuard permission="canViewBilling" />}>
-                  <Route path="/billing" element={<BillingPage />} />
-                </Route>
-
-                <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
-                  <Route path="/affiliate-accounts" element={<AffiliateAccountsPage />} />
-                </Route>
-
-                <Route element={<RoleGuard permission="canViewSettings" />}>
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Route>
-
-
-                {/*<Route element={<RoleGuard permission="canViewSettings" />}>
-                  <Route path="/audit-log" element={<AuditLogPage />} />
-                </Route>*/}
-
+                {/* Super Admin Routes */}
                 <Route element={<SuperAdminGuard />}>
+                  <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                  <Route path="/admin/subscriptions" element={<PaymentValidationPage />} />
                   <Route path="/admin/organizations" element={<OrganizationsPage />} />
                   <Route path="/admin/users" element={<UsersPage />} />
                   <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
                   <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
                   <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
+                </Route>
+
+                {/* Lab Routes protected by SubscriptionGuard */}
+                <Route element={<SubscriptionGuard />}>
+                  <Route path="/patients" element={<PatientsPage />} />
+                  <Route path="/patients/:id" element={<PatientDetailPage />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/orders/:id" element={<OrderDetailPage />} />
+
+                  <Route element={<AllowedRolesGuard roles={["super_admin", "lab_admin", "bioanalyst", "secretary"]} />}>
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                  </Route>
+
+                  <Route element={<RoleGuard permission="canViewTests" />}>
+                    <Route path="/tests" element={<TestsPage />} />
+                    <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
+                    <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
+                  </Route>
+
+                  <Route element={<RoleGuard permission="canViewVisits" />}>
+                    <Route path="/visits" element={<VisitsPage />} />
+                  </Route>
+
+                  <Route element={<RoleGuard permission="canViewBilling" />}>
+                    <Route path="/billing" element={<BillingPage />} />
+                  </Route>
+
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                    <Route path="/affiliate-accounts" element={<AffiliateAccountsPage />} />
+                  </Route>
+
+                  <Route element={<RoleGuard permission="canViewSettings" />}>
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Route>
+
+                  {/*<Route element={<RoleGuard permission="canViewSettings" />}>
+                    <Route path="/audit-log" element={<AuditLogPage />} />
+                  </Route>*/}
                 </Route>
               </Route>
 
