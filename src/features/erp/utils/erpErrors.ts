@@ -18,6 +18,7 @@ const ERP_ERROR_MESSAGES: Record<string, string> = {
   PAYMENT_EXCEEDS_BALANCE: "El monto supera el saldo pendiente de la factura.",
   INVOICE_NOT_PAYABLE: "La factura no admite pagos en su estado actual.",
   EXCHANGE_RATE_REQUIRED: "Falta la tasa de cambio para este pago.",
+  EXCHANGE_RATE_OUT_OF_RANGE: "La tasa de cambio es muy inferior a la tasa reciente del laboratorio. Revísala o pide a un administrador que registre el pago.",
   INVALID_BANK_ACCOUNT: "El método de cobro seleccionado no está disponible.",
   INSTALLMENTS_MUST_MATCH_BALANCE: "La suma de las cuotas debe ser igual al saldo pendiente.",
   INSUFFICIENT_STOCK: "No hay stock suficiente del insumo.",
