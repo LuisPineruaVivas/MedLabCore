@@ -63,7 +63,7 @@ export default function OrdersPage() {
         title="Ordenes de Laboratorio"
         description="Gestiona y administra tus ordenes de laboratorio."
         actions={
-          <Button onClick={() => setCreateOpen(true)} size="sm">
+          <Button onClick={() => setCreateOpen(true)} size="sm" data-tour="new-order">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             <span>Nueva Orden</span>
           </Button>
@@ -155,7 +155,7 @@ export default function OrdersPage() {
             {orders.map((order) => {
               const affiliate = affiliateById.get(order.created_by);
               return <React.Fragment key={order.id}>
-                <TableRow className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+                <TableRow className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)} data-tour="order-row">
                   <TableCell>
                     <div>
                       <p className="text-sm font-medium">{order.patients?.first_name} {order.patients?.last_name}</p>
@@ -224,6 +224,7 @@ export default function OrdersPage() {
             >
               <div
                 className="p-2 cursor-pointer active:bg-muted/30 transition-colors"
+                data-tour="order-row"
                 onClick={() => navigate(`/orders/${order.id}`)}
               >
                 <div className="flex items-center justify-between">

@@ -93,6 +93,7 @@ export default function SettingsPage() {
         {settingsCards.map((item) => (
           <div
             key={item.title}
+            data-tour={`settings-${item.id}`}
             role="button"
             tabIndex={0}
             onClick={() => setActiveDialog(item.id)}

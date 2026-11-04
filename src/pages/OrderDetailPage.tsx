@@ -29,6 +29,11 @@ import { LetterHeadPDF } from "@/lib/letterhead";
 import { LetterHeadPreviewDialog } from "@/features/orders/LetterHeadDialog";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
+import { DEMO_SHARE_EVENT, isDemo, type DemoShareDetail } from "@/lib/demo/isDemo";
+
+function shareInDemo(message: string, url: string) {
+  window.dispatchEvent(new CustomEvent<DemoShareDetail>(DEMO_SHARE_EVENT, { detail: { message, url } }));
+}
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -474,7 +479,9 @@ export default function OrderDetailPage() {
     }
     
     // 4. Crear el mensaje y abrir WhatsApp
-    const text = encodeURIComponent(`Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`);
+    const message = `Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`;
+    if (isDemo) return shareInDemo(message, portalUrl);
+    const text = encodeURIComponent(message);
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }
 
@@ -485,7 +492,9 @@ export default function OrderDetailPage() {
       const pdfUrl = `${window.location.origin}/informe-pdf?org=${order.org_id}&pin=${order.access_pin}&dni=${encodeURIComponent(patientDni)}`;
       
       const phoneDigits = (order.patients?.phone || "").replace(/\D/g, "");
-      const text = encodeURIComponent(`Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`);
+      const message = `Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`;
+      if (isDemo) return shareInDemo(message, pdfUrl);
+      const text = encodeURIComponent(message);
 
       window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
     }
@@ -502,13 +511,13 @@ export default function OrderDetailPage() {
               Volver
             </Button>
             {primaryStatusAction && (
-              <Button variant="outline" size="sm" onClick={primaryStatusAction.onClick} disabled={updateStatus.isPending}>
+              <Button variant="outline" size="sm" onClick={primaryStatusAction.onClick} disabled={updateStatus.isPending} data-tour="status-action">
                 <ClipboardCheck className="mr-2 h-4 w-4" />
                 {primaryStatusAction.label}
               </Button>
             )}
             {canViewOrderDocuments && (
-              <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading}>
+              <Button variant="outline" size="sm" onClick={handleViewReport} disabled={reportLoading} data-tour="view-report">
                 <FileText className="mr-2 h-4 w-4" />
                 {reportLoading ? "Generando..." : "Ver Informe"}
               </Button>
@@ -527,7 +536,7 @@ export default function OrderDetailPage() {
             )}
 
             {canEnterResults && order.status !== "completada" && (
-              <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0}>
+              <Button size="sm" onClick={handleSaveAll} disabled={isSavingAll || modifiedIds.size === 0} data-tour="save-results">
                 <Save className="mr-2 h-4 w-4" />
                 {isSavingAll ? "Guardando..." : "Guardar Todos"}
               </Button>
@@ -549,7 +558,7 @@ export default function OrderDetailPage() {
           showSharePortalAction={canViewOrderDocuments}
         />
 
-        <div className="w-full space-y-6 lg:w-[70%]">
+        <div className="w-full space-y-6 lg:w-[70%]" data-tour="results">
           {itemsLoading ? (
             <Card className="flex h-32 items-center justify-center rounded-xl border bg-card">
               <Atom color={labData.primary_color} size="large" text="Cargando exámenes..." textColor={labData.primary_color} />

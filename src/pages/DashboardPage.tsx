@@ -36,7 +36,7 @@ export default function DashboardPage() {
         description="Resumen de actividad laboratorio"
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="dashboard-stats">
         {statsLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-[120px] rounded-xl" />
@@ -69,7 +69,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Orders */}
-        <div className="lg:col-span-2 bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="lg:col-span-2 bg-card rounded-xl border border-border overflow-hidden" data-tour="dashboard-pending" style={{ boxShadow: "var(--shadow-card)" }}>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-sm">Pruebas pendientes</h3>

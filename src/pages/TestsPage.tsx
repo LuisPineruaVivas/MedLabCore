@@ -145,7 +145,7 @@ export default function TestsPage() {
                 Nuevo Perfil
               </Button>
             ) : activeTab === "exams" ? (
-              <Button size="sm" onClick={() => navigate("/tests/templates/new")}>
+              <Button size="sm" onClick={() => navigate("/tests/templates/new")} data-tour="new-test">
                 <Plus className="mr-1 h-4 w-4 sm:mr-2" />
                 Nuevo Examen
               </Button>
@@ -160,7 +160,7 @@ export default function TestsPage() {
         <StatCard title="Perfiles" value={statsLoading ? "..." : String(stats?.profiles ?? 0)} icon={Package} className="border-border bg-white shadow-sm transition-shadow hover:shadow-md" />
       </div>
 
-      <div className="w-fit items-center gap-1 rounded-lg bg-muted/50 p-1 md:inline-flex">
+      <div className="w-fit items-center gap-1 rounded-lg bg-muted/50 p-1 md:inline-flex" data-tour="tests-tabs">
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Examenes</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "profiles" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("profiles")}><Package className="mr-1.5 inline-block h-4 w-4" />Perfiles</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "methods" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("methods")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Métodos</button>
@@ -170,7 +170,7 @@ export default function TestsPage() {
 
       {activeTab === "exams" ? (
         <>
-          <Card className="rounded-xl border border-border bg-card p-0 shadow-sm">
+          <Card className="rounded-xl border border-border bg-card p-0 shadow-sm" data-tour="tests-table">
             <CardHeader className="flex flex-col gap-4 border-b border-border px-6 py-4 lg:flex-row lg:items-center">
               <div className="flex flex-1 gap-3 sm:flex-row">
                 <div className="relative flex-1">

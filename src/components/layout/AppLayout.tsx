@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
@@ -8,12 +9,21 @@ import { Footer } from "./Footer";
 import { PWAInstallBanner } from "../InstallPWA";
 import { ImpersonationBanner } from "./ImpersonationBanner";
 import { SubscriptionBanner } from "@/features/subscription/SubscriptionBanner";
+import { isDemo } from "@/lib/demo/isDemo";
+
+// Loaded only in demo mode so the tour library stays out of the normal bundle.
+const DemoGuide = isDemo ? lazy(() => import("@/features/tour/DemoGuide")) : null;
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
 
   return (
     <div className="min-h-screen bg-background">
+      {DemoGuide && (
+        <Suspense fallback={null}>
+          <DemoGuide />
+        </Suspense>
+      )}
       <ImpersonationBanner />
       <SubscriptionBanner />
       {/* Desktop sidebar */}

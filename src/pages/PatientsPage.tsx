@@ -55,7 +55,7 @@ export default function PatientsPage() {
         title="Directorio de Pacientes"
         description="Gestiona eficientemente los registros de pacientes"
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm">
+          <Button onClick={() => setDialogOpen(true)} size="sm" data-tour="new-patient">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             <span>Nuevo Paciente</span>
           </Button>

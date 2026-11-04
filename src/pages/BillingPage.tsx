@@ -42,14 +42,14 @@ export default function BillingPage() {
         description="Monitorea ingresos y controla el estado de las órdenes de examen"
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="billing-stats">
         <StatCard title="Total Recaudado" value={`$${totalRevenue.toFixed(2)}`} icon={DollarSign} trend={{ value: Number(((totalRevenue - thisMonthRevenue) / Math.max(thisMonthRevenue, 1) * 100).toFixed(0)), label: "vs mes" }} />
         <StatCard title="Mes Actual" value={`$${thisMonthRevenue.toFixed(2)}`} icon={TrendingUp} trend={{ value: 0, label: "" }} />
         <StatCard title="Ordenes Totales" value={totalOrders.toLocaleString()} icon={Receipt} subtitle="Ordenes registradas" />
         <StatCard title="Pendientes" value={pendingCount.toLocaleString()} icon={CreditCard} subtitle="Estado pendiente" />
       </div>
 
-      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
+      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm" data-tour="billing-table">
         <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
           <div className="md:flex md:flex-1 md:space-y-0 space-y-3 gap-3">
             <div className="relative md:flex-1 w-full">

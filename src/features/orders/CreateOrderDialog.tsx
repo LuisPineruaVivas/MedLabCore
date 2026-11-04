@@ -394,7 +394,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
               <Label className="text-sm font-semibold">1. Paciente</Label>
 
               {selectedPatient ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border" data-tour="order-patient-selected">
                   <div>
                     <p className="text-sm font-medium">
                       {selectedPatient.first_name} {selectedPatient.last_name}
@@ -421,6 +421,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                     <Input
                       className="pl-9"
                       placeholder="Buscar paciente por nombre o cedula..."
+                      data-tour="order-patient-search"
                       value={patientSearch}
                       onChange={(event) => {
                         setPatientSearch(event.target.value);
@@ -477,7 +478,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
             <Separator />
 
             <div className="mb-2 flex flex-col gap-4 lg:h-96 lg:flex-row">
-              <div className="w-full space-y-4 h-full flex flex-col">
+              <div className="w-full space-y-4 h-full flex flex-col" data-tour="order-tests">
                 <Label className="text-sm font-semibold">2. Selecciona los examenes a realizar</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -549,7 +550,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
                 </div>
               </div>
 
-              <div className="w-full space-y-4 h-full flex flex-col">
+              <div className="w-full space-y-4 h-full flex flex-col" data-tour="order-summary">
                 <Label className="text-sm font-semibold">Resumen de la orden</Label>
                 <div className="h-auto min-h-52 rounded-lg border border-border lg:h-full">
                   {cart.length === 0 ? (

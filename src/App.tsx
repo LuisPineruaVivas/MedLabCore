@@ -16,6 +16,7 @@ import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { Analytics } from "@vercel/analytics/react";
 import ReportViewerPage from "./pages/ReportViewerPage";
+import { isDemo } from "@/lib/demo/isDemo";
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
@@ -30,6 +31,8 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const OrganizationsPage = lazy(() => import("@/pages/admin/OrganizationsPage"));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const DemoEntryPage = lazy(() => import("@/pages/DemoEntryPage"));
+const DemoExitRedirect = lazy(() => import("@/pages/DemoEntryPage").then((m) => ({ default: m.DemoExitRedirect })));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
@@ -71,7 +74,9 @@ const App = () => (
             }
           >
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+              {/* The login page always uses the real backend, so reaching it ends a demo session. */}
+              <Route path="/login" element={isDemo ? <DemoExitRedirect /> : <LoginPage />} />
+              <Route path="/demo" element={<DemoEntryPage />} />
               <Route path="/portal-paciente" element={<PatientPortalPage />} />
               <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
