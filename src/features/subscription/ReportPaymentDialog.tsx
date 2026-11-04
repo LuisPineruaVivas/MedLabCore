@@ -1,4 +1,4 @@
-import { useState, useId } from "react";
+import { Fragment, useState, useId } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useReportSubscriptionPayment } from "./useSubscriptionPayments";
-import { DollarSign, Upload, CheckCircle2, Clock, AlertCircle, Loader2, Image as ImageIcon } from "lucide-react";
+import { DollarSign, Upload, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface ReportPaymentDialogProps {
@@ -16,8 +16,17 @@ interface ReportPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const PAYMENT_METHODS = [
-  { id: "pago_movil", label: "Pago Móvil" },
+// `details` is where the lab sends the money; shown under the selector once the method is picked.
+const PAYMENT_METHODS: { id: string; label: string; details: { label: string; value: string }[] }[] = [
+  {
+    id: "pago_movil",
+    label: "Pago Móvil",
+    details: [
+      { label: "Banco", value: "Banco Provincial" },
+      { label: "Cédula", value: "25631887" },
+      { label: "Teléfono", value: "04147223693" },
+    ],
+  },
   /*{ id: "transferencia_bs", label: "Transferencia Bancaria (Bs)" },
   { id: "zelle", label: "Zelle (USD)" },
   { id: "binance", label: "Binance USDT" },
@@ -35,6 +44,7 @@ export function ReportPaymentDialog({ open, onOpenChange }: ReportPaymentDialogP
   const amountBs = rate ? priceUsd * rate : null;
 
   const [paymentMethod, setPaymentMethod] = useState<string>("pago_movil");
+  const selectedMethod = PAYMENT_METHODS.find((method) => method.id === paymentMethod);
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState<string>("");
@@ -138,15 +148,6 @@ export function ReportPaymentDialog({ open, onOpenChange }: ReportPaymentDialogP
           )}
         </div>
 
-        {/* Alerta de Período de Gracia */}
-        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs">
-          <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>
-            <strong>Período de gracia automático:</strong> Al reportar este pago, el sistema activará inmediatamente{" "}
-            <strong>3 días de gracia</strong> para garantizar que el laboratorio siga operando sin pausas mientras validamos tu comprobante.
-          </span>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -176,6 +177,20 @@ export function ReportPaymentDialog({ open, onOpenChange }: ReportPaymentDialogP
               />
             </div>
           </div>
+
+          {selectedMethod && selectedMethod.details.length > 0 && (
+            <div className="rounded-lg border bg-muted/40 p-3 text-xs">
+              <p className="mb-2 font-semibold">Datos para el {selectedMethod.label}</p>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                {selectedMethod.details.map((detail) => (
+                  <Fragment key={detail.label}>
+                    <dt className="text-muted-foreground">{detail.label}</dt>
+                    <dd className="font-medium select-all">{detail.value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Número de Referencia</Label>

@@ -73,7 +73,7 @@ export function SubscriptionLockScreen() {
           <div className="flex items-start gap-2.5">
             <Clock className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
             <span>
-              <strong>¡Desbloqueo inmediato con período de gracia!</strong> Al reportar tu comprobante, el sistema reactivará automáticamente el acceso por <strong>3 días</strong> mientras el Super Admin confirma la acreditación bancaria.
+              <strong>¡Desbloqueo inmediato!</strong> Al reportar tu comprobante, el sistema reactivará automáticamente el acceso al laboratorio.
             </span>
           </div>
         </div>

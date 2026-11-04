@@ -73,7 +73,7 @@ export function useReportSubscriptionPayment(orgId: string | null | undefined) {
       }
       queryClient.invalidateQueries({ queryKey: ["superadmin-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["admin-subscription-payments"] });
-      toast.success("Pago reportado con éxito. Se ha activado un período de gracia de 3 días mientras es revisado.");
+      toast.success("Pago reportado con éxito. Lo revisaremos a la brevedad.");
     },
     onError: (error) => {
       toast.error(getUserFacingErrorMessage(error, "No se pudo registrar el comprobante de pago"));
