@@ -2,27 +2,13 @@ import { useEffect, type ReactNode } from "react";
 import * as Sentry from "@sentry/react";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const CHUNK_RELOAD_KEY = "medlab_chunk_reload";
-
-// After a deploy, an open tab asks for page chunks that no longer exist; a reload fetches the new ones.
-function isStaleChunkError(error: unknown) {
-  return error instanceof Error && /dynamically imported module|Importing a module script failed|Loading chunk/i.test(error.message);
-}
+import { isStaleChunkError, reloadForNewVersion } from "@/lib/reloadForNewVersion";
 
 function ErrorFallback({ error, resetError, fullPage }: { error: unknown; resetError: () => void; fullPage: boolean }) {
   const staleChunk = isStaleChunkError(error);
 
   useEffect(() => {
-    if (!staleChunk) return;
-    try {
-      // Reload at most once a minute, so a chunk that is really missing can't loop forever.
-      if (Date.now() - Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) ?? 0) < 60_000) return;
-      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-    } catch {
-      return;
-    }
-    window.location.reload();
+    if (staleChunk) reloadForNewVersion();
   }, [staleChunk]);
 
   return (

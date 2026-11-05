@@ -35,7 +35,6 @@ const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DemoEntryPage = lazy(() => import("@/pages/DemoEntryPage"));
 const DemoExitRedirect = lazy(() => import("@/pages/DemoEntryPage").then((m) => ({ default: m.DemoExitRedirect })));
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const DebugSentryPage = lazy(() => import("@/pages/DebugSentryPage"));
 const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
@@ -95,7 +94,6 @@ const App = () => (
                   }
                 >
                   <Route path="/" element={<RoleRouter />} />
-                  <Route path="/debug-sentry" element={<DebugSentryPage />} />
 
                   {/* Super Admin Routes */}
                   <Route element={<SuperAdminGuard />}>
