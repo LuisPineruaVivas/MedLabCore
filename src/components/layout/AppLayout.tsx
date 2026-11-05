@@ -1,5 +1,9 @@
-import { Suspense, lazy } from "react";
-import { Outlet } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { setSentryUser } from "@/lib/sentry";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { BottomNav } from "./BottomNav";
@@ -16,6 +20,13 @@ const DemoGuide = isDemo ? lazy(() => import("@/features/tour/DemoGuide")) : nul
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
+  const location = useLocation();
+  const { user } = useAuth();
+  const { orgId, role } = useCurrentOrgContext();
+
+  useEffect(() => {
+    if (user) setSentryUser({ id: user.id, role, orgId });
+  }, [user, role, orgId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,7 +51,10 @@ export function AppLayout() {
       >
         <AppHeader />
         <main className="p-3 sm:p-6 pb-20 md:pb-6">
-          <Outlet />
+          {/* Keyed by path so moving to another page clears a crashed one; menu and header keep working. */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
         <footer className="mb-14 md:mb-0">
           <Footer />

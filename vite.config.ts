@@ -2,6 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+
+// Set in Vercel. Without it (local builds) no source maps are generated or uploaded.
+const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
@@ -54,9 +58,23 @@ export default defineConfig(() => ({
         ],
       },
     }),
+    uploadSourceMaps &&
+      sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: { name: process.env.VERCEL_GIT_COMMIT_SHA },
+        // Maps go to Sentry only; deleting them keeps the original source off the public site.
+        sourcemaps: { filesToDeleteAfterUpload: ["./dist/**/*.map"] },
+        telemetry: false,
+      }),
   ],
+  build: {
+    sourcemap: uploadSourceMaps ? ("hidden" as const) : false,
+  },
   define: {
     global: 'globalThis',
+    "import.meta.env.VITE_DEPLOY_ENV": JSON.stringify(process.env.VERCEL_ENV ?? ""),
   },
   resolve: {
     alias: {
