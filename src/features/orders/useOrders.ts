@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { emitAppAction } from "@/lib/appActions";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
@@ -345,11 +346,12 @@ export function useCreateOrder() {
       if (error) throw error;
       return data as unknown as CreateLabOrderResponse;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(variables.orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.stats(variables.orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentOrders(variables.orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats(variables.orgId, undefined) });
+      if (data?.success && data.orderId) emitAppAction({ type: "order_created", orderId: data.orderId });
     },
   });
 }
@@ -383,6 +385,7 @@ export function useSaveResults() {
       getSaveResultsInvalidationTargets(variables.orderId, variables.orgId).forEach((queryKey) => {
         queryClient.invalidateQueries({ queryKey });
       });
+      emitAppAction({ type: "results_saved", orderId: variables.orderId });
     },
   });
 }

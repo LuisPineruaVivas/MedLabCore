@@ -125,7 +125,7 @@ export function useCurrentOrgContext(): CurrentOrgContext {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, org_id, role, full_name, email, created_at, firma_url, sello_url, signature_footer_text")
+        .select("id, org_id, role, full_name, email, created_at, firma_url, sello_url, signature_footer_text, onboarding_completed_at")
         .eq("id", user!.id)
         .single();
 

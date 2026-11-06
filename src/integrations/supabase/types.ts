@@ -583,6 +583,7 @@ export type Database = {
           firma_name: string | null
           full_name: string | null
           id: string
+          onboarding_completed_at: string | null
           org_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           sello_url: string | null
@@ -595,6 +596,7 @@ export type Database = {
           firma_name?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed_at?: string | null
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
@@ -607,6 +609,7 @@ export type Database = {
           firma_name?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed_at?: string | null
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
@@ -818,6 +821,7 @@ export type Database = {
           pct: number
         }[]
       }
+      complete_onboarding: { Args: never; Returns: undefined }
       get_my_org_id: { Args: never; Returns: string }
       has_role: {
         Args: {

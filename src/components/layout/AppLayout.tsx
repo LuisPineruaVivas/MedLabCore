@@ -14,15 +14,18 @@ import { PWAInstallBanner } from "../InstallPWA";
 import { ImpersonationBanner } from "./ImpersonationBanner";
 import { SubscriptionBanner } from "@/features/subscription/SubscriptionBanner";
 import { isDemo } from "@/lib/demo/isDemo";
+import { useOnboarding } from "@/features/tour/useOnboarding";
 
-// Loaded only in demo mode so the presentation and tour library stay out of the normal bundle.
+// Loaded only when shown, so the presentation and tour library stay out of the normal bundle.
 const DemoPresentation = isDemo ? lazy(() => import("@/features/tour/presentation/DemoPresentation")) : null;
+const OnboardingGuide = lazy(() => import("@/features/tour/OnboardingGuide"));
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
   const location = useLocation();
   const { user } = useAuth();
   const { orgId, role } = useCurrentOrgContext();
+  const onboarding = useOnboarding();
 
   useEffect(() => {
     if (user) setSentryUser({ id: user.id, role, orgId });
@@ -33,6 +36,11 @@ export function AppLayout() {
       {DemoPresentation && (
         <Suspense fallback={null}>
           <DemoPresentation />
+        </Suspense>
+      )}
+      {onboarding.open && (
+        <Suspense fallback={null}>
+          <OnboardingGuide userId={onboarding.userId} onFinish={onboarding.finish} />
         </Suspense>
       )}
       <ImpersonationBanner />

@@ -5,6 +5,7 @@ import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import type { PatientFormData } from "./schemas";
+import { emitAppAction } from "@/lib/appActions";
 
 export function usePatientsList(page: number, search: string) {
   const { orgId } = useCurrentOrgContext();
@@ -116,9 +117,10 @@ export function useCreatePatient() {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, formData) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.patients.all(orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.patients.stats(orgId) });
+      emitAppAction({ type: "patient_created", firstName: formData.first_name });
     },
   });
 }

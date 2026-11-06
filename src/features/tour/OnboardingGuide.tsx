@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Compass, LogOut, RotateCcw } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,11 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { DEMO_DB_KEY, DEMO_TOUR_KEY, exitDemo } from "@/lib/demo/isDemo";
-import { DEMO_EVENT, latestDemoOrderId, latestDemoPatientName, type DemoWriteEvent } from "@/lib/demo/demoFetch";
-import { DEMO_SHOWCASE_PATIENT_ID } from "@/lib/demo/seed";
+import { APP_ACTION_EVENT, type AppAction } from "@/lib/appActions";
 import { dialogTitled, findVisible, runGuidedTask, type GuideStep } from "./guidedTask";
-import { DemoShareSimulator, SHARE_CHAT_TITLE, SHARE_VIEWER_TITLE } from "./DemoShareSimulator";
 
 type TaskId = "patient" | "order" | "results" | "report" | "share";
 type ExploreId = "dashboard" | "patients" | "tests" | "billing" | "settings";
@@ -43,6 +40,10 @@ const inDialog = (selector: string) => `[role="dialog"] ${selector}`;
 const filled = (selector: string) => Boolean((findVisible(selector) as HTMLInputElement | null)?.value?.trim());
 const birthDateEntered = () =>
   /^\d{2}\/\d{2}\/\d{4}$/.test((findVisible(inDialog('input[placeholder="Seleccionar fecha"]')) as HTMLInputElement | null)?.value ?? "");
+
+/** What the user created last, so later steps can point at their own patient and order. */
+const latest: { orderId: string | null; patientName: string | null } = { orderId: null, patientName: null };
+const orderPage = () => (location.pathname.startsWith("/orders/") ? null : latest.orderId ? `/orders/${latest.orderId}` : "/orders");
 
 /** True once the dialog has been seen and then closed again. */
 function closedAfterOpen(title: string) {
@@ -148,7 +149,7 @@ const TASKS: Task[] = [
         target: '[data-tour="order-patient-search"]',
         title: "1. Busca al paciente",
         text: () => {
-          const name = latestDemoPatientName();
+          const name = latest.patientName;
           return `Escribe el nombre o la cédula del paciente${name ? ` (por ejemplo, «${name}»)` : ""} y selecciónalo en la lista que aparece.`;
         },
         doneWhen: () => Boolean(findVisible('[data-tour="order-patient-selected"]')),
@@ -215,7 +216,7 @@ const TASKS: Task[] = [
     id: "report",
     title: "Mira el informe en PDF",
     hint: "Genera el informe de resultados listo para entregar al paciente.",
-    start: () => (location.pathname.startsWith("/orders/") ? null : `/orders/${latestDemoOrderId() ?? ""}`),
+    start: orderPage,
     steps: () => [
       {
         target: '[data-tour="view-report"]',
@@ -242,28 +243,14 @@ const TASKS: Task[] = [
   {
     id: "share",
     title: "Compártelo con tu paciente",
-    hint: "Envía el informe por WhatsApp y míralo como lo recibe tu paciente.",
-    start: () => (location.pathname.startsWith("/orders/") ? null : `/orders/${latestDemoOrderId() ?? ""}`),
+    hint: "Envíale el informe por WhatsApp con un enlace que abre al instante.",
+    start: orderPage,
     steps: (isDone) => [
       {
         target: '[data-tour="share-pdf"]',
         title: "Envíaselo por WhatsApp",
-        text: "Con «Compartir pdf» le mandas a tu paciente un enlace a su informe por WhatsApp, sin imprimir ni adjuntar archivos. Púlsalo.",
-        doneWhen: () => Boolean(dialogTitled(SHARE_CHAT_TITLE)),
-      },
-      {
-        target: '[data-tour="demo-share-link"]',
-        title: "Así le llega el mensaje",
-        text: "Este es el mensaje que recibe tu paciente. Ponte en su lugar: toca el enlace.",
+        text: "Pulsa «Compartir pdf»: se abre WhatsApp con un mensaje listo para tu paciente y el enlace a su informe. Él lo toca y lo ve al instante, sin descargar nada ni crear cuentas.",
         doneWhen: () => isDone("share"),
-        fallbackTo: 0,
-      },
-      {
-        target: () => dialogTitled(SHARE_VIEWER_TITLE),
-        title: "¡Así lo ve tu paciente!",
-        text: "Su informe se abre al instante, con el logo de tu laboratorio, listo para ver, descargar o imprimir. Ciérralo para terminar.",
-        doneWhen: closedAfterOpen(SHARE_VIEWER_TITLE),
-        optional: true,
       },
     ],
   },
@@ -291,17 +278,17 @@ const EXPLORE: ExploreItem[] = [
   {
     id: "patients",
     title: "Pacientes e historial",
-    route: () => `/patients/${DEMO_SHOWCASE_PATIENT_ID}`,
+    route: () => "/patients",
     steps: [
       {
-        selector: '[data-tour="patient-info"]',
-        title: "Ficha del paciente",
-        text: "Sus datos personales y de contacto. Desde aquí puedes editarlos o generar su tarjeta de grupo sanguíneo.",
+        selector: "main tbody tr",
+        title: "Ficha e historial",
+        text: "Haz clic en cualquier paciente para ver su ficha, editar sus datos y ver el historial de todas sus órdenes con su estado y monto.",
       },
       {
-        selector: '[data-tour="patient-orders"]',
-        title: "Historial de órdenes",
-        text: "Todas las órdenes que se le han hecho en tu laboratorio, con su estado y monto. Haz clic en una para ver sus resultados.",
+        selector: '[data-tour="new-patient"]',
+        title: "Registra pacientes",
+        text: "También puedes registrarlos directamente desde una orden nueva, si aún no existen.",
       },
     ],
   },
@@ -375,12 +362,17 @@ interface GuideState {
   minimized: boolean;
   done: TaskId[];
   explored: ExploreId[];
+  orderId: string | null;
+  patientName: string | null;
 }
 
-function loadState(): GuideState {
-  const fresh: GuideState = { welcomed: false, minimized: false, done: [], explored: [] };
+// Progress lives in this browser; the profile only records that the guide is finished.
+const stateKey = (userId: string) => `medlab_onboarding_${userId}`;
+
+function loadState(userId: string): GuideState {
+  const fresh: GuideState = { welcomed: false, minimized: false, done: [], explored: [], orderId: null, patientName: null };
   try {
-    const saved = sessionStorage.getItem(DEMO_TOUR_KEY);
+    const saved = localStorage.getItem(stateKey(userId));
     if (saved) return { ...fresh, ...(JSON.parse(saved) as Partial<GuideState>) };
   } catch {
     // Fall through to a fresh guide.
@@ -388,9 +380,9 @@ function loadState(): GuideState {
   return fresh;
 }
 
-function saveState(state: GuideState) {
+function saveState(userId: string, state: GuideState) {
   try {
-    sessionStorage.setItem(DEMO_TOUR_KEY, JSON.stringify(state));
+    localStorage.setItem(stateKey(userId), JSON.stringify(state));
   } catch {
     // Progress is a convenience; losing it only re-shows unchecked tasks.
   }
@@ -417,23 +409,35 @@ function StatusIcon({ done, current }: { done: boolean; current?: boolean }) {
   );
 }
 
-export default function DemoGuide() {
+/**
+ * Interactive first-steps guide for a new lab admin: they do each task on their own lab while the guide
+ * points at what to press. `onFinish` records it as finished so it never shows again.
+ */
+export default function OnboardingGuide({ userId, onFinish }: { userId: string; onFinish: () => void }) {
   const navigate = useNavigate();
-  const [state, setState] = useState<GuideState>(loadState);
+  const [state, setState] = useState<GuideState>(() => loadState(userId));
+  latest.orderId = state.orderId;
+  latest.patientName = state.patientName;
 
-  const update = useCallback((patch: Partial<GuideState>) => {
-    setState((prev) => saveState({ ...prev, ...patch }));
-  }, []);
+  const update = useCallback(
+    (patch: Partial<GuideState>) => {
+      setState((prev) => saveState(userId, { ...prev, ...patch }));
+    },
+    [userId]
+  );
 
   // Steps poll completion from a ref so a running guide sees progress without re-rendering.
   const doneRef = useRef<TaskId[]>(state.done);
   const stopGuideRef = useRef<(() => void) | null>(null);
   const [runningTask, setRunningTask] = useState<TaskId | null>(null);
 
-  const markDone = useCallback((id: TaskId) => {
-    if (!doneRef.current.includes(id)) doneRef.current = [...doneRef.current, id];
-    setState((prev) => (prev.done.includes(id) ? prev : saveState({ ...prev, done: [...prev.done, id] })));
-  }, []);
+  const markDone = useCallback(
+    (id: TaskId) => {
+      if (!doneRef.current.includes(id)) doneRef.current = [...doneRef.current, id];
+      setState((prev) => (prev.done.includes(id) ? prev : saveState(userId, { ...prev, done: [...prev.done, id] })));
+    },
+    [userId]
+  );
 
   const stopGuide = useCallback(() => {
     stopGuideRef.current?.();
@@ -443,28 +447,39 @@ export default function DemoGuide() {
 
   useEffect(() => stopGuide, [stopGuide]);
 
-  const markExplored = useCallback((id: ExploreId) => {
-    setState((prev) => (prev.explored.includes(id) ? prev : saveState({ ...prev, explored: [...prev.explored, id] })));
-  }, []);
+  const markExplored = useCallback(
+    (id: ExploreId) => {
+      setState((prev) => (prev.explored.includes(id) ? prev : saveState(userId, { ...prev, explored: [...prev.explored, id] })));
+    },
+    [userId]
+  );
 
-  // Tasks tick themselves off from what the visitor actually does, not from clicking "next".
+  // Tasks tick themselves off from what the user actually does, not from clicking "next".
   useEffect(() => {
-    const onWrite = (event: Event) => {
-      const { table, action, rows } = (event as CustomEvent<DemoWriteEvent>).detail;
-      if (table === "patients" && action === "insert") markDone("patient");
-      if (action === "create_order") markDone("order");
-      if (table === "order_items" && action === "update" && rows.some((row) => row.results_data)) markDone("results");
+    const onAction = (event: Event) => {
+      const action = (event as CustomEvent<AppAction>).detail;
+      if (action.type === "patient_created") {
+        update({ patientName: action.firstName });
+        markDone("patient");
+      }
+      if (action.type === "order_created") {
+        update({ orderId: action.orderId });
+        markDone("order");
+      }
+      if (action.type === "results_saved") markDone("results");
     };
     const onClick = (event: MouseEvent) => {
-      if ((event.target as Element | null)?.closest?.('[data-tour="view-report"]')) markDone("report");
+      const target = event.target as Element | null;
+      if (target?.closest?.('[data-tour="view-report"]')) markDone("report");
+      if (target?.closest?.('[data-tour="share-pdf"]')) markDone("share");
     };
-    window.addEventListener(DEMO_EVENT, onWrite);
+    window.addEventListener(APP_ACTION_EVENT, onAction);
     document.addEventListener("click", onClick, true);
     return () => {
-      window.removeEventListener(DEMO_EVENT, onWrite);
+      window.removeEventListener(APP_ACTION_EVENT, onAction);
       document.removeEventListener("click", onClick, true);
     };
-  }, [markDone]);
+  }, [markDone, update]);
 
   const showTask = useCallback(
     (task: Task) => {
@@ -514,39 +529,20 @@ export default function DemoGuide() {
   const nextTask = TASKS.find((task) => !state.done.includes(task.id));
   const progress = state.done.length + state.explored.length;
 
-  const restart = () => {
-    sessionStorage.removeItem(DEMO_DB_KEY);
-    sessionStorage.removeItem(DEMO_TOUR_KEY);
-    window.location.replace("/dashboard");
-  };
-
-  const leave = () => {
-    exitDemo();
-    window.location.replace("/login");
+  const finish = () => {
+    stopGuide();
+    onFinish();
   };
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-sky-600 px-4 py-1.5 text-xs text-white sm:text-sm">
-        <span>
-          <strong>Modo demo:</strong> los datos son ficticios y nada de lo que hagas se guarda.
-        </span>
-        <button type="button" onClick={restart} className="inline-flex items-center gap-1 underline underline-offset-2">
-          <RotateCcw className="h-3 w-3" /> Reiniciar
-        </button>
-        <button type="button" onClick={leave} className="inline-flex items-center gap-1 underline underline-offset-2">
-          <LogOut className="h-3 w-3" /> Salir
-        </button>
-      </div>
-
-      <DemoShareSimulator onOpenLink={() => markDone("share")} />
-
-      <Dialog open={!state.welcomed} onOpenChange={(open) => !open && update({ welcomed: true })}>
+      <Dialog open={!state.welcomed} onOpenChange={(open) => !open && update({ welcomed: true, minimized: true })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Bienvenido a MedLabCore</DialogTitle>
+            <DialogTitle>¡Bienvenido a MedLabCore!</DialogTitle>
             <DialogDescription>
-              Te guiaremos por el flujo principal de un laboratorio, de punta a punta, en unos 3 minutos.
+              Te acompañamos paso a paso a registrar tu primer paciente, crear su orden, cargar sus resultados y enviárselos.
+              Toma unos 5 minutos.
             </DialogDescription>
           </DialogHeader>
           <ol className="space-y-2 text-sm">
@@ -560,14 +556,12 @@ export default function DemoGuide() {
             ))}
           </ol>
           <p className="text-sm text-muted-foreground">
-            Después puedes recorrer el resto del sistema: historial de pacientes, catálogo de exámenes, ventas y configuración.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Es un laboratorio de prueba: puedes tocar todo sin miedo. Al cerrar la pestaña, todo se borra.
+            Lo que registres queda guardado en tu laboratorio. Después puedes recorrer el resto del sistema: exámenes,
+            ventas y configuración.
           </p>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => update({ welcomed: true, minimized: false })}>
-              Explorar por mi cuenta
+            <Button variant="outline" onClick={() => update({ welcomed: true, minimized: true })}>
+              Ahora no
             </Button>
             <Button
               onClick={() => {
@@ -575,7 +569,7 @@ export default function DemoGuide() {
                 showTask(TASKS[0]);
               }}
             >
-              Comenzar recorrido
+              Comenzar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -635,9 +629,12 @@ export default function DemoGuide() {
                     {runningTask === nextTask.id ? "Reiniciar este paso" : "Guíame paso a paso"}
                   </Button>
                 ) : (
-                  <p className="rounded-md bg-emerald-50 p-2 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                    ¡Completaste el flujo principal! Ahora conoce el resto del sistema.
-                  </p>
+                  <div className="space-y-2 rounded-md bg-emerald-50 p-2 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                    <p>¡Completaste el flujo principal! Conoce el resto del sistema abajo, o cierra la guía.</p>
+                    <Button size="sm" variant="outline" className="w-full bg-card" onClick={finish}>
+                      Terminar la guía
+                    </Button>
+                  </div>
                 )}
               </section>
 
@@ -662,6 +659,12 @@ export default function DemoGuide() {
                   })}
                 </ul>
               </section>
+
+              {nextTask && (
+                <button type="button" onClick={finish} className="text-xs text-muted-foreground underline underline-offset-2">
+                  No volver a mostrar la guía
+                </button>
+              )}
             </div>
           )}
         </aside>
