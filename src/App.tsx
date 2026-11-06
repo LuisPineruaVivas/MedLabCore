@@ -32,6 +32,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const OrganizationsPage = lazy(() => import("@/pages/admin/OrganizationsPage"));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const SignupPage = lazy(() => import("@/pages/SignupPage"));
 const DemoEntryPage = lazy(() => import("@/pages/DemoEntryPage"));
 const DemoExitRedirect = lazy(() => import("@/pages/DemoEntryPage").then((m) => ({ default: m.DemoExitRedirect })));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -78,6 +79,7 @@ const App = () => (
               <Routes>
                 {/* The login page always uses the real backend, so reaching it ends a demo session. */}
                 <Route path="/login" element={isDemo ? <DemoExitRedirect /> : <LoginPage />} />
+                <Route path="/registro" element={isDemo ? <DemoExitRedirect to="/registro" /> : <SignupPage />} />
                 <Route path="/demo" element={<DemoEntryPage />} />
                 <Route path="/portal-paciente" element={<PatientPortalPage />} />
                 <Route path="/informe-pdf" element={<ReportViewerPage />} />
