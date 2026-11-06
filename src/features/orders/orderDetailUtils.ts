@@ -1,5 +1,6 @@
 import { differenceInYears, differenceInMonths, format } from "date-fns";
 import type { ThermalReceiptData } from "@/lib/thermalReceiptTypes";
+import { isDemo } from "@/lib/demo/isDemo";
 import type { EditableOrderItem, OrderItemResultsState } from "./useOrderResultsEditor";
 
 type OrderPatient = {
@@ -72,7 +73,9 @@ export function buildThermalReceiptData(
 }
 
 export function isMobileDevice() {
+  // The demo keeps reports and receipts in in-app dialogs: its presentation cannot open new tabs.
   return (
+    !isDemo &&
     typeof window !== "undefined" &&
     (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
   );

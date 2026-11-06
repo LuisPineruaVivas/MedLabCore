@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { isDemo } from "@/lib/demo/isDemo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Plus, X, UserPlus, ShoppingCart, Printer, Package, FlaskConical, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -73,7 +74,9 @@ interface CreateOrderDialogProps {
 }
 
 function isMobileReceiptFlow() {
+  // The demo keeps the receipt in its dialog: its presentation cannot open new tabs.
   return (
+    !isDemo &&
     typeof window !== "undefined" &&
     (window.matchMedia("(max-width: 768px)").matches ||
       /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))

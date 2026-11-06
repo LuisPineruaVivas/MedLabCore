@@ -15,8 +15,8 @@ import { ImpersonationBanner } from "./ImpersonationBanner";
 import { SubscriptionBanner } from "@/features/subscription/SubscriptionBanner";
 import { isDemo } from "@/lib/demo/isDemo";
 
-// Loaded only in demo mode so the tour library stays out of the normal bundle.
-const DemoGuide = isDemo ? lazy(() => import("@/features/tour/DemoGuide")) : null;
+// Loaded only in demo mode so the presentation and tour library stay out of the normal bundle.
+const DemoPresentation = isDemo ? lazy(() => import("@/features/tour/presentation/DemoPresentation")) : null;
 
 export function AppLayout() {
   const { sidebarCollapsed } = useLayoutStore();
@@ -30,9 +30,9 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {DemoGuide && (
+      {DemoPresentation && (
         <Suspense fallback={null}>
-          <DemoGuide />
+          <DemoPresentation />
         </Suspense>
       )}
       <ImpersonationBanner />

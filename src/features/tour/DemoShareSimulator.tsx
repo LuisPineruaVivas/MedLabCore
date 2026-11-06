@@ -24,9 +24,8 @@ export function DemoShareSimulator({ onOpenLink }: { onOpenLink: () => void }) {
   const openLink = () => {
     if (!share) return;
     onOpenLink();
-    // Phones can't show a PDF inside an iframe; a new tab gets a copy of sessionStorage, so it stays in demo mode.
-    if (window.matchMedia("(max-width: 768px)").matches) window.open(share.url, "_blank");
-    else setViewerUrl(share.url);
+    // Always in-app: a new tab would leave the presentation (and on phones the browser may reuse this tab).
+    setViewerUrl(share.url);
     setShare(null);
   };
 
