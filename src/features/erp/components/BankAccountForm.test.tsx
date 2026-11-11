@@ -18,6 +18,8 @@ const zelleAccount: BankAccount = {
   email: "pagos@lab.test",
   is_active: true,
   sort_order: 1,
+  opening_balance: 250,
+  opening_date: "2026-11-01",
   created_at: "2026-10-25T00:00:00Z",
   updated_at: "2026-10-25T00:00:00Z",
 };
@@ -42,7 +44,7 @@ describe("BankAccountForm", () => {
     fireEvent.change(view().getByDisplayValue("Zelle Banesco"), { target: { value: "Zelle principal" } });
     fireEvent.click(view().getByRole("button", { name: /guardar/i }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: "Zelle principal", method_type: "zelle", currency: "VES" });
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: "Zelle principal", method_type: "zelle", currency: "VES", opening_balance: 250, opening_date: "2026-11-01" });
   });
 
   it("starts empty with sensible defaults for a new method", () => {

@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { bankAccountSchema, type BankAccountFormValues } from "../schemas/bankAccountSchema";
-import { PAYMENT_METHOD_LABELS } from "../utils/cashRegister";
+import { PAYMENT_METHOD_LABELS } from "../utils/paymentMethods";
 import type { BankAccount } from "../types";
 
-const defaults: BankAccountFormValues = { name: "", method_type: "cash", currency: "USD", description: "", bank_name: "", account_number: "", phone_number: "", email: "", is_active: true };
+const defaults: BankAccountFormValues = { name: "", method_type: "cash", currency: "USD", description: "", bank_name: "", account_number: "", phone_number: "", email: "", is_active: true, opening_balance: 0, opening_date: new Date().toLocaleDateString("en-CA") };
 
 /** The lab's working currencies, stored as ISO codes. */
 const CURRENCY_OPTIONS: { value: string; label: string }[] = [
@@ -30,11 +30,13 @@ function bankAccountFormValues(account?: BankAccount | null): BankAccountFormVal
     phone_number: account.phone_number ?? "",
     email: account.email ?? "",
     is_active: account.is_active,
+    opening_balance: Number(account.opening_balance ?? 0),
+    opening_date: account.opening_date ?? defaults.opening_date,
   };
 }
 
 // Mount with key={account?.id ?? "new"}: values are read once at mount, so the
-// selects always show the saved method and currency when editing.
+// selects always show the saved type and currency when editing.
 export function BankAccountForm({ account, onSubmit, pending }: { account?: BankAccount | null; onSubmit: (values: BankAccountFormValues) => void; pending: boolean }) {
   const form = useForm<BankAccountFormValues>({ resolver: zodResolver(bankAccountSchema), defaultValues: bankAccountFormValues(account) });
   const error = (name: keyof BankAccountFormValues) => form.formState.errors[name]?.message;
@@ -50,7 +52,7 @@ export function BankAccountForm({ account, onSubmit, pending }: { account?: Bank
           <p className="text-xs text-destructive">{error("name")}</p>
         </div>
         <div>
-          <Label>Método</Label>
+          <Label>Tipo</Label>
           <Select value={form.watch("method_type")} onValueChange={(value) => form.setValue("method_type", value as BankAccountFormValues["method_type"], { shouldValidate: true })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -70,6 +72,17 @@ export function BankAccountForm({ account, onSubmit, pending }: { account?: Bank
           <p className="text-xs text-destructive">{error("currency")}</p>
         </div>
         <div>
+          <Label>Saldo inicial {currency ? `(${currency})` : ""}</Label>
+          <Input type="number" step="0.01" {...form.register("opening_balance")} />
+          <p className="text-xs text-destructive">{error("opening_balance")}</p>
+        </div>
+        <div>
+          <Label>Fecha del saldo inicial</Label>
+          <Input type="date" {...form.register("opening_date")} />
+          <p className="text-xs text-muted-foreground">Los cobros desde esta fecha suman al saldo.</p>
+          <p className="text-xs text-destructive">{error("opening_date")}</p>
+        </div>
+        <div>
           <Label>Banco</Label>
           <Input {...form.register("bank_name")} />
           <p className="text-xs text-destructive">{error("bank_name")}</p>
@@ -87,9 +100,9 @@ export function BankAccountForm({ account, onSubmit, pending }: { account?: Bank
       </div>
       <div className="flex items-center gap-2">
         <Switch checked={form.watch("is_active")} onCheckedChange={(value) => form.setValue("is_active", value)} />
-        <Label>Disponible para cobrar</Label>
+        <Label>Cuenta activa (disponible para cobrar y pagar)</Label>
       </div>
-      <Button type="submit" disabled={pending}>{pending ? "Guardando..." : "Guardar método"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Guardando..." : "Guardar cuenta"}</Button>
     </form>
   );
 }

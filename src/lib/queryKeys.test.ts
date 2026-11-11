@@ -14,7 +14,10 @@ describe("queryKeys", () => {
 
   it("keeps prefix keys matching the entries they invalidate", () => {
     expect(startsWith(queryKeys.erp.invoices("org-1", "pending"), queryKeys.erp.invoicesAll("org-1"))).toBe(true);
-    expect(startsWith(queryKeys.erp.cashSummary("s-1"), queryKeys.erp.cashSummaryAll)).toBe(true);
+    expect(startsWith(queryKeys.erp.financeMovements("org-1", { page: 1 }), queryKeys.erp.financeAll("org-1"))).toBe(true);
+    expect(startsWith(queryKeys.erp.accountBalances("org-1"), queryKeys.erp.financeAll("org-1"))).toBe(true);
+    expect(startsWith(queryKeys.erp.receivablesList("org-1", "installments", {}), queryKeys.erp.receivables("org-1"))).toBe(true);
+    expect(startsWith(queryKeys.erp.receivablesOverview("org-1"), queryKeys.erp.receivables("org-1"))).toBe(true);
     expect(startsWith(queryKeys.erp.kardex("i-1"), queryKeys.erp.kardexAll)).toBe(true);
     expect(startsWith(queryKeys.erp.bomPreview("o-1"), queryKeys.erp.bomPreviewAll)).toBe(true);
     expect(startsWith(queryKeys.erp.report("financial", "org-1"), queryKeys.erp.reportsAll)).toBe(true);

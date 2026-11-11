@@ -9,7 +9,8 @@ export interface BankAccount {
   id: string; org_id: string; name: string; method_type: PaymentMethodType; currency: string;
   description: string | null; bank_name: string | null; account_number: string | null;
   account_holder: string | null; phone_number: string | null; email: string | null;
-  is_active: boolean; sort_order: number; created_at: string; updated_at: string;
+  is_active: boolean; sort_order: number; opening_balance: number; opening_date: string;
+  created_at: string; updated_at: string;
 }
 export interface Invoice {
   id: string; org_id: string; invoice_number: string; invoice_seq: number; order_id: string;
@@ -26,30 +27,65 @@ export interface Invoice {
 export interface PaymentSchedule { id: string; invoice_id: string; installment_number: number; amount_due_usd: number; amount_paid_usd: number; due_date: string; status: "pending" | "partial" | "paid" | "overdue" | "cancelled"; notes: string | null; }
 
 
-export interface Payment { id: string; invoice_id: string; amount: number; currency: string; amount_usd: number; exchange_rate: number | null; payment_method: string; method_type: PaymentMethodType; reference_number: string | null; payment_date: string; is_void: boolean; void_reason: string | null; cash_session_id: string | null; }
+export interface Payment { id: string; invoice_id: string; amount: number; currency: string; amount_usd: number; exchange_rate: number | null; payment_method: string; method_type: PaymentMethodType; reference_number: string | null; payment_date: string; is_void: boolean; void_reason: string | null; }
 
-export type CashSessionStatus = "open" | "closed" | "reviewed";
-
-/** Per-currency totals computed by `erp_cash_session_totals`. Only cash is physically counted. */
-export interface CashCurrencyTotals {
-  opening: number;
-  cash_payments: number;
-  cash_expected: number;
-  electronic: number;
-  total_received: number;
-  count: number;
-  by_method: { name: string; method_type: PaymentMethodType; total: number; count: number }[];
+/** Account balance from `get_account_balances` (admins only). */
+export interface AccountBalance {
+  account_id: string; name: string; currency: string; is_active: boolean;
+  opening_balance: number; opening_date: string; balance: number; balance_usd: number | null;
 }
-export type CashSessionTotals = Record<string, CashCurrencyTotals>;
-export type CashDifference = Record<string, { expected: number; actual: number; difference: number }>;
 
-export interface CashSession {
-  id: string; org_id: string; opened_by: string; closed_by: string | null; reviewed_by: string | null;
-  operator_name: string; opened_at: string; closed_at: string | null; reviewed_at: string | null;
-  opening_cash_usd: number; opening_cash_ves: number;
-  expected_totals: CashSessionTotals | null; actual_totals: Record<string, number> | null; difference: CashDifference | null;
-  status: CashSessionStatus; notes: string | null; closing_notes: string | null; review_notes: string | null;
+export type MovementKind = "income" | "expense" | "transfer_in" | "transfer_out" | "adjustment_in" | "adjustment_out";
+/** Kinds listed by `get_finance_movements`: movements plus order payments. */
+export type FinanceEntryKind = MovementKind | "order_payment";
+
+export interface FinanceCategory { id: string; org_id: string | null; name: string; kind: "income" | "expense"; is_active: boolean; sort_order: number; }
+
+/** One row of `get_finance_movements`. signed_amount is in the account currency (negative = money out). */
+export interface FinanceEntry {
+  source: "payment" | "movement"; id: string; account_id: string; account_name: string; kind: FinanceEntryKind;
+  signed_amount: number; currency: string; amount_usd: number | null; exchange_rate: number | null;
+  entry_date: string; created_at: string; category_id: string | null; category_name: string | null;
+  description: string | null; reference_number: string | null; transfer_id: string | null;
+  invoice_id: string | null; order_id: string | null; is_void: boolean; void_reason: string | null;
+  /** Admins only. */
+  running_balance?: number;
 }
+export interface FinanceMovementsPage { total: number; rows: FinanceEntry[]; }
+
+/** Cash-basis figures from `get_finance_dashboard` (USD). */
+export interface FinanceDashboard {
+  date_from: string; date_to: string; order_income_usd: number; other_income_usd: number; income_usd: number;
+  expenses_usd: number; profit_usd: number;
+  expenses_by_category: { category: string; amount_usd: number }[];
+  monthly: { month: string; income_usd: number; expenses_usd: number }[];
+}
+
+/** Totals from `get_receivables_overview` (USD). */
+export interface ReceivablesOverview {
+  as_of: string; total_usd: number; open_invoices: number; unscheduled_usd: number; unscheduled_count: number;
+  overdue_usd: number; overdue_count: number; due_week_usd: number; due_week_count: number; due_month_usd: number; due_month_count: number;
+}
+
+/** Who owes and for which order, embedded in receivables rows. */
+export interface ReceivableInvoiceRef {
+  id: string; invoice_number: string; order_id: string; balance_due_usd: number; status: InvoiceStatus;
+  patients: { first_name: string; last_name: string; id_number: string; phone: string | null } | null;
+  orders: { order_seq: number } | null;
+}
+export type InstallmentRow = PaymentSchedule & { invoices: ReceivableInvoiceRef };
+export type OpenBalanceRow = ReceivableInvoiceRef & { issued_at: string; total_usd: number; payment_schedules: { id: string; status: string }[] };
+
+export type PayableStatus = "pending" | "partial" | "paid" | "cancelled";
+/** A bill the lab owes. amount_paid and status are maintained from its payment movements. */
+export interface Payable {
+  id: string; org_id: string; category_id: string; payee: string | null; description: string; reference_number: string | null;
+  amount: number; currency: string; amount_paid: number; status: PayableStatus; due_date: string | null;
+  inventory_transaction_id: string | null; cancelled_at: string | null; cancel_reason: string | null; created_at: string;
+  finance_categories?: { name: string } | null;
+}
+/** Open bills per currency, from `get_payables_summary`. */
+export interface PayablesSummaryRow { currency: string; pending: number; overdue: number; count: number; overdue_count: number; }
 
 export type ItemCategory = "reagent" | "consumable" | "equipment_part" | "office_supply" | "other";
 export type UnitOfMeasure = "units" | "boxes" | "packs" | "ml" | "l" | "mg" | "g" | "kg" | "tests" | "strips" | "other";

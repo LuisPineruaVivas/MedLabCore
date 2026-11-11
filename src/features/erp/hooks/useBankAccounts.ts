@@ -24,5 +24,9 @@ export function useSaveBankAccount(orgId: string | null) {
     const request = id ? db.from("bank_accounts").update(payload).eq("id", id) : db.from("bank_accounts").insert(payload);
     const { error } = await request;
     if (error) throw error;
-  }, onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.erp.bankAccounts(orgId, false) }) });
+  }, onSuccess: () => {
+    client.invalidateQueries({ queryKey: queryKeys.erp.bankAccounts(orgId, false) });
+    client.invalidateQueries({ queryKey: queryKeys.erp.bankAccounts(orgId, true) });
+    client.invalidateQueries({ queryKey: queryKeys.erp.financeAll(orgId) });
+  } });
 }

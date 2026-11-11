@@ -7,16 +7,19 @@ do $$
 declare
   v_tables text[] := array[
     'exchange_rate_history', 'bank_accounts', 'invoices', 'invoice_sequences', 'payments', 'payment_schedules',
-    'cash_register_sessions', 'items', 'inventory_transactions', 'test_materials', 'invoice_consumptions'
+    'cash_register_sessions', 'items', 'inventory_transactions', 'test_materials', 'invoice_consumptions',
+    'finance_categories', 'account_movements', 'payables'
   ];
   -- Ledger tables: written only by SECURITY DEFINER RPCs/triggers, never directly.
-  v_rpc_only text[] := array['invoice_sequences', 'payments', 'inventory_transactions', 'invoice_consumptions', 'cash_register_sessions'];
+  v_rpc_only text[] := array['invoice_sequences', 'payments', 'inventory_transactions', 'invoice_consumptions', 'cash_register_sessions', 'account_movements', 'payables'];
   v_functions text[] := array[
     'get_exchange_rate', 'register_payment', 'void_payment', 'create_payment_schedule', 'open_cash_session',
     'close_cash_session', 'get_cash_session_summary', 'review_cash_session', 'register_purchase', 'register_adjustment',
     'get_order_bom_preview', 'confirm_order_consumption', 'get_erp_financial_summary', 'get_erp_profitability_report',
     'get_erp_inventory_summary', 'get_accounts_receivable_report', 'erp_backfill_invoices', 'mark_overdue_invoices',
-    'erp_cash_session_totals', 'erp_invoice_overdue_amount'
+    'erp_cash_session_totals', 'erp_invoice_overdue_amount', 'create_account_movement', 'create_account_transfer',
+    'void_account_movement', 'get_account_balances', 'get_finance_movements', 'erp_amount_usd', 'erp_finance_entries',
+    'create_payable', 'pay_payable', 'cancel_payable', 'get_payables_summary', 'erp_refresh_payable', 'get_receivables_overview', 'get_finance_dashboard'
   ];
   v_name text;
   v_bad text;
@@ -67,7 +70,7 @@ begin
   select string_agg(p.proname, ', ') into v_bad
   from pg_proc p
   where p.pronamespace = 'public'::regnamespace
-    and p.proname in ('erp_cash_session_totals', 'erp_invoice_overdue_amount', 'mark_overdue_invoices')
+    and p.proname in ('erp_cash_session_totals', 'erp_invoice_overdue_amount', 'mark_overdue_invoices', 'erp_amount_usd', 'erp_finance_entries', 'erp_refresh_payable')
     and has_function_privilege('authenticated', p.oid, 'execute');
   if v_bad is not null then raise exception 'authenticated can execute internal helpers: %', v_bad; end if;
 

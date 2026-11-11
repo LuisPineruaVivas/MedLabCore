@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { BrandProvider } from "@/contexts/BrandContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
@@ -38,11 +38,13 @@ const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
 const AuditLogPage = lazy(() => import("@/pages/AuditLogPage"));
-const BankAccountsPage = lazy(() => import("@/pages/erp/BankAccountsPage"));
+const ErpHomePage = lazy(() => import("@/pages/erp/ErpHomePage"));
+const AccountsPage = lazy(() => import("@/pages/erp/AccountsPage"));
+const MovementsPage = lazy(() => import("@/pages/erp/MovementsPage"));
+const PayablesPage = lazy(() => import("@/pages/erp/PayablesPage"));
 const InvoicesPage = lazy(() => import("@/pages/erp/InvoicesPage"));
 const InvoiceDetailPage = lazy(() => import("@/pages/erp/InvoiceDetailPage"));
-const AccountsReceivablePage = lazy(() => import("@/pages/erp/AccountsReceivablePage"));
-const CashRegisterPage = lazy(() => import("@/pages/erp/CashRegisterPage"));
+const ReceivablesPage = lazy(() => import("@/pages/erp/ReceivablesPage"));
 const InventoryPage = lazy(() => import("@/pages/erp/InventoryPage"));
 const FinancialDashboardPage = lazy(() => import("@/pages/erp/FinancialDashboardPage"));
 
@@ -114,13 +116,17 @@ const App = () => (
 
                 <Route element={<ErpGuard />}>
                   <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
-                    <Route path="/erp/bank-accounts" element={<BankAccountsPage />} />
+                    <Route path="/erp" element={<ErpHomePage />} />
+                    <Route path="/erp/accounts" element={<AccountsPage />} />
+                    <Route path="/erp/bank-accounts" element={<Navigate to="/erp/accounts" replace />} />
                   </Route>
                   <Route element={<AllowedRolesGuard roles={["lab_admin", "secretary", "super_admin"]} />}>
                     <Route path="/erp/invoices" element={<InvoicesPage />} />
                     <Route path="/erp/invoices/:id" element={<InvoiceDetailPage />} />
-                    <Route path="/erp/accounts-receivable" element={<AccountsReceivablePage />} />
-                    <Route path="/erp/cash-register" element={<CashRegisterPage />} />
+                    <Route path="/erp/receivables" element={<ReceivablesPage />} />
+                    <Route path="/erp/accounts-receivable" element={<Navigate to="/erp/receivables" replace />} />
+                    <Route path="/erp/movements" element={<MovementsPage />} />
+                    <Route path="/erp/payables" element={<PayablesPage />} />
                   </Route>
                   <Route element={<AllowedRolesGuard roles={["lab_admin", "bioanalyst", "super_admin"]} />}>
                     <Route path="/erp/inventory" element={<InventoryPage />} />

@@ -1,50 +1,83 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  FlaskConical,
-  Receipt,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Building2,
-  UserCog,
-  HandCoins,
-  Calculator,
-  LogOut,
-  ShoppingCart,
-  User,
-  ClipboardList,
-  Landmark,
-  FileText,
-  Boxes,
-  BarChart3,
-} from "lucide-react";
-import { useMemo } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/stores/layoutStore";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
-import { useHasAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
-import { useErpModule } from "@/hooks/useErpModule";
+import { isEntryActive, isGroup, isPathActive, useNavigation, type NavGroup, type NavLink } from "./useNavigation";
 
-const adminNavItems = [
-  { label: "Laboratorios", icon: Building2, path: "/admin/organizations" },
-  { label: "Usuarios", icon: UserCog, path: "/admin/users" },
-  { label: "Examenes Templates", icon: FlaskConical, path: "/admin/tests-templates" },
-  { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts" },
-  { label: "Bitácora", icon: ClipboardList, path: "/audit-log" },
-];
+function SidebarLink({ item, collapsed, nested = false }: { item: NavLink; collapsed: boolean; nested?: boolean }) {
+  const { pathname } = useLocation();
+  const isActive = isPathActive(item.path, pathname);
+  return (
+    <Link
+      to={item.path}
+      title={collapsed ? item.label : undefined}
+      className={cn(
+        "group flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+        nested ? "py-2" : "py-2.5",
+        isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+      )}
+    >
+      <item.icon className={cn("flex-shrink-0 transition-colors", nested ? "h-4 w-4" : "h-[18px] w-[18px]", isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground")} />
+      {!collapsed && <span className="truncate animate-fade-in">{item.label}</span>}
+      {isActive && !collapsed && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary" />}
+    </Link>
+  );
+}
+
+/** A section such as "Administración": the name opens its home page, the arrow shows its pages. */
+function SidebarGroup({ group, collapsed }: { group: NavGroup; collapsed: boolean }) {
+  const { pathname } = useLocation();
+  const isActive = isEntryActive(group, pathname);
+  const [open, setOpen] = useState(isActive);
+  // Entering any page of the section opens it.
+  useEffect(() => {
+    if (isActive) setOpen(true);
+  }, [isActive]);
+
+  return (
+    <div>
+      <div
+        className={cn(
+          "group flex items-center rounded-lg text-sm font-medium transition-all duration-150",
+          isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Link to={group.path} onClick={() => setOpen(true)} title={collapsed ? group.label : undefined} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+          <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground")} />
+          {!collapsed && <span className="truncate animate-fade-in">{group.label}</span>}
+        </Link>
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-label={open ? `Ocultar opciones de ${group.label}` : `Mostrar opciones de ${group.label}`}
+            className="mr-1 rounded-md p-1.5 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+          </button>
+        )}
+      </div>
+      {/* Collapsed (icons only): the section's pages show while you are in it. */}
+      {(collapsed ? isActive : open) && (
+        <div className={cn("mt-1 space-y-0.5", collapsed ? "border-t border-sidebar-border pt-1" : "ml-4 border-l border-sidebar-border pl-2")}>
+          {group.children.map((child) => <SidebarLink key={child.path} item={child} collapsed={collapsed} nested />)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppSidebar() {
-  const location = useLocation();
   const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
   const { isSuperAdmin } = useUserRole();
   const { signOut, user } = useAuth();
-  const { profile, permissions } = useCurrentOrgContext();
-  const { isErpEnabled, canManageFinances, canRegisterPayments, canManageCashRegister, canManageInventory, canViewFinancialReports } = useErpModule();
-  const { data: hasAffiliateUsers = false } = useHasAffiliateUsers();
+  const { profile } = useCurrentOrgContext();
+  const navEntries = useNavigation();
 
   const displayName = user?.email || "Usuario";
   const roleLabel = isSuperAdmin
@@ -58,29 +91,6 @@ export function AppSidebar() {
           : profile?.role === "lab_affiliate"
             ? "Laboratorio Afiliado"
             : "Usuario";
-
-  const labNavItems = useMemo(() => {
-    const items = [
-      { label: "Panel de control", icon: LayoutDashboard, path: "/dashboard", show: profile?.role !== "lab_affiliate" },
-      { label: "Pacientes", icon: Users, path: "/patients", show: true },
-      { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
-      { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
-      { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
-      { label: "Facturas", icon: FileText, path: "/erp/invoices", show: isErpEnabled && (canManageFinances || canRegisterPayments) },
-      { label: "Métodos de cobro", icon: Landmark, path: "/erp/bank-accounts", show: isErpEnabled && canManageFinances },
-      { label: "Cuentas por cobrar", icon: HandCoins, path: "/erp/accounts-receivable", show: isErpEnabled && canManageFinances },
-      { label: "Caja", icon: Calculator, path: "/erp/cash-register", show: isErpEnabled && canManageCashRegister },
-      { label: "Inventario", icon: Boxes, path: "/erp/inventory", show: isErpEnabled && canManageInventory },
-      { label: "Reportes", icon: BarChart3, path: "/erp/reports", show: isErpEnabled && canViewFinancialReports },
-      { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
-      /*{ label: "Bitácora", icon: ClipboardList, path: "/audit-log", show: profile?.role === "lab_admin" },*/
-      { label: "Configuracion", icon: Settings, path: "/settings", show: permissions.canViewSettings },
-    ];
-
-    return items.filter((item) => item.show);
-  }, [canManageCashRegister, canManageFinances, canManageInventory, canRegisterPayments, canViewFinancialReports, hasAffiliateUsers, isErpEnabled, permissions, profile?.role]);
-
-  const navItems = isSuperAdmin ? adminNavItems.filter((item) => item.path !== "/affiliate-accounts" || hasAffiliateUsers) : labNavItems;
 
   return (
     <aside
@@ -106,34 +116,11 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {navItems.map((item) => {
-          const isActive =
-            item.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.path);
-
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "h-[18px] w-[18px] flex-shrink-0 transition-colors",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground"
-                )}
-              />
-              {!sidebarCollapsed && <span className="truncate animate-fade-in">{item.label}</span>}
-              {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary" />}
-            </Link>
-          );
-        })}
+        {navEntries.map((entry) =>
+          isGroup(entry)
+            ? <SidebarGroup key={entry.label} group={entry} collapsed={sidebarCollapsed} />
+            : <SidebarLink key={entry.path} item={entry} collapsed={sidebarCollapsed} />,
+        )}
       </nav>
 
       <div className="mb-4 space-y-1 px-3">
@@ -159,6 +146,7 @@ export function AppSidebar() {
 
         <button
           onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? "Expandir menú" : "Contraer menú"}
           className="flex h-9 w-full items-center justify-center rounded-lg border border-sidebar-border text-sidebar-muted transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         >
           {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

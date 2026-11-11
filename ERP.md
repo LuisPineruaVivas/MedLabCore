@@ -8,7 +8,7 @@
 
 ## Estado de implementación
 
-> Actualizado: 26 de octubre de 2026 (ver "Piloto" más abajo); estado de fases del 18 de octubre. Una tarea marcada con `[x]` está implementada en el repositorio; `[~]` significa código terminado pero pendiente de desplegar en Supabase (producción). Los criterios de aceptación de cada fase se marcan cuando se validan con las migraciones aplicadas.
+> Actualizado: 8 de noviembre de 2026 (ver "Rediseño de finanzas" más abajo); estado de fases del 18 de octubre. Una tarea marcada con `[x]` está implementada en el repositorio; `[~]` significa código terminado pero pendiente de desplegar en Supabase (producción). Los criterios de aceptación de cada fase se marcan cuando se validan con las migraciones aplicadas.
 
 - [x] Fase 1 — Infraestructura y feature flagging.
 - [x] Fase 2 — Código terminado; migraciones aplicadas en producción (18 oct).
@@ -17,7 +17,22 @@
 - [x] Fase 5 — Código terminado (catálogo, Kardex, WAC, compras, ajustes, alertas); migraciones aplicadas en producción (18 oct).
 - [x] Fase 6 — Código terminado (recetas por examen, modal de consumo al aprobar, descuento automático); migraciones aplicadas en producción (18 oct).
 - [x] Fase 7 — Código terminado (dashboard financiero, rentabilidad, inventario, antigüedad de saldos, PDFs, KPIs en el panel); migraciones aplicadas en producción (18 oct).
-- [~] Fase 8 — Pruebas, auditoría RLS, rendimiento, vencidas automáticas, facturas retroactivas, paginación y guía de usuario terminados; base de datos desplegada en producción. Falta reemplazar `erpDb`, desplegar el frontend y el piloto (8.8–8.9).
+- [~] Fase 8 — Pruebas, auditoría RLS, rendimiento, vencidas automáticas, facturas retroactivas, paginación y guía de usuario terminados; base de datos desplegada en producción; `erpDb` ya reemplazado por el cliente tipado (S-10). Falta desplegar el frontend (8.9).
+- [~] **Rediseño de finanzas (nov 2026)** — cuentas con saldo, gastos, transferencias, por cobrar, por pagar y resumen financiero; caja retirada. Terminado en local, sin desplegar. Detalle abajo y en `docs/ERP_FINANZAS_PLAN.md`.
+
+### Rediseño de finanzas (8 nov 2026, local)
+
+El laboratorio pidió algo más simple que la contabilidad por métodos de cobro y caja: saber cuánto dinero hay en cada cuenta, en qué se gasta, cuánto se gana y qué falta por cobrar y por pagar. Plan, decisiones y estado por fase en `docs/ERP_FINANZAS_PLAN.md`; guía actualizada en `docs/ERP_GUIA_USUARIO.md`.
+
+- **Cuentas con saldo** (`20261108000000_erp_accounts_and_movements.sql`): `bank_accounts` (antes "métodos de cobro") tiene `opening_balance` y `opening_date`. El saldo se deriva: saldo inicial + cobros de órdenes desde esa fecha + `account_movements` (libro inmutable: `income`, `expense`, `transfer_in/out`, `adjustment_in/out`; se anula, no se borra). Categorías en `finance_categories` (globales con `org_id` nulo + propias del laboratorio). RPCs: `create_account_movement`, `create_account_transfer` (guarda la tasa llegó ÷ salió), `void_account_movement`, `get_account_balances`, `get_finance_movements`. Helpers internos `erp_amount_usd` (mismo piso de tasa que `register_payment` para no administradores) y `erp_finance_entries`.
+- **Caja retirada:** se quitaron la pantalla, la ruta, el PDF y los hooks de caja; `void_payment` ya no depende de la sesión de caja. Las tablas y RPCs de caja quedan en la base (migraciones aditivas, historial intacto).
+- **Por pagar y compras** (`20261108010000_erp_payables_and_purchases.sql`): tabla `payables` con abonos (`pay_payable`), anulación (`cancel_payable`) y totales (`get_payables_summary`); un pago anulado reabre la deuda. `register_purchase` recibe `p_account_id`, `p_exchange_rate` y `p_due_date`: con cuenta (sólo admin) crea el gasto ligado al Kardex; sin cuenta, la compra queda por pagar. La carga inicial no mueve dinero.
+- **Por cobrar** (`20261108020000_erp_receivables_overview.sql`): `get_receivables_overview` y la página `/erp/receivables` (admin y secretaria; reemplaza `/erp/accounts-receivable`) con las cuotas de todas las órdenes y los saldos, y cobro directo.
+- **Resumen financiero** (`20261108030000_erp_finance_dashboard.sql`): `get_finance_dashboard` (sólo admin; base caja, USD). El panel está en `/erp` y en el Panel de control.
+- **Menú:** lo financiero se agrupa en *Administración* (desplegable en escritorio; en móvil la barra tiene Panel, Pacientes, Órdenes, Administración y un botón *Menú* con todas las secciones). Definición única en `src/components/layout/useNavigation.ts`.
+- **Permisos:** admin todo; secretaria cobra, registra gastos e ingresos y ve/paga por cobrar y por pagar, sin saldos, ganancia, transferencias, ajustes ni anulaciones; bioanalista sólo inventario (sus compras quedan por pagar).
+- **Pruebas:** `erp_accounts_movements`, `erp_payables_purchases`, `erp_receivables_overview`, `erp_finance_dashboard` (rollback) y `erp_rls_audit` ampliado; tests unitarios en `src/features/erp/utils/finance.test.ts` y `src/components/layout/useNavigation.test.ts`.
+- **Al desplegar:** las cuentas existentes quedan con saldo inicial 0 y fecha = día de la migración; el administrador de cada laboratorio debe cargar el saldo real.
 
 ### Despliegue a producción (18 oct 2026)
 
@@ -37,14 +52,15 @@ Proyecto `mgeateznuhmhgqemaphj` (plan Free: el panel no ofrece respaldos descarg
 
 - Probado en línea con **Lab Instumed** (ERP activado) desde la vista previa de `dev`, con los roles administrador, secretaria y bioanalista. Resultados en `docs/ERP_PRUEBA_CHECKLIST.md` (todo ✅ tras las correcciones).
 - Correcciones del piloto (`716e3c9`): moneda USD/VES y edición de métodos de cobro, compras **por empaque** (`unidades por empaque`), y reportes sólo para administradores (migración `20261025000000`, desplegada).
-- Pendiente: reemplazar `erpDb` por el cliente tipado (plan de mejoras S-10) y el release `dev` → `main`.
+- Pendiente: el release `dev` → `main` (el reemplazo de `erpDb`, S-10, ya está hecho).
 
 ### Pendiente (acción del equipo)
 
-1. Reemplazar `erpDb` (`src/features/erp/utils/erpDb.ts`) por el cliente tipado, ahora que `types.ts` incluye las tablas ERP.
+1. ~~Reemplazar `erpDb` por el cliente tipado~~ (hecho, S-10).
 2. Terminar la prueba manual en producción: firmas y pie de página, super admin (impersonar, crear organización y usuarios, cambiar roles), `/portal-paciente` e `/informe-pdf`.
 3. Fusionar los 7 commits de `origin/dev` (reportes DOCX/Palermo) y desplegar el frontend.
 4. Probar el flujo en un laboratorio piloto con `has_erp_module = true`. Las vistas previas de Vercel usan el mismo proyecto Supabase que producción.
+5. Desplegar el rediseño de finanzas (4 migraciones `20261108*`; `supabase db push --dry-run` primero) y pedir a cada laboratorio con ERP que cargue el saldo inicial de sus cuentas.
 
 ### Validación realizada (18 oct 2026)
 

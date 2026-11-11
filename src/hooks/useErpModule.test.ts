@@ -12,7 +12,6 @@ describe("buildErpPermissions", () => {
       canRegisterPayments: false,
       canViewFinancialReports: false,
       canConfirmConsumption: false,
-      canManageCashRegister: false,
       canManageSuppliers: false,
     });
   });
@@ -27,7 +26,6 @@ describe("buildErpPermissions", () => {
       canRegisterPayments: true,
       canViewFinancialReports: true,
       canConfirmConsumption: true,
-      canManageCashRegister: true,
       canManageSuppliers: true,
     });
   });
@@ -42,7 +40,6 @@ describe("buildErpPermissions", () => {
       canRegisterPayments: false,
       canViewFinancialReports: false,
       canConfirmConsumption: true,
-      canManageCashRegister: false,
       canManageSuppliers: false,
     });
   });
@@ -57,7 +54,6 @@ describe("buildErpPermissions", () => {
       canRegisterPayments: true,
       canViewFinancialReports: false,
       canConfirmConsumption: false,
-      canManageCashRegister: true,
       canManageSuppliers: false,
     });
   });
@@ -72,7 +68,6 @@ describe("buildErpPermissions", () => {
       canRegisterPayments: true,
       canViewFinancialReports: true,
       canConfirmConsumption: true,
-      canManageCashRegister: true,
       canManageSuppliers: true,
     });
   });

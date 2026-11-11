@@ -39,6 +39,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_movements: {
+        Row: {
+          account_id: string
+          amount: number
+          amount_usd: number | null
+          category_id: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          description: string | null
+          exchange_rate: number | null
+          id: string
+          inventory_transaction_id: string | null
+          is_void: boolean
+          kind: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date: string
+          org_id: string
+          payable_amount: number | null
+          payable_id: string | null
+          reference_number: string | null
+          transfer_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          amount_usd?: number | null
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          currency: string
+          description?: string | null
+          exchange_rate?: number | null
+          id?: string
+          inventory_transaction_id?: string | null
+          is_void?: boolean
+          kind: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date: string
+          org_id: string
+          payable_amount?: number | null
+          payable_id?: string | null
+          reference_number?: string | null
+          transfer_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          amount_usd?: number | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string | null
+          exchange_rate?: number | null
+          id?: string
+          inventory_transaction_id?: string | null
+          is_void?: boolean
+          kind?: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date?: string
+          org_id?: string
+          payable_amount?: number | null
+          payable_id?: string | null
+          reference_number?: string | null
+          transfer_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_movements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "payables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       antibiotics: {
         Row: {
           created_at: string
@@ -131,6 +242,8 @@ export type Database = {
           is_active: boolean
           method_type: Database["public"]["Enums"]["payment_method_type"]
           name: string
+          opening_balance: number
+          opening_date: string
           org_id: string
           phone_number: string | null
           sort_order: number
@@ -148,6 +261,8 @@ export type Database = {
           is_active?: boolean
           method_type?: Database["public"]["Enums"]["payment_method_type"]
           name: string
+          opening_balance?: number
+          opening_date?: string
           org_id: string
           phone_number?: string | null
           sort_order?: number
@@ -165,6 +280,8 @@ export type Database = {
           is_active?: boolean
           method_type?: Database["public"]["Enums"]["payment_method_type"]
           name?: string
+          opening_balance?: number
+          opening_date?: string
           org_id?: string
           phone_number?: string | null
           sort_order?: number
@@ -366,6 +483,44 @@ export type Database = {
             foreignKeyName: "exchange_rates_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          org_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          org_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          org_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -1157,6 +1312,88 @@ export type Database = {
           },
         ]
       }
+      payables: {
+        Row: {
+          amount: number
+          amount_paid: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          category_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          description: string
+          due_date: string | null
+          id: string
+          inventory_transaction_id: string | null
+          org_id: string
+          payee: string | null
+          reference_number: string | null
+          status: Database["public"]["Enums"]["payable_status"]
+        }
+        Insert: {
+          amount: number
+          amount_paid?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id: string
+          created_at?: string
+          created_by: string
+          currency: string
+          description: string
+          due_date?: string | null
+          id?: string
+          inventory_transaction_id?: string | null
+          org_id: string
+          payee?: string | null
+          reference_number?: string | null
+          status?: Database["public"]["Enums"]["payable_status"]
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          inventory_transaction_id?: string | null
+          org_id?: string
+          payee?: string | null
+          reference_number?: string | null
+          status?: Database["public"]["Enums"]["payable_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payables_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_schedules: {
         Row: {
           amount_due_usd: number
@@ -1710,6 +1947,10 @@ export type Database = {
         Args: { p_items: Json; p_org_id: string }
         Returns: Json
       }
+      cancel_payable: {
+        Args: { p_payable_id: string; p_reason: string }
+        Returns: Json
+      }
       close_cash_session: {
         Args: {
           p_actual_totals: Json
@@ -1720,6 +1961,33 @@ export type Database = {
       }
       confirm_order_consumption: {
         Args: { p_consumptions: Json; p_order_id: string; p_signature?: Json }
+        Returns: Json
+      }
+      create_account_movement: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_category_id?: string
+          p_description?: string
+          p_exchange_rate?: number
+          p_kind: string
+          p_movement_date?: string
+          p_org_id: string
+          p_reference_number?: string
+        }
+        Returns: Json
+      }
+      create_account_transfer: {
+        Args: {
+          p_description?: string
+          p_from_account_id: string
+          p_from_amount: number
+          p_movement_date?: string
+          p_org_id: string
+          p_reference_number?: string
+          p_to_account_id: string
+          p_to_amount?: number
+        }
         Returns: Json
       }
       create_lab_order: {
@@ -1735,9 +2003,34 @@ export type Database = {
         }
         Returns: Json
       }
+      create_payable: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_currency?: string
+          p_description: string
+          p_due_date?: string
+          p_org_id: string
+          p_payee?: string
+          p_reference_number?: string
+        }
+        Returns: Json
+      }
       create_payment_schedule: {
         Args: { p_installments: Json; p_invoice_id: string; p_org_id: string }
         Returns: Json
+      }
+      erp_amount_usd: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_org_id: string
+          p_rate: number
+        }
+        Returns: {
+          amount_usd: number
+          rate: number
+        }[]
       }
       erp_assert_access: {
         Args: {
@@ -1751,6 +2044,31 @@ export type Database = {
         Returns: Json
       }
       erp_cash_session_totals: { Args: { p_session_id: string }; Returns: Json }
+      erp_finance_entries: {
+        Args: { p_org_id: string }
+        Returns: {
+          account_id: string
+          amount_usd: number
+          category_id: string
+          category_name: string
+          created_at: string
+          created_by: string
+          currency: string
+          description: string
+          entry_date: string
+          exchange_rate: number
+          id: string
+          invoice_id: string
+          is_void: boolean
+          kind: string
+          order_id: string
+          reference_number: string
+          signed_amount: number
+          source: string
+          transfer_id: string
+          void_reason: string
+        }[]
+      }
       erp_invoice_overdue_amount: {
         Args: { p_invoice_id: string }
         Returns: number
@@ -1759,6 +2077,10 @@ export type Database = {
       erp_reference_rate: {
         Args: { p_currency: string; p_org_id: string }
         Returns: number
+      }
+      erp_refresh_payable: {
+        Args: { p_payable_id: string }
+        Returns: undefined
       }
       erp_report_range: {
         Args: { p_date_from: string; p_date_to: string }
@@ -1784,6 +2106,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_account_balances: { Args: { p_org_id: string }; Returns: Json }
       get_accounts_receivable_report: {
         Args: { p_limit?: number; p_offset?: number; p_org_id: string }
         Returns: Json
@@ -1835,12 +2158,29 @@ export type Database = {
         }
         Returns: number
       }
+      get_finance_dashboard: {
+        Args: { p_date_from?: string; p_date_to?: string; p_org_id: string }
+        Returns: Json
+      }
+      get_finance_movements: {
+        Args: {
+          p_account_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_kind?: string
+          p_limit?: number
+          p_offset?: number
+          p_org_id: string
+        }
+        Returns: Json
+      }
       get_my_org_id: { Args: never; Returns: string }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_order_bom_preview: { Args: { p_order_id: string }; Returns: Json }
+      get_payables_summary: { Args: { p_org_id: string }; Returns: Json }
       get_public_org_brand: {
         Args: { p_org_id: string }
         Returns: {
@@ -1854,6 +2194,7 @@ export type Database = {
           secondary_color: string
         }[]
       }
+      get_receivables_overview: { Args: { p_org_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -1878,6 +2219,17 @@ export type Database = {
           base_price: number
           schema: Json
         }[]
+      }
+      pay_payable: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_exchange_rate?: number
+          p_movement_date?: string
+          p_payable_id: string
+          p_reference_number?: string
+        }
+        Returns: Json
       }
       portal_authenticate: {
         Args: { p_dni: string; p_pin: string }
@@ -1927,6 +2279,9 @@ export type Database = {
       }
       register_purchase: {
         Args: {
+          p_account_id?: string
+          p_due_date?: string
+          p_exchange_rate?: number
           p_expiration_date?: string
           p_is_initial?: boolean
           p_item_id: string
@@ -1970,12 +2325,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      void_account_movement: {
+        Args: { p_movement_id: string; p_reason: string }
+        Returns: Json
+      }
       void_payment: {
         Args: { p_payment_id: string; p_reason: string }
         Returns: Json
       }
     }
     Enums: {
+      account_movement_kind:
+        | "income"
+        | "expense"
+        | "transfer_in"
+        | "transfer_out"
+        | "adjustment_in"
+        | "adjustment_out"
       cash_session_status: "open" | "closed" | "reviewed"
       inventory_transaction_type:
         | "purchase"
@@ -2006,6 +2372,7 @@ export type Database = {
         | "por_aprobar"
         | "completada"
         | "cancelada"
+      payable_status: "pending" | "partial" | "paid" | "cancelled"
       payment_method_type:
         | "cash"
         | "bank_transfer"
@@ -2163,6 +2530,14 @@ export const Constants = {
   },
   public: {
     Enums: {
+      account_movement_kind: [
+        "income",
+        "expense",
+        "transfer_in",
+        "transfer_out",
+        "adjustment_in",
+        "adjustment_out",
+      ],
       cash_session_status: ["open", "closed", "reviewed"],
       inventory_transaction_type: [
         "purchase",
@@ -2197,6 +2572,7 @@ export const Constants = {
         "completada",
         "cancelada",
       ],
+      payable_status: ["pending", "partial", "paid", "cancelled"],
       payment_method_type: [
         "cash",
         "bank_transfer",

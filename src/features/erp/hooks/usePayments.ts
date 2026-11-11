@@ -25,7 +25,7 @@ function useInvalidatePayments(orgId: string | null, invoiceId: string | undefin
     client.invalidateQueries({ queryKey: queryKeys.erp.payments(invoiceId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.schedules(invoiceId) });
     client.invalidateQueries({ queryKey: queryKeys.erp.receivables(orgId) });
-    client.invalidateQueries({ queryKey: queryKeys.erp.cashSummaryAll });
+    client.invalidateQueries({ queryKey: queryKeys.erp.financeAll(orgId) });
   };
 }
 

@@ -18,12 +18,21 @@ export const queryKeys = {
     invoice: (invoiceId: string | null | undefined) => ["erp", "invoice", invoiceId ?? "none"] as const,
     payments: (invoiceId: string | null | undefined) => ["erp", "payments", invoiceId ?? "none"] as const,
     schedules: (invoiceId: string | null | undefined) => ["erp", "schedules", invoiceId ?? "none"] as const,
+    // Prefix: payments and new plans refresh every receivables list below.
     receivables: (orgId: string | null | undefined) => ["erp", "receivables", orgId ?? "none"] as const,
-    cashSession: (orgId: string | null | undefined) => ["erp", "cash-session", orgId ?? "none"] as const,
-    cashSessions: (orgId: string | null | undefined) => ["erp", "cash-sessions", orgId ?? "none"] as const,
-    // Prefix keys (no id) refresh every cached entry of that kind.
-    cashSummaryAll: ["erp", "cash-summary"] as const,
-    cashSummary: (sessionId: string | null | undefined) => ["erp", "cash-summary", sessionId ?? "none"] as const,
+    receivablesOverview: (orgId: string | null | undefined) => ["erp", "receivables", orgId ?? "none", "overview"] as const,
+    receivablesList: (orgId: string | null | undefined, kind: "installments" | "balances", filters: Record<string, string | number>) =>
+      ["erp", "receivables", orgId ?? "none", kind, filters] as const,
+    // Prefix key: balances and movement lists change together with any payment or movement.
+    financeAll: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none"] as const,
+    accountBalances: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none", "balances"] as const,
+    financeMovements: (orgId: string | null | undefined, filters: Record<string, string | number | null>) =>
+      ["erp", "finance", orgId ?? "none", "movements", filters] as const,
+    payables: (orgId: string | null | undefined, filters: Record<string, string | number>) =>
+      ["erp", "finance", orgId ?? "none", "payables", filters] as const,
+    financeDashboard: (orgId: string | null | undefined, from: string, to: string) => ["erp", "finance", orgId ?? "none", "dashboard", from, to] as const,
+    payablesSummary: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none", "payables-summary"] as const,
+    financeCategories: (orgId: string | null | undefined) => ["erp", "finance-categories", orgId ?? "none"] as const,
     items: (orgId: string | null | undefined) => ["erp", "items", orgId ?? "none"] as const,
     kardexAll: ["erp", "kardex"] as const,
     kardex: (itemId: string | null | undefined) => ["erp", "kardex", itemId ?? "none"] as const,

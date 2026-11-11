@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -137,5 +137,53 @@ export function ReportCard({ title, description, children, className }: { title:
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
       <div className="mt-4">{children}</div>
     </section>
+  );
+}
+
+const INCOME_COLOR = "hsl(var(--chart-2))";
+const EXPENSE_COLOR = "hsl(var(--chart-4))";
+
+/** Income vs expenses per month (USD), grouped bars with a legend and a data table. */
+export function IncomeExpenseChart({ data }: { data: { label: string; income_usd: number; expenses_usd: number }[] }) {
+  const rows = data.map((row) => ({ ...row, income_usd: Number(row.income_usd), expenses_usd: Number(row.expenses_usd) }));
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: INCOME_COLOR }} />Ingresos</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: EXPENSE_COLOR }} />Egresos</span>
+      </div>
+      <div className="h-56 w-full" role="img" aria-label="Ingresos y egresos por mes en USD">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
+            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+            <YAxis tickLine={false} axisLine={false} width={56} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(value: number) => `$${value.toLocaleString("es-VE")}`} />
+            <Tooltip
+              cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+              contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }}
+              formatter={(value: number, name: string) => [formatCurrency(value), name === "income_usd" ? "Ingresos" : "Egresos"]}
+            />
+            <Bar dataKey="income_usd" fill={INCOME_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="expenses_usd" fill={EXPENSE_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <details className="text-xs text-muted-foreground">
+        <summary className="cursor-pointer">Ver datos</summary>
+        <table className="mt-2 w-full">
+          <thead><tr className="border-b"><th className="px-2 py-1 text-left">Mes</th><th className="px-2 py-1 text-right">Ingresos</th><th className="px-2 py-1 text-right">Egresos</th><th className="px-2 py-1 text-right">Resultado</th></tr></thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-b last:border-0">
+                <td className="px-2 py-1">{row.label}</td>
+                <td className="px-2 py-1 text-right text-foreground">{formatCurrency(row.income_usd)}</td>
+                <td className="px-2 py-1 text-right text-foreground">{formatCurrency(row.expenses_usd)}</td>
+                <td className="px-2 py-1 text-right text-foreground">{formatCurrency(row.income_usd - row.expenses_usd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </div>
   );
 }

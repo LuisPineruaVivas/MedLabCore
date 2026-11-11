@@ -7,24 +7,6 @@ import type { Invoice, InvoiceStatus } from "../types";
 // the embed must name the FK; a bare `orders(...)` makes PostgREST answer 300 (ambiguous).
 const INVOICE_SELECT = "*, patients(first_name,last_name,id_number), orders!invoices_order_id_fkey(order_seq)";
 
-/** Unpaginated list for a status (or several); used by the receivables view. */
-export function useInvoices(orgId: string | null, status?: InvoiceStatus | InvoiceStatus[] | "all") {
-  const statusKey = Array.isArray(status) ? status.join(",") : status ?? "all";
-  return useQuery({
-    queryKey: queryKeys.erp.invoices(orgId, statusKey),
-    enabled: !!orgId,
-    queryFn: async (): Promise<Invoice[]> => {
-      let request = db.from("invoices").select(INVOICE_SELECT).eq("org_id", orgId!).order("issued_at", { ascending: false });
-      if (Array.isArray(status)) request = request.in("status", status);
-      else if (status && status !== "all") request = request.eq("status", status);
-      const { data, error } = await request;
-      if (error) throw error;
-      // status and the joined patient/order follow the hand-written Invoice type.
-      return (data ?? []) as unknown as Invoice[];
-    },
-  });
-}
-
 /** Paginated list (1-based page) with the total count for the pager. */
 export function useInvoicesPage(orgId: string | null, status: InvoiceStatus | "all", page: number, pageSize = 25) {
   return useQuery({

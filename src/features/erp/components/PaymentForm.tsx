@@ -19,11 +19,13 @@ interface PaymentFormProps {
    * rate history, which can be days old and convert bolívares at the wrong value.
    */
   defaultRate?: number | null;
+  /** Pre-fills the first payment with this USD amount (e.g. what is left of an installment). */
+  suggestedUsd?: number | null;
   onSubmit: (values: PaymentInput[]) => void;
   pending: boolean;
 }
 
-export function PaymentForm({ accounts, balance, defaultRate, onSubmit, pending }: PaymentFormProps) {
+export function PaymentForm({ accounts, balance, defaultRate, suggestedUsd, onSubmit, pending }: PaymentFormProps) {
   const rateFor = (accountId: string) => {
     const account = accounts.find((item) => item.id === accountId);
     return account && account.currency !== "USD" && defaultRate ? Number(defaultRate) : undefined;
@@ -32,7 +34,13 @@ export function PaymentForm({ accounts, balance, defaultRate, onSubmit, pending 
     const accountId = accounts[0]?.id ?? "";
     return { key, amount: 0, bank_account_id: accountId, exchange_rate: rateFor(accountId), reference_number: "" };
   };
-  const [drafts, setDrafts] = useState<Draft[]>(() => [newDraft(1)]);
+  const [drafts, setDrafts] = useState<Draft[]>(() => {
+    const first = newDraft(1);
+    const account = accounts.find((item) => item.id === first.bank_account_id);
+    if (!suggestedUsd || !account) return [first];
+    const amount = account.currency === "USD" ? suggestedUsd : first.exchange_rate ? Math.round(suggestedUsd * Number(first.exchange_rate) * 100) / 100 : 0;
+    return [{ ...first, amount }];
+  });
 
   // The live rate can arrive after the form opens; fill it where the user left it empty.
   useEffect(() => {
@@ -78,9 +86,9 @@ export function PaymentForm({ accounts, balance, defaultRate, onSubmit, pending 
               )}
             </div>
             <div className="space-y-1">
-              <Label>Método</Label>
+              <Label>Cuenta donde entra el dinero</Label>
               <Select value={draft.bank_account_id} onValueChange={(value) => update(draft.key, { bank_account_id: value, exchange_rate: rateFor(value) })}>
-                <SelectTrigger><SelectValue placeholder="Selecciona un método" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecciona una cuenta" /></SelectTrigger>
                 <SelectContent>
                   {accounts.map((item) => <SelectItem key={item.id} value={item.id}>{item.name} · {item.currency}</SelectItem>)}
                 </SelectContent>

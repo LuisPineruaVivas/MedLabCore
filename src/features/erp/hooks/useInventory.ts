@@ -97,10 +97,14 @@ export function useSaveItem(orgId: string | null) {
   });
 }
 
+/** How a purchase is paid: from an account (admins) or left as a payable (account_id null). */
+export type PurchaseInput = PurchaseFormValues & { account_id?: string | null; exchange_rate?: number | null; due_date?: string | null };
+
 export function useRegisterPurchase(orgId: string | null) {
   const invalidate = useInvalidateInventory(orgId);
+  const client = useQueryClient();
   return useMutation({
-    mutationFn: async (values: PurchaseFormValues) => {
+    mutationFn: async (values: PurchaseInput) => {
       if (!orgId) throw new Error("No hay organización seleccionada.");
       const { data, error } = await db.rpc("register_purchase", {
         p_org_id: orgId,
@@ -114,11 +118,17 @@ export function useRegisterPurchase(orgId: string | null) {
         p_expiration_date: emptyToNull(values.expiration_date) ?? undefined,
         p_notes: emptyToNull(values.notes) ?? undefined,
         p_is_initial: false,
+        p_account_id: values.account_id ?? undefined,
+        p_exchange_rate: values.exchange_rate ?? undefined,
+        p_due_date: values.due_date || undefined,
       });
       if (error) throw error;
-      return data as { new_stock: number; new_unit_cost: number };
+      return data as { new_stock: number; new_unit_cost: number; movement_id: string | null; payable_id: string | null };
     },
-    onSuccess: (_data, values) => invalidate(values.item_id),
+    onSuccess: (_data, values) => {
+      invalidate(values.item_id);
+      client.invalidateQueries({ queryKey: queryKeys.erp.financeAll(orgId) });
+    },
   });
 }
 

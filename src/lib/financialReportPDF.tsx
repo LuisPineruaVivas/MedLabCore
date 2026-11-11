@@ -1,6 +1,6 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import type { FinancialSummary, ProfitabilityReport, ReceivablesReport } from "@/features/erp/types";
-import { PAYMENT_METHOD_LABELS } from "@/features/erp/utils/cashRegister";
+import { PAYMENT_METHOD_LABELS } from "@/features/erp/utils/paymentMethods";
 import { formatCurrency } from "@/features/erp/utils/currencyFormatters";
 import { AGING_LABELS, AGING_ORDER, formatPercent, share } from "@/features/erp/utils/reports";
 import { createErpReportStyles, ErpReportFooter, ErpReportHeader, formatReportDate, type ErpReportLabData } from "./erpReportPDFParts";

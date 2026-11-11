@@ -8,7 +8,6 @@ export interface ErpModulePermissions {
   canRegisterPayments: boolean;
   canViewFinancialReports: boolean;
   canConfirmConsumption: boolean;
-  canManageCashRegister: boolean;
   canManageSuppliers: boolean;
 }
 
@@ -25,7 +24,6 @@ export function buildErpPermissions(
       canRegisterPayments: false,
       canViewFinancialReports: false,
       canConfirmConsumption: false,
-      canManageCashRegister: false,
       canManageSuppliers: false,
     };
   }
@@ -41,7 +39,6 @@ export function buildErpPermissions(
     canRegisterPayments: isAdmin || isSecretary,
     canViewFinancialReports: isAdmin,
     canConfirmConsumption: isAdmin || isBioanalyst,
-    canManageCashRegister: isAdmin || isSecretary,
     canManageSuppliers: isAdmin,
   };
 }

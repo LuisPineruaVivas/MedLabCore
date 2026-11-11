@@ -8,7 +8,16 @@ import { useRegisterPayments } from "../hooks/usePayments";
 import { getErpErrorMessage } from "../utils/erpErrors";
 import { PaymentForm } from "./PaymentForm";
 
-export function OrderPaymentDialog({ invoiceId, open, onOpenChange }: { invoiceId: string | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+interface OrderPaymentDialogProps {
+  invoiceId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** USD amount pre-filled in the first payment (e.g. an installment). */
+  suggestedUsd?: number | null;
+  title?: string;
+}
+
+export function OrderPaymentDialog({ invoiceId, open, onOpenChange, suggestedUsd, title = "Registrar pago de la orden" }: OrderPaymentDialogProps) {
   const { orgId } = useCurrentOrgContext();
   const { data: invoice } = useInvoice(invoiceId ?? undefined);
   const { data: accounts = [] } = useBankAccounts(orgId, true);
@@ -18,9 +27,12 @@ export function OrderPaymentDialog({ invoiceId, open, onOpenChange }: { invoiceI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-auto">
-        <DialogHeader><DialogTitle>Registrar pago de la orden</DialogTitle></DialogHeader>
-        {invoice && (
+        <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
+        {invoice && !accounts.length && <p className="text-sm text-muted-foreground">Cargando cuentas… Si no aparece ninguna, un administrador debe crear una cuenta activa.</p>}
+        {invoice && accounts.length > 0 && (
           <PaymentForm
+            key={`${invoice.id}-${suggestedUsd ?? ""}`}
+            suggestedUsd={suggestedUsd}
             accounts={accounts}
             balance={Number(invoice.balance_due_usd)}
             defaultRate={liveRate?.rate ?? invoice.exchange_rate}

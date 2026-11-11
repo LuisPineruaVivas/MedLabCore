@@ -2,7 +2,7 @@ import { AlertTriangle, CalendarClock, DollarSign, HandCoins, Percent } from "lu
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/StatCard";
 import type { FinancialSummary, ProfitabilityReport } from "../types";
-import { PAYMENT_METHOD_LABELS } from "../utils/cashRegister";
+import { PAYMENT_METHOD_LABELS } from "../utils/paymentMethods";
 import { formatCurrency } from "../utils/currencyFormatters";
 import { formatPercent, percentChange, share } from "../utils/reports";
 import { DailyCollectedChart, HorizontalBars, ReportCard } from "./ReportCharts";
@@ -61,7 +61,7 @@ export function FinancialOverview({ summary, profitability, isLoading }: Financi
         <ReportCard title="Cobrado por día" description="USD, incluye conversiones de bolívares a la tasa del pago" className="lg:col-span-3">
           <DailyCollectedChart data={summary.daily} />
         </ReportCard>
-        <ReportCard title="Cobrado por método" description="Pagos no anulados del período" className="lg:col-span-2">
+        <ReportCard title="Cobrado por cuenta" description="Pagos no anulados del período" className="lg:col-span-2">
           <HorizontalBars
             emptyText="Sin cobros en el período."
             rows={summary.by_method.map((method) => ({

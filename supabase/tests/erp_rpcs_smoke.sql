@@ -158,9 +158,8 @@ begin
   perform pg_temp.assert_eq((v->'VES'->>'difference')::numeric, -10, 'VES difference');
 end $$;
 
-select pg_temp.act_as(pg_temp.id('adminA'));
-select pg_temp.expect_error(format('select public.void_payment(%L, %L)',
-  (select id from public.payments where invoice_id = pg_temp.id('invoiceA') and not is_void limit 1), 'x'), 'CASH_SESSION_CLOSED');
+-- Voiding a payment of a closed cash session is allowed since 20261108000000 (cash sessions retired);
+-- covered in erp_accounts_movements.sql.
 
 select pg_temp.act_as(pg_temp.id('secA'));
 select pg_temp.expect_error(format('select public.review_cash_session(%L, null)', pg_temp.id('sessionA')), 'ERP_PERMISSION_DENIED');
