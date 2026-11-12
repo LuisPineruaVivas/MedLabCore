@@ -1,0 +1,116 @@
+<!--
+  Supabase Auth → Emails → Templates → "Confirm signup". Subject: Confirma tu cuenta de Lexu
+  Paste this whole file as the body. Email clients ignore <style> blocks and modern CSS, so the layout is
+  tables with inline styles; the logo is a PNG served from the app (webp does not show in Outlook).
+  Variables: {{ .ConfirmationURL }}, {{ .Data.full_name }}, {{ .Data.lab_name }} (from signUp options.data).
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light only" />
+  <title>Confirma tu cuenta de Lexu</title>
+</head>
+<body style="margin:0;padding:0;background-color:#eef3f7;">
+  <!-- Inbox preview line -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef3f7;">
+    Un clic y tu prueba gratis de 7 días queda activa.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef3f7;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+          <!-- Brand band -->
+          <tr>
+            <td align="center" style="background-color:#0f2d5c;background-image:linear-gradient(135deg,#0f2d5c 0%,#14706a 100%);padding:28px 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#ffffff;border-radius:12px;padding:6px;">
+                    <img src="https://lexu.app/pwa-192x192.png" width="44" height="44" alt="Lexu" style="display:block;border:0;" />
+                  </td>
+                  <td style="padding-left:12px;font-size:26px;font-weight:700;letter-spacing:0.5px;color:#ffffff;">Lexu</td>
+                </tr>
+              </table>
+              <p style="margin:10px 0 0;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#a7f3e4;">Gestión para laboratorios clínicos</p>
+            </td>
+          </tr>
+
+          <!-- Message -->
+          <tr>
+            <td style="padding:36px 36px 8px;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#14a38f;">Tu prueba gratis te espera</p>
+              <h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;color:#0f2d5c;">Confirma tu correo para empezar</h1>
+              <p style="margin:0 0 12px;font-size:16px;line-height:1.6;color:#334155;">Hola {{ .Data.full_name }},</p>
+              <p style="margin:0;font-size:16px;line-height:1.6;color:#334155;">
+                Gracias por registrar <strong style="color:#0f2d5c;">{{ .Data.lab_name }}</strong>. Confirma tu correo y activamos
+                tus <strong style="color:#0f2d5c;">7 días gratis</strong> con todas las funciones.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Button (table-based so Outlook keeps the padding) -->
+          <tr>
+            <td align="center" style="padding:28px 36px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="border-radius:10px;background-color:#14706a;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">Confirmar mi cuenta</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- What they get -->
+          <tr>
+            <td style="padding:0 36px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f8fb;border-radius:12px;">
+                <tr>
+                  <td style="padding:20px 22px;">
+                    <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#0f2d5c;">Con Lexu podrás:</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="top" style="padding:0 10px 10px 0;font-size:15px;color:#14a38f;">✓</td>
+                        <td style="padding:0 0 10px;font-size:14px;line-height:1.5;color:#334155;">Registrar pacientes y crear órdenes en segundos</td>
+                      </tr>
+                      <tr>
+                        <td valign="top" style="padding:0 10px 10px 0;font-size:15px;color:#14a38f;">✓</td>
+                        <td style="padding:0 0 10px;font-size:14px;line-height:1.5;color:#334155;">Cargar resultados y generar informes con el logo de tu laboratorio</td>
+                      </tr>
+                      <tr>
+                        <td valign="top" style="padding:0 10px 0 0;font-size:15px;color:#14a38f;">✓</td>
+                        <td style="padding:0;font-size:14px;line-height:1.5;color:#334155;">Enviar los resultados a tus pacientes por WhatsApp</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Fallback link -->
+          <tr>
+            <td style="padding:20px 36px 32px;">
+              <p style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#64748b;">¿El botón no funciona? Copia y pega este enlace en tu navegador:</p>
+              <p style="margin:0;font-size:12px;line-height:1.5;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#14706a;">{{ .ConfirmationURL }}</a></p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f4f8fb;border-top:1px solid #e2e8f0;padding:22px 36px;">
+              <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0f2d5c;">Lexu</p>
+              <p style="margin:0 0 6px;font-size:12px;color:#64748b;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
+              <p style="margin:0;font-size:12px;"><a href="https://lexu.app" style="color:#14706a;text-decoration:none;">lexu.app</a></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
