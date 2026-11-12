@@ -9,8 +9,10 @@
 -- ---------------------------------------------------------------------------
 alter table public.profiles add column if not exists onboarding_completed_at timestamptz;
 
--- Everyone who already uses the system has, in effect, finished onboarding.
-update public.profiles set onboarding_completed_at = now() where onboarding_completed_at is null;
+-- Everyone who already used the system has, in effect, finished onboarding. The fixed cutoff keeps a
+-- re-run (the file is applied by hand in prod, then again by db push from dev) from marking new users.
+update public.profiles set onboarding_completed_at = now()
+where onboarding_completed_at is null and created_at < '2026-11-12 00:00:00+00';
 
 create or replace function public.complete_onboarding()
 returns void language sql security definer set search_path = public as $$
