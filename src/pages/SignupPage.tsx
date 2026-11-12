@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTurnstile } from "@/hooks/useTurnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
-const TURNSTILE_SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 const signupSchema = z.object({
   labName: z.string().trim().min(2, "Escribe el nombre de tu laboratorio").max(120),
@@ -22,47 +20,6 @@ const signupSchema = z.object({
 
 type SignupForm = z.infer<typeof signupSchema>;
 type FieldErrors = Partial<Record<keyof SignupForm, string>>;
-
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (el: HTMLElement, options: { sitekey: string; language?: string; callback: (token: string) => void; "expired-callback": () => void }) => string;
-      reset: (widgetId: string) => void;
-    };
-  }
-}
-
-/** Cloudflare Turnstile captcha; Supabase Auth checks the token. Without a site key (local dev) it renders nothing. */
-function useTurnstile(container: React.RefObject<HTMLDivElement>) {
-  const [token, setToken] = useState<string | null>(null);
-  const widgetId = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!TURNSTILE_SITE_KEY || !container.current) return;
-    const render = () => {
-      if (!window.turnstile || !container.current || widgetId.current) return;
-      widgetId.current = window.turnstile.render(container.current, {
-        sitekey: TURNSTILE_SITE_KEY,
-        language: "es",
-        callback: setToken,
-        "expired-callback": () => setToken(null),
-      });
-    };
-    if (window.turnstile) return render();
-    const script = document.createElement("script");
-    script.src = TURNSTILE_SCRIPT;
-    script.async = true;
-    script.onload = render;
-    document.head.appendChild(script);
-  }, [container]);
-
-  const reset = () => {
-    setToken(null);
-    if (widgetId.current) window.turnstile?.reset(widgetId.current);
-  };
-
-  return { token, required: Boolean(TURNSTILE_SITE_KEY), reset };
-}
 
 export default function SignupPage() {
   const [form, setForm] = useState<SignupForm>({ labName: "", fullName: "", phone: "", email: "", password: "" });

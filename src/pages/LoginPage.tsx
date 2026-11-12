@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTurnstile } from "@/hooks/useTurnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,18 +17,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const captchaRef = useRef<HTMLDivElement>(null);
+  const captcha = useTurnstile(captchaRef);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (captcha.required && !captcha.token) {
+      toast.error("Espera un momento a que se complete la verificación de seguridad");
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: captcha.token ?? undefined },
+    });
     setLoading(false);
     if (error) {
+      captcha.reset();
       const msg = error.message || "Error de autenticación";
       if (msg.toLowerCase().includes("invalid login credentials") || msg.toLowerCase().includes("invalid email or password")) {
         toast.error("Usuario o contraseña inválidos");
       } else if (msg.toLowerCase().includes("email not confirmed")) {
         toast.error("Confirma tu correo antes de iniciar sesión: revisa el enlace que te enviamos.");
+      } else if (msg.toLowerCase().includes("captcha")) {
+        toast.error("La verificación de seguridad falló. Inténtalo de nuevo.");
       } else {
         toast.error(msg);
       }
@@ -79,6 +93,7 @@ export default function LoginPage() {
                 </div>
 
             </div>
+            <div ref={captchaRef} className="flex justify-center" />
           </CardContent>
           <CardFooter className="flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
