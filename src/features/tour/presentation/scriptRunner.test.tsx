@@ -56,6 +56,22 @@ describe("ScriptRunner", () => {
     expect(captions).toEqual(["a", "b"]);
   });
 
+  it("falls back to reading the line when its recording cannot play", async () => {
+    const captions: string[] = [];
+    const voiceUrl = vi.fn(() => "/demo/voice/no-existe.mp3");
+    const runner = new ScriptRunner([{ title: "Voz", beats: [{ say: "hola", voice: "intro" }] }], {
+      navigate: vi.fn(),
+      isMuted: () => true,
+      onCaption: (_s, text) => captions.push(text),
+      onSceneFailed: vi.fn(),
+      voiceUrl,
+    });
+
+    expect(await runner.play()).toBe(true);
+    expect(voiceUrl).toHaveBeenCalledWith("intro", "hola");
+    expect(captions).toEqual(["hola"]);
+  });
+
   it("estimates reading time from word count, with a floor", () => {
     expect(readingTimeMs("hola")).toBe(1500);
     expect(readingTimeMs(Array(10).fill("palabra").join(" "))).toBe(3800);

@@ -2,13 +2,29 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
-import { Compass, LogOut, Pause, Play, RotateCcw, SkipForward, Sparkles, Volume2, VolumeX, X } from "lucide-react";
+import {
+  Clock,
+  Compass,
+  FileText,
+  LogOut,
+  MessageCircle,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipForward,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Wallet,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DEMO_DB_KEY, DEMO_TOUR_KEY, exitDemo } from "@/lib/demo/isDemo";
 import { resetDemoStore } from "@/lib/demo/demoFetch";
 import { DemoShareSimulator } from "../DemoShareSimulator";
 import { DEMO_SCRIPT } from "./demoScript";
 import { ScriptRunner } from "./scriptRunner";
+import { textHash } from "./narration";
 
 type Phase = "intro" | "playing" | "done" | "exploring";
 
@@ -31,6 +47,27 @@ function savePhase(phase: Phase) {
     // Only decides which screen shows after a reload.
   }
 }
+
+const VOICE_DIR = "/demo/voice";
+
+/** Which lines have a recording, and of which text (written by scripts/generate-demo-voice.ts). */
+async function loadVoiceManifest(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${VOICE_DIR}/manifest.json`, { cache: "no-cache" });
+    // The SPA fallback answers missing files with index.html, so check the type too.
+    if (!res.ok || !res.headers.get("content-type")?.includes("json")) return {};
+    return (await res.json()) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+const BENEFITS = [
+  { icon: Clock, text: "Registra pacientes y crea órdenes en segundos" },
+  { icon: FileText, text: "Informes en PDF con el logo de tu laboratorio" },
+  { icon: MessageCircle, text: "Resultados al paciente por WhatsApp, al instante" },
+  { icon: Wallet, text: "Cobros en dólares y bolívares con la tasa del día" },
+];
 
 /** Swallows clicks so the visitor can't knock the presentation off course; scripted clicks don't hit-test. */
 function ClickShield() {
@@ -75,9 +112,11 @@ export default function DemoPresentation() {
     setCaption("");
     setPaused(false);
     setPhase("playing");
+    const recorded = await loadVoiceManifest();
     const runner = new ScriptRunner(DEMO_SCRIPT, {
       navigate,
       isMuted: () => mutedRef.current,
+      voiceUrl: (voice, text) => (recorded[voice] === textHash(text) ? `${VOICE_DIR}/${voice}.mp3` : null),
       onCaption: (s, text) => {
         setScene(s);
         setCaption(text);
@@ -109,7 +148,7 @@ export default function DemoPresentation() {
   const toggleMute = () => {
     mutedRef.current = !muted;
     setMuted(!muted);
-    if (!muted) runnerRef.current?.silenceNow();
+    runnerRef.current?.setMuted(!muted);
   };
 
   const exitPresentation = () => {
@@ -218,15 +257,23 @@ export default function DemoPresentation() {
       {phase === "done" && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md space-y-5 rounded-2xl bg-card p-6 text-center shadow-2xl sm:p-8">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Así de fácil funciona tu laboratorio con MedLabCore</h2>
-              <p className="text-sm text-muted-foreground">
-                Pacientes, órdenes, resultados, informes con tu logo y envío por WhatsApp. Empieza hoy, sin tarjeta.
-              </p>
+            <h2 className="text-2xl font-bold">Así de fácil se maneja tu laboratorio</h2>
+            <ul className="space-y-2.5 text-left">
+              {BENEFITS.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3 text-sm">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <div className="space-y-1.5">
+              <Button size="lg" className="w-full" onClick={goToSignup}>
+                Comienza tu prueba gratis de 7 días
+              </Button>
+              <p className="text-xs text-muted-foreground">Sin tarjeta. Configuras tu laboratorio en minutos.</p>
             </div>
-            <Button size="lg" className="w-full" onClick={goToSignup}>
-              Comienza tu prueba gratis de 7 días
-            </Button>
             <div className="flex flex-wrap justify-center gap-2">
               <Button variant="outline" onClick={() => void start()}>
                 <RotateCcw className="mr-2 h-4 w-4" /> Ver de nuevo
