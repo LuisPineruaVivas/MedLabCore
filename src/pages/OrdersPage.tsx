@@ -86,7 +86,7 @@ export default function OrdersPage() {
         title="Órdenes"
         description={liveRate?.rate ? `Tasa BCV de hoy: ${Number(liveRate.rate).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs/USD` : "Busca una orden o filtra por estado."}
         actions={
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)} data-tour="new-order">
             <Plus />
             Nueva orden
           </Button>
@@ -174,6 +174,7 @@ export default function OrdersPage() {
                     awaitingWork(order.status) && "bg-[hsl(var(--neu-lo)/0.16)] dark:bg-[hsl(var(--neu-lo)/0.55)] [&>td]:bg-[linear-gradient(to_bottom,hsl(var(--neu-lo)/0.5),transparent_9px)]",
                   )}
                   tabIndex={0}
+                  data-tour="order-row"
                   aria-label={`Abrir orden ${orderNumber(order.order_seq)} de ${order.patients?.first_name ?? ""} ${order.patients?.last_name ?? ""}`}
                   onClick={() => navigate(`/orders/${order.id}`)}
                   onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`/orders/${order.id}`); } }}
@@ -240,6 +241,7 @@ export default function OrdersPage() {
               <li key={order.id}>
                 <button
                   type="button"
+                  data-tour="order-row"
                   onClick={() => navigate(`/orders/${order.id}`)}
                   className={cn(
                     "neu-rise w-full rounded-2xl border p-3.5 text-left",

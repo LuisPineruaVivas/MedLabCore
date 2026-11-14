@@ -29,7 +29,7 @@ export function CreateOrderCartSummary({
   currentRate: number | null;
 }) {
   return (
-    <div className="w-full space-y-4 h-full flex flex-col">
+    <div className="w-full space-y-4 h-full flex flex-col" data-tour="order-summary">
       <Label className="text-sm font-semibold">Resumen de la orden</Label>
       <div className="h-auto min-h-52 rounded-lg border border-border lg:h-full">
         {cart.length === 0 ? (

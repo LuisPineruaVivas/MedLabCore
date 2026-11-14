@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isDemo } from "@/lib/demo/isDemo";
 import { pdf } from "@react-pdf/renderer";
 import { OrderReceiptPDF } from "@/lib/orderReceiptPDF";
 import { OrderBudgetPDF } from "@/lib/orderBudgetPDF";
@@ -51,7 +52,9 @@ export type CreateOrderLabData = {
 };
 
 function isMobileReceiptFlow() {
+  // The demo keeps the receipt in its dialog: its presentation cannot open new tabs.
   return (
+    !isDemo &&
     typeof window !== "undefined" &&
     (window.matchMedia("(max-width: 768px)").matches ||
       /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))

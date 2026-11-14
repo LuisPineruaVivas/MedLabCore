@@ -22,7 +22,7 @@ export function CreateOrderExamPicker({
   const testSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className="w-full space-y-4 h-full flex flex-col">
+    <div className="w-full space-y-4 h-full flex flex-col" data-tour="order-tests">
       <Label className="text-sm font-semibold">2. Selecciona los examenes a realizar</Label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

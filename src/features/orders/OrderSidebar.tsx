@@ -77,7 +77,7 @@ export const OrderSidebar = memo(function OrderSidebar({
                 <Button variant="outline" size="sm" onClick={onSharePortalLink}>
                   <LinkIcon /> Compartir enlace
                 </Button>
-                <Button variant="outline" size="sm" onClick={onSharePdfDirectLink}>
+                <Button variant="outline" size="sm" onClick={onSharePdfDirectLink} data-tour="share-pdf">
                   <LinkIcon /> Compartir PDF
                 </Button>
               </div>

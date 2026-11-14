@@ -43,14 +43,14 @@ export default function BillingPage() {
         description="Lo cobrado por órdenes y lo que falta por cobrar."
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="billing-stats">
         <StatCard title="Total recaudado" value={formatCurrency(totalRevenue)} icon={DollarSign} />
         <StatCard title="Este mes" value={formatCurrency(thisMonthRevenue)} icon={TrendingUp} />
         <StatCard title="Órdenes" value={totalOrders.toLocaleString("es-VE")} icon={Receipt} />
         <StatCard title="Pendientes de pago" value={pendingCount.toLocaleString("es-VE")} icon={CreditCard} />
       </div>
 
-      <Card className="overflow-hidden p-0">
+      <Card className="overflow-hidden p-0" data-tour="billing-table">
         <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
           <div className="md:flex md:flex-1 md:space-y-0 space-y-3 gap-3">
             <div className="relative md:flex-1 w-full">

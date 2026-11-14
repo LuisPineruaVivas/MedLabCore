@@ -30,6 +30,10 @@ function vercelSecurityHeaders(supabaseUrl: string | undefined): Record<string, 
   }
   return headers;
 }
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+
+// Set in Vercel. Without it (local builds) no source maps are generated or uploaded.
+const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -85,9 +89,23 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
+    uploadSourceMaps &&
+      sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: { name: process.env.VERCEL_GIT_COMMIT_SHA },
+        // Maps go to Sentry only; deleting them keeps the original source off the public site.
+        sourcemaps: { filesToDeleteAfterUpload: ["./dist/**/*.map"] },
+        telemetry: false,
+      }),
   ],
+  build: {
+    sourcemap: uploadSourceMaps ? ("hidden" as const) : false,
+  },
   define: {
     global: 'globalThis',
+    "import.meta.env.VITE_DEPLOY_ENV": JSON.stringify(process.env.VERCEL_ENV ?? ""),
   },
   resolve: {
     alias: {

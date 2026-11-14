@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useReducer, ReactNode } from "rea
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { clearImpersonationStorage } from "@/lib/impersonationStorage";
+import { setSentryUser } from "@/lib/sentry";
 
 interface AuthContextType {
   session: Session | null;
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         if (event === "SIGNED_OUT") clearImpersonationStorage();
         dispatch({ type: "SET_SESSION", session });
+        if (!session) setSentryUser(null);
       }
     );
 

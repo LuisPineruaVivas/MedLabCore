@@ -102,7 +102,7 @@ export default function PatientDetailPage() {
       />
 
       {/* Patient Info Card */}
-      <Card>
+      <Card data-tour="patient-info">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Información del Paciente</CardTitle>
         </CardHeader>
@@ -124,7 +124,7 @@ export default function PatientDetailPage() {
       </Card>
 
       {/* Orders History */}
-      <Card>
+      <Card data-tour="patient-orders">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Historial de Órdenes</CardTitle>

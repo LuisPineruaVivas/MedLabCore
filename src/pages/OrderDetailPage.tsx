@@ -82,7 +82,7 @@ export default function OrderDetailPage() {
               Volver
             </Button>
             {canViewOrderDocuments && (
-              <Button variant="outline" size="sm" onClick={report.viewPdf} disabled={report.loading}>
+              <Button variant="outline" size="sm" onClick={report.viewPdf} disabled={report.loading} data-tour="view-report">
                 <FileText />
                 {report.loading ? "Generando…" : "Ver informe"}
               </Button>
@@ -95,14 +95,14 @@ export default function OrderDetailPage() {
             )}
 
             {canEnterResults && order.status !== "completada" && (
-              <Button variant="outline" size="sm" className="max-md:hidden" onClick={actions.handleSaveAll} disabled={actions.isSavingAll || editor.modifiedIds.size === 0}>
+              <Button variant="outline" size="sm" className="max-md:hidden" onClick={actions.handleSaveAll} disabled={actions.isSavingAll || editor.modifiedIds.size === 0} data-tour="save-results">
                 <Save />
                 {actions.isSavingAll ? "Guardando…" : "Guardar cambios"}
               </Button>
             )}
             {/* The one filled action: what moves the order forward (e.g. Aprobar y firmar). */}
             {primaryStatusAction && (
-              <Button size="sm" className="max-md:hidden" onClick={primaryStatusAction.onClick} disabled={actions.statusUpdating}>
+              <Button size="sm" className="max-md:hidden" onClick={primaryStatusAction.onClick} disabled={actions.statusUpdating} data-tour="status-action">
                 <ClipboardCheck />
                 {primaryStatusAction.label}
               </Button>
@@ -125,7 +125,7 @@ export default function OrderDetailPage() {
           showSharePortalAction={canViewOrderDocuments}
         />
 
-        <div className="w-full space-y-6 lg:w-[70%]">
+        <div className="w-full space-y-6 lg:w-[70%]" data-tour="results">
           {itemsLoading ? (
             <Card className="flex h-32 items-center justify-center rounded-xl border bg-card">
               <Atom color={labData.primary_color} size="large" text="Cargando exámenes..." textColor={labData.primary_color} />

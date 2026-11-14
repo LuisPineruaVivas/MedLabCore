@@ -1210,6 +1210,9 @@ export type Database = {
           secondary_color: string | null
           state: string | null
           subscription_active: boolean
+          subscription_expires_at: string | null
+          subscription_grace_until: string | null
+          subscription_plan_price: number | null
           watermark_url: string | null
         }
         Insert: {
@@ -1231,6 +1234,9 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          subscription_expires_at?: string | null
+          subscription_grace_until?: string | null
+          subscription_plan_price?: number | null
           watermark_url?: string | null
         }
         Update: {
@@ -1252,6 +1258,9 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          subscription_expires_at?: string | null
+          subscription_grace_until?: string | null
+          subscription_plan_price?: number | null
           watermark_url?: string | null
         }
         Relationships: []
@@ -1627,6 +1636,7 @@ export type Database = {
           firma_url: string | null
           full_name: string | null
           id: string
+          onboarding_completed_at: string | null
           org_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           sello_url: string | null
@@ -1638,6 +1648,7 @@ export type Database = {
           firma_url?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed_at?: string | null
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
@@ -1649,6 +1660,7 @@ export type Database = {
           firma_url?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed_at?: string | null
           org_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           sello_url?: string | null
@@ -1657,6 +1669,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_payments: {
+        Row: {
+          amount_bs: number | null
+          amount_usd: number
+          created_at: string
+          exchange_rate: number | null
+          id: string
+          notes: string | null
+          org_id: string
+          payment_date: string
+          payment_method: string
+          proof_url: string
+          reference_number: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_bs?: number | null
+          amount_usd?: number
+          created_at?: string
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          payment_date?: string
+          payment_method: string
+          proof_url: string
+          reference_number: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_bs?: number | null
+          amount_usd?: number
+          created_at?: string
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          payment_date?: string
+          payment_method?: string
+          proof_url?: string
+          reference_number?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1942,6 +2019,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_subscription_payment: {
+        Args: { p_payment_id: string }
+        Returns: Json
+      }
       assert_org_member: { Args: { p_org_id: string }; Returns: undefined }
       bulk_upsert_org_prices: {
         Args: { p_items: Json; p_org_id: string }
@@ -1959,6 +2040,7 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_onboarding: { Args: never; Returns: undefined }
       confirm_order_consumption: {
         Args: { p_consumptions: Json; p_order_id: string; p_signature?: Json }
         Returns: Json
@@ -2195,6 +2277,7 @@ export type Database = {
         }[]
       }
       get_receivables_overview: { Args: { p_org_id: string }; Returns: Json }
+      get_superadmin_metrics: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -2295,6 +2378,24 @@ export type Database = {
         }
         Returns: Json
       }
+      reject_subscription_payment: {
+        Args: { p_payment_id: string; p_rejection_reason: string }
+        Returns: Json
+      }
+      report_subscription_payment: {
+        Args: {
+          p_amount_bs: number
+          p_amount_usd: number
+          p_exchange_rate: number
+          p_notes?: string
+          p_org_id: string
+          p_payment_date: string
+          p_payment_method: string
+          p_proof_url: string
+          p_reference_number: string
+        }
+        Returns: Json
+      }
       review_cash_session: {
         Args: { p_notes?: string; p_session_id: string }
         Returns: Json
@@ -2382,6 +2483,7 @@ export type Database = {
         | "other"
       payment_status: "unpaid" | "partial" | "paid" | "pending"
       schedule_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
+      subscription_payment_status: "pending" | "approved" | "rejected"
       unit_of_measure:
         | "units"
         | "boxes"
@@ -2583,6 +2685,7 @@ export const Constants = {
       ],
       payment_status: ["unpaid", "partial", "paid", "pending"],
       schedule_status: ["pending", "partial", "paid", "overdue", "cancelled"],
+      subscription_payment_status: ["pending", "approved", "rejected"],
       unit_of_measure: [
         "units",
         "boxes",

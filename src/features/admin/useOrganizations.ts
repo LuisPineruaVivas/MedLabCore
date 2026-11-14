@@ -23,7 +23,7 @@ export function useOrganizations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("id, name, city, state, country, address, email, phone, rif, is_active, subscription_active, has_erp_module, created_at")
+        .select("id, name, city, state, country, address, email, phone, rif, is_active, subscription_active, subscription_expires_at, subscription_grace_until, has_erp_module, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

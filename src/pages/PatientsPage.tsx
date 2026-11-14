@@ -48,7 +48,7 @@ export default function PatientsPage() {
         title="Pacientes"
         description={stats ? `${stats.total.toLocaleString("es-VE")} registrados · ${stats.thisMonth.toLocaleString("es-VE")} este mes · ${stats.today.toLocaleString("es-VE")} hoy` : "Busca un paciente por cédula, nombre o teléfono."}
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => setDialogOpen(true)} data-tour="new-patient">
             <Plus />
             Nuevo paciente
           </Button>

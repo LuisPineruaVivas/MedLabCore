@@ -34,7 +34,7 @@ export function CreateOrderPatientPicker({
       <Label className="text-sm font-semibold">1. Paciente</Label>
 
       {selectedPatient ? (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50 border border-border" data-tour="order-patient-selected">
           <div>
             <p className="text-sm font-medium">
               {selectedPatient.first_name} {selectedPatient.last_name}
@@ -61,6 +61,7 @@ export function CreateOrderPatientPicker({
             <Input
               className="pl-9"
               placeholder="Buscar paciente por nombre o cedula..."
+              data-tour="order-patient-search"
               value={patientSearch}
               onChange={(event) => {
                 setPatientSearch(event.target.value);

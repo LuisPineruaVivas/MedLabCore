@@ -5,6 +5,7 @@ import {
   Boxes,
   Building2,
   ClipboardList,
+  CreditCard,
   FileText,
   FlaskConical,
   HandCoins,
@@ -54,6 +55,8 @@ export const isEntryActive = (entry: NavEntry, pathname: string) =>
 
 const superAdminEntries = (hasAffiliateUsers: boolean): NavEntry[] =>
   [
+    { label: "Métricas Globales", short: "Métricas", icon: LayoutDashboard, path: "/admin/dashboard" },
+    { label: "Validar Pagos", short: "Pagos", icon: CreditCard, path: "/admin/subscriptions" },
     { label: "Laboratorios", short: "Labs", icon: Building2, path: "/admin/organizations" },
     { label: "Usuarios", icon: UserCog, path: "/admin/users" },
     { label: "Examenes Templates", short: "Templates", icon: FlaskConical, path: "/admin/tests-templates" },

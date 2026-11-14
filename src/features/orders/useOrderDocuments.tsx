@@ -12,6 +12,7 @@ import { LetterHeadPDF } from "@/lib/letterhead";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
 import { buildPortalLink } from "@/features/patientPortal/portalLink";
+import { DEMO_SHARE_EVENT, isDemo, type DemoShareDetail } from "@/lib/demo/isDemo";
 import type { OrderItemResultsState } from "./useOrderResultsEditor";
 import { buildOrderPatientInfo, buildThermalReceiptData, isMobileDevice } from "./orderDetailUtils";
 import type { OrderDetailItem } from "./useOrders";
@@ -37,6 +38,10 @@ async function openPdfInNewTab(document: ReactElement<DocumentProps>, errorLabel
  * selection, receipt (PDF and thermal printer), letterhead, attendance certificates,
  * and the WhatsApp links to the patient portal.
  */
+function shareInDemo(message: string, url: string) {
+  window.dispatchEvent(new CustomEvent<DemoShareDetail>(DEMO_SHARE_EVENT, { detail: { message, url } }));
+}
+
 export function useOrderDocuments({
   order,
   orderItems,
@@ -292,7 +297,9 @@ export function useOrderDocuments({
       return;
     }
 
-    const text = encodeURIComponent(`Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`);
+    const message = `Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`;
+    if (isDemo) return shareInDemo(message, portalUrl);
+    const text = encodeURIComponent(message);
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }
 
@@ -306,7 +313,9 @@ export function useOrderDocuments({
     });
 
     const phoneDigits = (patients?.phone || "").replace(/\D/g, "");
-    const text = encodeURIComponent(`Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`);
+    const message = `Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`;
+    if (isDemo) return shareInDemo(message, pdfUrl);
+    const text = encodeURIComponent(message);
 
     window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
   }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, LogOut, BadgeCheck, Shield } from "lucide-react";
+import { Building2, LogOut, BadgeCheck, Shield, CreditCard } from "lucide-react";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,15 +10,16 @@ import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
 import { ProfileSettings } from "@/features/settings/ProfileSettings";
 import { ErpModuleToggle } from "@/features/settings/ErpModuleToggle";
+import { SubscriptionSettingsCard } from "@/features/subscription/SubscriptionSettingsCard";
 
-type SettingsDialog = "org" | "dept" | "users" | "exchange" | "profile" | null;
+type SettingsDialog = "org" | "dept" | "users" | "exchange" | "profile" | "subscription" | null;
 
 export default function SettingsPage() {
   const [activeDialog, setActiveDialog] = useState<SettingsDialog>(null);
-  const { orgId, role, user } = useCurrentOrgContext();
+  const { orgId, role, user, subscriptionStatus } = useCurrentOrgContext();
   const { signOut } = useAuth();
 
-  const mapRoles = (role: string) => {
+  const mapRoles = (role: string | null) => {
     switch (role) {
       case "lab_admin":
         return "Administrador";
@@ -29,7 +30,7 @@ export default function SettingsPage() {
       default:
         return "Super Admin";
     }
-  }
+  };
 
   const settingsCards =
     role === "bioanalyst"
@@ -42,6 +43,12 @@ export default function SettingsPage() {
           },
         ]
       : [
+          {
+            id: "subscription" as const,
+            icon: CreditCard,
+            title: "Suscripción y Pagos",
+            desc: `Estado: ${subscriptionStatus.statusText}. Administra tu membresía y reportes de pago.`,
+          },
           {
             id: "org" as const,
             icon: Building2,
@@ -60,10 +67,10 @@ export default function SettingsPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Configuración"
-        description={role === "bioanalyst" ? "Administra tu firma y sello profesional" : "Configura tu laboratorio"}
+        description={role === "bioanalyst" ? "Administra tu firma y sello profesional" : "Configura tu laboratorio y suscripción"}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div
             className="group cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md"
             style={{ boxShadow: "var(--shadow-card)" }}
@@ -83,9 +90,11 @@ export default function SettingsPage() {
               </button>
             </div>
         </div>
+
         {settingsCards.map((item) => (
           <div
             key={item.title}
+            data-tour={`settings-${item.id}`}
             role="button"
             tabIndex={0}
             onClick={() => setActiveDialog(item.id)}
@@ -106,6 +115,19 @@ export default function SettingsPage() {
         ))}
         {role === "lab_admin" && <ErpModuleToggle />}
       </div>
+
+      {/* Dialog Suscripción */}
+      <Dialog open={activeDialog === "subscription"} onOpenChange={(open) => !open && setActiveDialog(null)}>
+        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-[780px]">
+          <DialogHeader>
+            <DialogTitle>Módulo de Suscripción y Pagos</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Consulta el estado de tu licencia, vigencia restante y envía comprobantes de renovación.
+            </DialogDescription>
+          </DialogHeader>
+          <SubscriptionSettingsCard />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={activeDialog === "org"} onOpenChange={(open) => !open && setActiveDialog(null)}>
         <DialogContent className="h-[90vh] w-[90vw] overflow-y-auto md:h-auto md:w-full sm:max-w-[600px]">

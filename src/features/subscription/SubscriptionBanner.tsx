@@ -1,0 +1,68 @@
+import { useState } from "react";
+import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, CreditCard, ChevronRight } from "lucide-react";
+import { ReportPaymentDialog } from "./ReportPaymentDialog";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+export function SubscriptionBanner() {
+  const { subscriptionStatus, role } = useCurrentOrgContext();
+  const [openModal, setOpenModal] = useState(false);
+
+  // Super admin never needs to see this banner
+  if (role === "super_admin") {
+    return null;
+  }
+
+  const { isWarning, isInGrace, daysRemaining, hoursRemaining, expiresAt } = subscriptionStatus;
+
+  // Only display the expiry warning (<= 3 days remaining). A payment under review (grace period) is
+  // shown only in Settings > Suscripción; the lab doesn't need to know about the grace period.
+  if (!isWarning || isInGrace) {
+    return null;
+  }
+
+  const formattedExpiry = expiresAt
+    ? format(new Date(expiresAt), "dd 'de' MMMM", { locale: es })
+    : "";
+
+  return (
+    <>
+      {/* Banner de advertencia preventiva (<= 3 días restantes) */}
+      <div className="w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-950 dark:text-amber-200 px-4 py-2.5 transition-all">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded-md bg-amber-500/20 flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <span className="font-bold mr-1.5 uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20">
+                Aviso de Vencimiento
+              </span>
+              <span>
+                Tu suscripción expira en{" "}
+                <strong>
+                  {daysRemaining === 0 ? `pocas horas (${hoursRemaining}h)` : `${daysRemaining} día(s)`}
+                </strong>{" "}
+                ({formattedExpiry}). Reporta tu pago para evitar la suspensión operativa del laboratorio.
+              </span>
+            </div>
+          </div>
+
+          <Button
+            size="sm"
+            onClick={() => setOpenModal(true)}
+            className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium flex-shrink-0 shadow-sm"
+          >
+            <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+            Reportar Pago Ahora ($29 USD)
+            <ChevronRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </div>
+      </div>
+
+      <ReportPaymentDialog open={openModal} onOpenChange={setOpenModal} />
+    </>
+  );
+}

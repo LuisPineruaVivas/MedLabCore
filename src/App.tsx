@@ -15,6 +15,9 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
 import { ErpGuard } from "./components/ErpGuard";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isDemo } from "@/lib/demo/isDemo";
 import { Analytics } from "@vercel/analytics/react";
 import { isNonRetryableError } from "@/lib/errors";
 // Lazy like every other page: it pulls in react-pdf and all report layouts,
@@ -34,6 +37,9 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const OrganizationsPage = lazy(() => import("@/pages/admin/OrganizationsPage"));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const SignupPage = lazy(() => import("@/pages/SignupPage"));
+const DemoEntryPage = lazy(() => import("@/pages/DemoEntryPage"));
+const DemoExitRedirect = lazy(() => import("@/pages/DemoEntryPage").then((m) => ({ default: m.DemoExitRedirect })));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
@@ -48,6 +54,8 @@ const InvoiceDetailPage = lazy(() => import("@/pages/erp/InvoiceDetailPage"));
 const ReceivablesPage = lazy(() => import("@/pages/erp/ReceivablesPage"));
 const InventoryPage = lazy(() => import("@/pages/erp/InventoryPage"));
 const FinancialDashboardPage = lazy(() => import("@/pages/erp/FinancialDashboardPage"));
+const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
+const PaymentValidationPage = lazy(() => import("@/pages/admin/PaymentValidationPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +72,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
+  <ErrorBoundary fullPage>
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="medlabcore-theme" disableTransitionOnChange>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -79,12 +88,18 @@ const App = () => (
             }
           >
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+              {/* The login page always uses the real backend, so reaching it ends a demo session. */}
+              <Route path="/login" element={isDemo ? <DemoExitRedirect /> : <LoginPage />} />
+              <Route path="/registro" element={isDemo ? <DemoExitRedirect to="/registro" /> : <SignupPage />} />
+              <Route path="/demo" element={<DemoEntryPage />} />
               <Route path="/portal-paciente" element={<PatientPortalPage />} />
               <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
               <Route element={<ProtectedRoute><ImpersonationProvider><BrandProvider><AppLayout /></BrandProvider></ImpersonationProvider></ProtectedRoute>}>
                 <Route path="/" element={<RoleRouter />} />
+
+                {/* Lab routes: blocked when the subscription has expired */}
+                <Route element={<SubscriptionGuard />}>
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/patients/:id" element={<PatientDetailPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
@@ -139,11 +154,15 @@ const App = () => (
                 </Route>
 
 
+                </Route>
+
                 {/*<Route element={<RoleGuard permission="canViewSettings" />}>
                   <Route path="/audit-log" element={<AuditLogPage />} />
                 </Route>*/}
 
                 <Route element={<SuperAdminGuard />}>
+                  <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                  <Route path="/admin/subscriptions" element={<PaymentValidationPage />} />
                   <Route path="/admin/organizations" element={<OrganizationsPage />} />
                   <Route path="/admin/users" element={<UsersPage />} />
                   <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
@@ -161,6 +180,7 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
   </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

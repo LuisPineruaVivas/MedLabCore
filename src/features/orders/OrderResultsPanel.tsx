@@ -168,7 +168,7 @@ export const OrderMobileSaveBar = memo(function OrderMobileSaveBar({
         <div className="fixed inset-x-3 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] z-40 md:hidden">
           <div className="flex items-center gap-2 rounded-2xl border bg-popover p-2 shadow-[var(--shadow-elevated)]">
             {modifiedCount > 0 && (
-              <Button variant="outline" size="sm" className="flex-1" onClick={onSaveAll} disabled={isSavingAll} aria-label={`Guardar: ${changes}`}>
+              <Button variant="outline" size="sm" className="flex-1" onClick={onSaveAll} disabled={isSavingAll} aria-label={`Guardar: ${changes}`} data-tour="save-results">
                 <Save />
                 {isSavingAll ? "Guardando…" : `Guardar (${modifiedCount})`}
               </Button>

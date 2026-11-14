@@ -152,6 +152,14 @@ export function AppSidebar() {
               {roleLabel}
             </p>
           </div>
+          {!sidebarCollapsed && (
+            <div className="min-w-0 flex-1 animate-fade-in">
+              <p className="truncate text-xs font-medium text-sidebar-accent-foreground">
+                {displayName}
+              </p>
+              <p className="truncate text-[10px] text-sidebar-muted">{roleLabel}</p>
+            </div>
+          )}
         </div>
 
         <button
