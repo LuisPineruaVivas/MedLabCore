@@ -338,7 +338,9 @@ export class ScriptRunner {
       const el = (await this.waitFor(target)) as HTMLElement;
       this.spotlight(el);
       await this.pointAt(el);
-      el.click();
+      // Lists that re-render while the pointer travels (e.g. a debounced search) replace the element.
+      const current = el.isConnected ? el : ((await this.waitFor(target)) as HTMLElement);
+      current.click();
       await this.sleep(300);
     },
     type: async (target, text) => {

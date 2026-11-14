@@ -4,10 +4,11 @@
  *
  *   ELEVENLABS_API_KEY=... [ELEVENLABS_VOICE_ID=...] npm run demo:voice
  *   npm run demo:voice -- --all     (record every line again, e.g. after changing the voice)
+ *   npm run demo:voice -- --manual  (register MP3s you saved by hand; lists the missing ones)
  *
  * The key stays in your shell; it is never written to the repo or sent to the browser.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { NARRATION, textHash, type LineId } from "../src/features/tour/presentation/narration.ts";
 
 const OUT_DIR = new URL("../public/demo/voice/", import.meta.url);
@@ -18,6 +19,30 @@ const DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE_ID;
 const all = process.argv.includes("--all");
+
+// --manual: the MP3s were recorded by hand (e.g. on the ElevenLabs website) and saved as public/demo/voice/<id>.mp3.
+// Registers every file present as a recording of the line's current text, and lists the ones still missing.
+if (process.argv.includes("--manual")) {
+  const ids = Object.keys(NARRATION) as LineId[];
+  const found: Record<string, string> = {};
+  const missing: LineId[] = [];
+  for (const id of ids) {
+    try {
+      await access(new URL(`${id}.mp3`, OUT_DIR));
+      found[id] = textHash(NARRATION[id]);
+    } catch {
+      missing.push(id);
+    }
+  }
+  await mkdir(OUT_DIR, { recursive: true });
+  await writeFile(MANIFEST, JSON.stringify(found, null, 2) + "\n");
+  console.log(`${Object.keys(found).length} de ${ids.length} audios registrados.`);
+  if (missing.length) {
+    console.log("\nFaltan (estas líneas usarán la voz del navegador):");
+    for (const id of missing) console.log(`  ${id}.mp3  →  "${NARRATION[id]}"`);
+  }
+  process.exit(0);
+}
 
 if (!apiKey) {
   console.error("Falta ELEVENLABS_API_KEY. Ejemplo:  ELEVENLABS_API_KEY=sk_... npm run demo:voice");

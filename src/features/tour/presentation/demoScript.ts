@@ -12,8 +12,12 @@ const PATIENT = {
 };
 const RESULT_VALUES = ["13.5", "41", "7.2", "250", "92"]; // Hematología completa (4 fields) + Glicemia
 
-const inDialog = (selector: string) => `[role="dialog"]:not([data-state="closed"]) ${selector}`;
 const navLink = (path: string) => `a[href="${path}"]`;
+// The patient form opens on top of the order dialog: look only inside it.
+const inPatientForm =
+  (selector: string): Target =>
+  () =>
+    dialogTitled("Nuevo Paciente")?.querySelector(selector) ?? null;
 
 /** Clicks the menu link when it is on screen (desktop sidebar or mobile bottom bar), else navigates. */
 const openPage = (h: Helpers, path: string) => (findVisible(navLink(path)) ? h.click(navLink(path)) : h.navigate(path));
@@ -67,40 +71,7 @@ export const DEMO_SCRIPT: Scene[] = [
     ],
   },
   {
-    title: "Registrar un paciente",
-    beats: [
-      {
-        ...line("patientOpen"),
-        run: async (h) => {
-          await openPage(h, "/patients");
-          await h.click('[data-tour="new-patient"]');
-        },
-      },
-      {
-        ...line("patientFill"),
-        run: async (h) => {
-          await h.type(inDialog('input[name="id_number"]'), PATIENT.idNumber);
-          await h.type(inDialog('input[name="first_name"]'), PATIENT.firstName);
-          await h.type(inDialog('input[name="last_name"]'), PATIENT.lastName);
-          await h.type(inDialog('input[placeholder="Seleccionar fecha"]'), PATIENT.birthDate);
-          // Closes the calendar the date field opened (react-datepicker closes on a mousedown outside it),
-          // so it doesn't cover the next fields.
-          dialogTitled("Nuevo Paciente")?.querySelector("h2")?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-          await h.pickSelect(inDialog("button[role='combobox']"), "Femenino");
-          await h.type(inDialog('input[name="phone"]'), PATIENT.phone);
-        },
-      },
-      {
-        ...line("patientSave"),
-        run: async (h) => {
-          await h.click(inDialog('button[type="submit"]'));
-          await h.waitFor(() => (dialogTitled("Nuevo Paciente") ? null : document.body));
-        },
-      },
-    ],
-  },
-  {
-    title: "Crear la orden",
+    title: "Nueva orden y paciente",
     beats: [
       {
         ...line("orderOpen"),
@@ -110,12 +81,44 @@ export const DEMO_SCRIPT: Scene[] = [
         },
       },
       {
-        ...line("orderPatient"),
+        // She isn't registered yet, so the search offers to register her without leaving the order.
+        ...line("orderSearch"),
         run: async (h) => {
           await h.type('[data-tour="order-patient-search"]', PATIENT.firstName);
-          await h.click(button(`${PATIENT.firstName} ${PATIENT.lastName}`, '[role="dialog"]'));
+          await h.pause(900); // the search is debounced: let it finish before reading its result
+          await h.click(button("Registrar paciente", '[role="dialog"]'));
+          await h.waitFor(() => dialogTitled("Nuevo Paciente"));
         },
       },
+      {
+        ...line("patientFill"),
+        run: async (h) => {
+          await h.type(inPatientForm('input[name="id_number"]'), PATIENT.idNumber);
+          await h.type(inPatientForm('input[name="first_name"]'), PATIENT.firstName);
+          await h.type(inPatientForm('input[name="last_name"]'), PATIENT.lastName);
+          await h.type(inPatientForm('input[placeholder="Seleccionar fecha"]'), PATIENT.birthDate);
+          // Closes the calendar the date field opened (react-datepicker closes on a mousedown outside it),
+          // so it doesn't cover the next fields.
+          dialogTitled("Nuevo Paciente")?.querySelector("h2")?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+          await h.pickSelect(inPatientForm("button[role='combobox']"), "Femenino");
+          await h.type(inPatientForm('input[name="phone"]'), PATIENT.phone);
+        },
+      },
+      {
+        ...line("patientSave"),
+        run: async (h) => {
+          await h.click(inPatientForm('button[type="submit"]'));
+          await h.waitFor(() => (dialogTitled("Nuevo Paciente") ? null : document.body));
+          // The search under the order refreshes and now finds her.
+          await h.click(button(`${PATIENT.firstName} ${PATIENT.lastName}`, '[role="dialog"]'));
+          await h.waitFor('[data-tour="order-patient-selected"]');
+        },
+      },
+    ],
+  },
+  {
+    title: "Exámenes y orden",
+    beats: [
       {
         ...line("orderTests"),
         run: async (h) => {
