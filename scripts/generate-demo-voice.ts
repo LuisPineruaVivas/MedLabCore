@@ -50,19 +50,30 @@ async function record(text: string): Promise<Buffer> {
 await mkdir(OUT_DIR, { recursive: true });
 const manifest = await loadManifest();
 const ids = Object.keys(NARRATION) as LineId[];
-// Lines that no longer exist in the script drop out of the manifest.
-const next: Record<string, string> = {};
+// Keeps what is already recorded; lines that no longer exist in the script drop out.
+const next: Record<string, string> = Object.fromEntries(ids.filter((id) => manifest[id]).map((id) => [id, manifest[id]]));
 let recorded = 0;
 
 for (const id of ids) {
   const text = NARRATION[id];
   const hash = textHash(text);
-  if (!all && manifest[id] === hash) {
-    next[id] = hash;
-    continue;
-  }
+  if (!all && manifest[id] === hash) continue;
   process.stdout.write(`Grabando ${id}… `);
-  await writeFile(new URL(`${id}.mp3`, OUT_DIR), await record(text));
+  try {
+    await writeFile(new URL(`${id}.mp3`, OUT_DIR), await record(text));
+  } catch (error) {
+    const message = String(error instanceof Error ? error.message : error);
+    console.log("falló");
+    console.error(
+      message.includes("paid_plan_required")
+        ? "\nEsa voz es de la Voice Library, y el plan gratis de ElevenLabs no permite usarlas por API.\n" +
+            "Usa una voz predeterminada (borra ELEVENLABS_VOICE_ID) o mejora tu plan."
+        : `\n${message}`
+    );
+    // Not process.exit(): on Windows it can crash Node while the fetch socket is still closing.
+    process.exitCode = 1;
+    break;
+  }
   next[id] = hash;
   recorded++;
   console.log("listo");
