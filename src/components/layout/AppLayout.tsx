@@ -23,7 +23,8 @@ export function AppLayout() {
           "transition-all duration-300",
           "md:ml-[240px]",
           sidebarCollapsed && "md:ml-[68px]",
-          "grid grid-rows-[auto_1fr_auto] min-h-screen"
+          // minmax(0,1fr): wide children (tables, scrolling strips) scroll inside instead of widening the page.
+          "grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] min-h-screen"
         )}
       >
         <AppHeader />

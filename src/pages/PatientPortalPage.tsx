@@ -221,9 +221,9 @@ export default function PatientPortalPage() {
               <CardTitle className="text-2xl">Consulta de Resultados</CardTitle>
               <CardDescription className="text-base">
                 Ingresa tu número de cédula y el PIN de acceso.
-                EJ: <span className="font-bold bg-slate-200 p-1 rounded">19458302</span> <br></br>  
+                EJ: <span className="font-bold bg-secondary p-1 rounded">19458302</span> <br></br>  
                 En caso de ser menor de edad el paciente, agrega un guion y un 1 al final <br></br> 
-                de la cedula del representante EJ: <span className="font-bold bg-slate-200 p-1 rounded">11948302-1</span>
+                de la cedula del representante EJ: <span className="font-bold bg-secondary p-1 rounded">11948302-1</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -351,7 +351,7 @@ export default function PatientPortalPage() {
                               </div>
                             </div>
                           </div>
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                          <Badge className="bg-success/10 text-success border-success/40">
                             Completada
                           </Badge>
                         </div>
@@ -436,7 +436,7 @@ export default function PatientPortalPage() {
       </Dialog>
 
       {/* Footer */}
-      <footer className="border-t bg-white/50 mt-16">
+      <footer className="border-t bg-card/50 mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-muted-foreground">
           <p>Portal seguro de consulta de resultados. Sus datos están protegidos.</p>
         </div>

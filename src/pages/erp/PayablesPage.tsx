@@ -63,7 +63,7 @@ export default function PayablesPage() {
               <TableHead>Vence</TableHead>
               <TableHead>Detalle</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
+              <TableHead className="text-right max-sm:hidden">Monto</TableHead>
               <TableHead className="text-right">Pendiente</TableHead>
               <TableHead className="w-28" />
             </TableRow>
@@ -88,7 +88,7 @@ export default function PayablesPage() {
                     <TableCell>
                       <Badge variant={overdue ? "destructive" : row.status === "paid" ? "default" : "outline"}>{overdue ? "Vencida" : PAYABLE_STATUS_LABELS[row.status]}</Badge>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(row.amount, row.currency)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right max-sm:hidden">{formatCurrency(row.amount, row.currency)}</TableCell>
                     <TableCell className="whitespace-nowrap text-right font-medium">{open ? formatCurrency(Number(row.amount) - Number(row.amount_paid), row.currency) : "—"}</TableCell>
                     <TableCell className="whitespace-nowrap text-right">
                       {open && <Button size="sm" variant="outline" onClick={() => setPaying(row)}><Wallet className="mr-1 h-4 w-4" />Pagar</Button>}

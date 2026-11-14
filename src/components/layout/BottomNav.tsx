@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Drawer } from "vaul";
 import { LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { isEntryActive, isGroup, isPathActive, useNavigation, type NavEntry, type NavLink } from "./useNavigation";
 
@@ -27,7 +28,7 @@ function DrawerLink({ item, onNavigate, nested = false }: { item: NavLink; onNav
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium",
         nested && "py-2.5",
-        isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted",
+        isActive ? "neu-inset font-semibold text-primary" : "text-foreground hover:bg-secondary",
       )}
     >
       <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
@@ -52,7 +53,7 @@ export function BottomNav() {
 
   return (
     <Drawer.Root open={menuOpen} onOpenChange={setMenuOpen}>
-      <nav className="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
+      <nav aria-label="Navegación principal" className="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background shadow-[0_-4px_12px_hsl(var(--neu-lo)/0.35)]">
         <div className="flex h-14 items-center justify-around">
           {pinned.map((entry) => {
             const isActive = isEntryActive(entry, pathname);
@@ -60,10 +61,11 @@ export function BottomNav() {
               <Link
                 key={entry.path}
                 to={entry.path}
-                className={cn("flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}
+                aria-current={isActive ? "page" : undefined}
+                className={cn("flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors", isActive ? "font-semibold text-primary" : "text-muted-foreground")}
               >
                 <entry.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-none">{entry.short ?? entry.label}</span>
+                <span className="text-[11px] leading-none">{entry.short ?? entry.label}</span>
               </Link>
             );
           })}
@@ -73,7 +75,7 @@ export function BottomNav() {
               className={cn("flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition-colors", menuActive ? "text-primary" : "text-muted-foreground")}
             >
               <Menu className="h-5 w-5" />
-              <span className="text-[10px] font-medium leading-none">Menú</span>
+              <span className="text-[11px] leading-none">Menú</span>
             </button>
           </Drawer.Trigger>
         </div>
@@ -81,9 +83,12 @@ export function BottomNav() {
 
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Drawer.Content className="safe-area-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border-t bg-card outline-none">
+        <Drawer.Content className="safe-area-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-3xl border-t bg-background shadow-[var(--shadow-elevated)] outline-none">
           <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted" />
-          <Drawer.Title className="px-5 pt-3 text-base font-semibold">Menú</Drawer.Title>
+          <div className="flex items-center justify-between px-5 pt-3">
+            <Drawer.Title className="text-base font-semibold">Menú</Drawer.Title>
+            <ThemeToggle />
+          </div>
           <Drawer.Description className="sr-only">Todas las secciones de la aplicación</Drawer.Description>
           <div className="space-y-4 overflow-y-auto px-3 pb-6 pt-2">
             <div className="space-y-0.5">

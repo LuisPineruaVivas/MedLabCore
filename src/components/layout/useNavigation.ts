@@ -31,6 +31,8 @@ export interface NavLink {
   short?: string;
   icon: LucideIcon;
   path: string;
+  /** Heading the sidebar shows above the first entry of each section. */
+  section?: string;
 }
 export interface NavGroup extends NavLink {
   /** `path` is the group's home: where clicking the group name goes. */
@@ -84,15 +86,15 @@ export function useNavigation(): NavEntry[] {
     ].filter((item) => item.show).map(({ show: _show, ...item }) => item);
 
     const entries: (NavEntry & { show: boolean })[] = [
-      { label: "Panel de control", short: "Panel", icon: LayoutDashboard, path: "/dashboard", show: profile?.role !== "lab_affiliate" },
-      { label: "Pacientes", icon: Users, path: "/patients", show: true },
-      { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
-      { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
-      { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
-      { label: "Administración", short: "Admin.", icon: Wallet, path: adminChildren[0]?.path ?? "/erp", children: adminChildren, show: adminChildren.length > 0 },
-      { label: "Inventario", icon: Boxes, path: "/erp/inventory", show: isErpEnabled && canManageInventory },
-      { label: "Cuentas Afiliadas", short: "Afiliados", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
-      { label: "Configuracion", short: "Config", icon: Settings, path: "/settings", show: permissions.canViewSettings },
+      { label: "Panel de control", short: "Panel", icon: LayoutDashboard, path: "/dashboard", section: "Laboratorio", show: profile?.role !== "lab_affiliate" },
+      { label: "Pacientes", icon: Users, path: "/patients", section: "Laboratorio", show: true },
+      { label: "Órdenes", icon: ShoppingCart, path: "/orders", section: "Laboratorio", show: true },
+      { label: "Exámenes", icon: FlaskConical, path: "/tests", section: "Laboratorio", show: permissions.canViewTests },
+      { label: "Ventas", icon: Receipt, path: "/billing", section: "Laboratorio", show: permissions.canViewBilling },
+      { label: "Administración", short: "Admin.", icon: Wallet, path: adminChildren[0]?.path ?? "/erp", section: "Gestión", children: adminChildren, show: adminChildren.length > 0 },
+      { label: "Inventario", icon: Boxes, path: "/erp/inventory", section: "Gestión", show: isErpEnabled && canManageInventory },
+      { label: "Cuentas afiliadas", short: "Afiliados", icon: HandCoins, path: "/affiliate-accounts", section: "Gestión", show: profile?.role === "lab_admin" && hasAffiliateUsers },
+      { label: "Configuración", short: "Config", icon: Settings, path: "/settings", section: "Ajustes", show: permissions.canViewSettings },
     ];
     return entries.filter((entry) => entry.show).map(({ show: _show, ...entry }) => entry as NavEntry);
   }, [canManageFinances, canManageInventory, canRegisterPayments, canViewFinancialReports, hasAffiliateUsers, isErpEnabled, isSuperAdmin, permissions, profile?.role]);

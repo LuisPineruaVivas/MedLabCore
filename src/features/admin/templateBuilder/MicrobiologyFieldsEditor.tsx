@@ -52,7 +52,7 @@ export function MicrobiologyFieldsEditor({
                   onChange={(e) => updateMicroFieldLabel(mField.id, e.target.value)}
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
                 Fijo
               </span>
             </div>
@@ -127,7 +127,7 @@ export function MicrobiologyFieldsEditor({
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <FlaskConical className="h-4 w-4 text-primary" />
             Resultado del cultivo y antibiograma
-            <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
               Campo fijo · aparece al final
             </span>
           </CardTitle>
@@ -149,7 +149,7 @@ export function MicrobiologyFieldsEditor({
                   onChange={(e) => updateMicroFieldLabel(cultureResultField.id, e.target.value)}
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
                 Fijo
               </span>
             </div>

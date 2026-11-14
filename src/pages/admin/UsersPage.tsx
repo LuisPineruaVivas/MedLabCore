@@ -109,13 +109,13 @@ export default function UsersPage() {
                           size="sm"
                           onClick={() => handleImpersonate(u.id, u.full_name || u.email || "Usuario")}
                           disabled={isImpersonatingLoading}
-                          className="h-8 text-xs font-medium text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800 transition-colors"
+                          className="h-8 text-xs font-medium text-warning border-warning/40 hover:bg-warning/10 hover:text-warning transition-colors"
                           title="Iniciar sesión como este usuario para soporte"
                         >
                           {isThisLoading ? (
                             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                           ) : (
-                            <LogIn className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                            <LogIn className="w-3.5 h-3.5 mr-1.5 text-warning" />
                           )}
                           <span>Iniciar sesión como</span>
                         </Button>

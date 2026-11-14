@@ -48,7 +48,7 @@ export function KardexView({ item }: { item: Item }) {
                   <TableRow key={movement.id}>
                     <TableCell className="whitespace-nowrap">{format(new Date(movement.transaction_date), "dd/MM/yyyy HH:mm")}</TableCell>
                     <TableCell className="whitespace-nowrap">{TRANSACTION_LABELS[movement.transaction_type]}</TableCell>
-                    <TableCell className={cn("text-right font-medium", quantity > 0 ? "text-emerald-600" : "text-destructive")}>
+                    <TableCell className={cn("text-right font-medium", quantity > 0 ? "text-success" : "text-destructive")}>
                       {quantity > 0 ? "+" : "−"}{formatQuantity(Math.abs(quantity))}
                     </TableCell>
                     <TableCell className="text-right">{formatUnitCost(movement.unit_cost_at_time)}</TableCell>

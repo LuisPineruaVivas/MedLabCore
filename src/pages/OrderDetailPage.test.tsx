@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Safety net for splitting OrderDetailPage (improvement plan M-02): patient data,
-// who can edit results, and "Guardar Todos" (one request, all-or-nothing; B-03/P-04).
+// who can edit results, and "Guardar cambios" (one request, all-or-nothing; B-03/P-04).
 import { fireEvent, render, within, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -81,7 +81,8 @@ function renderPage(role: Role = "lab_admin", status = "pendiente") {
   );
 }
 
-const resultInputs = () => view().getAllByPlaceholderText("Ingresar resultado") as HTMLInputElement[];
+// Numeric result inputs, each labelled by its field ("Urea (mg/dL)", "Creatinina (mg/dL)").
+const resultInputs = () => [view().getByLabelText(/^Urea/), view().getByLabelText(/^Creatinina/)] as HTMLInputElement[];
 
 // Query the current document: with vitest isolate:false, Testing Library's `screen`
 // stays bound to the first test file's document.
@@ -109,7 +110,7 @@ describe("OrderDetailPage", () => {
     const [urea, creatinina] = resultInputs();
     fireEvent.change(urea, { target: { value: "32" } });
     fireEvent.change(creatinina, { target: { value: "0.9" } });
-    fireEvent.click(view().getAllByRole("button", { name: /Guardar Todos/i })[0]);
+    fireEvent.click(view().getAllByRole("button", { name: /Guardar cambios/i })[0]);
 
     await waitFor(() => expect(state.toastSuccess).toHaveBeenCalled());
     expect(state.mutateAsync).toHaveBeenCalledTimes(1);
@@ -125,7 +126,7 @@ describe("OrderDetailPage", () => {
     state.mutateAsync.mockRejectedValue(new Error("ORDER_RESULTS_LOCKED"));
     renderPage();
     fireEvent.change(resultInputs()[0], { target: { value: "40" } });
-    const saveButton = view().getAllByRole("button", { name: /Guardar Todos/i })[0];
+    const saveButton = view().getAllByRole("button", { name: /Guardar cambios/i })[0];
     fireEvent.click(saveButton);
 
     await waitFor(() => expect(state.toastError).toHaveBeenCalledWith(expect.stringMatching(/completada o cancelada/)));
@@ -136,7 +137,7 @@ describe("OrderDetailPage", () => {
   it("is read-only for a completed order", () => {
     renderPage("lab_admin", "completada");
     expect(resultInputs().every((input) => input.disabled)).toBe(true);
-    expect(view().queryByRole("button", { name: /Guardar Todos/i })).not.toBeInTheDocument();
+    expect(view().queryByRole("button", { name: /Guardar cambios/i })).not.toBeInTheDocument();
   });
 
   it("lets the bioanalyst, not the secretary, edit an order awaiting approval", () => {

@@ -98,8 +98,8 @@ describe("CreateOrderDialog", () => {
     // profile header + its 2 exams + the single exam
     expect(view().getAllByText("Glucosa").length).toBeGreaterThan(0);
     expect(view().getAllByText("Urea").length).toBeGreaterThan(0);
-    expect(view().getByText("$32.50", { selector: ".text-primary" })).toBeInTheDocument();
-    expect(view().getByText("Bs. 1300.00")).toBeInTheDocument();
+    expect(view().getByText("$32,50", { selector: ".text-primary" })).toBeInTheDocument();
+    expect(view().getByText("Bs 1.300,00")).toBeInTheDocument();
   });
 
   it("creates the order with the cart, the rate and the Bs total", async () => {

@@ -34,7 +34,7 @@ export function OptionsEditor({
   return (
     <div className="flex flex-wrap gap-2 items-center pl-2 py-1.5 border-t border-border/40 mt-1">
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
+        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
           {isText ? "Plantillas de resultado:" : "Opciones:"}
         </span>
 
@@ -42,7 +42,7 @@ export function OptionsEditor({
           type="button"
           variant="outline"
           size="sm"
-          className="h-6 text-[11px] px-2 gap-1 text-primary hover:text-primary hover:bg-primary/5 border-primary/30"
+          className="h-6 text-xs px-2 gap-1 text-primary hover:text-primary hover:bg-primary/5 border-primary/30"
           onClick={handleOpenDialog}
         >
           <FileText className="w-3 h-3" />
@@ -65,7 +65,7 @@ export function OptionsEditor({
           return (
             <div
               key={i}
-              className="flex items-center gap-1.5 bg-secondary/80 hover:bg-secondary text-secondary-foreground rounded px-2 py-0.5 text-[11px] cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 bg-secondary/80 hover:bg-secondary text-secondary-foreground rounded px-2 py-0.5 text-xs cursor-pointer transition-colors"
               onClick={handleOpenDialog}
               title={opt}
             >
@@ -115,7 +115,7 @@ export function OptionsEditor({
               <div key={idx} className="rounded-lg border bg-card p-3 shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
                       {idx + 1}
                     </span>
                     {isText ? `Modelo de Resultado ${idx + 1}` : `Opción ${idx + 1}`}
@@ -181,7 +181,7 @@ export function OptionsEditor({
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t mt-2">
-            <p className="text-[11px] text-muted-foreground hidden sm:block">
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Tip: Los saltos de línea se respetarán tanto en el informe PDF como en la orden.
             </p>
             <div className="flex gap-2">

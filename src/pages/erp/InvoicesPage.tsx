@@ -48,9 +48,9 @@ export default function InvoicesPage() {
             <TableRow>
               <TableHead>Factura</TableHead>
               <TableHead>Paciente</TableHead>
-              <TableHead>Fecha</TableHead>
+              <TableHead className="max-sm:hidden">Fecha</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right max-sm:hidden">Total</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
             </TableRow>
           </TableHeader>
@@ -62,9 +62,9 @@ export default function InvoicesPage() {
                 <TableRow key={invoice.id}>
                   <TableCell><Link className="font-medium text-primary hover:underline" to={`/erp/invoices/${invoice.id}`}>{invoice.invoice_number}</Link></TableCell>
                   <TableCell>{invoice.patients ? `${invoice.patients.first_name} ${invoice.patients.last_name}` : "—"}</TableCell>
-                  <TableCell>{new Date(invoice.issued_at).toLocaleDateString("es-VE")}</TableCell>
+                  <TableCell className="max-sm:hidden">{new Date(invoice.issued_at).toLocaleDateString("es-VE")}</TableCell>
                   <TableCell><InvoiceStatusBadge status={invoice.status} /></TableCell>
-                  <TableCell className="text-right">{formatCurrency(invoice.total_usd)}</TableCell>
+                  <TableCell className="text-right max-sm:hidden">{formatCurrency(invoice.total_usd)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(invoice.balance_due_usd)}</TableCell>
                 </TableRow>
               ))

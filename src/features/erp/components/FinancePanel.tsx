@@ -15,7 +15,7 @@ function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?
   return (
     <div className="rounded-lg border p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("text-xl font-semibold tabular-nums", tone === "bad" && "text-destructive", tone === "good" && "text-emerald-600 dark:text-emerald-400")}>{value}</p>
+      <p className={cn("text-xl font-semibold tabular-nums", tone === "bad" && "text-destructive", tone === "good" && "text-success")}>{value}</p>
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
@@ -118,7 +118,7 @@ export function FinancePanel({ orgId }: { orgId: string | null }) {
                   <span className="block truncate">{row.description || row.category_name || FINANCE_KIND_LABELS[row.kind]}</span>
                   <span className="text-xs text-muted-foreground">{formatShortDate(row.entry_date)} · {row.account_name}</span>
                 </span>
-                <span className={cn("shrink-0 font-medium tabular-nums", Number(row.signed_amount) < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400")}>
+                <span className={cn("shrink-0 font-medium tabular-nums", Number(row.signed_amount) < 0 ? "text-destructive" : "text-success")}>
                   {Number(row.signed_amount) > 0 ? "+" : ""}{formatCurrency(row.signed_amount, row.currency)}
                 </span>
               </li>

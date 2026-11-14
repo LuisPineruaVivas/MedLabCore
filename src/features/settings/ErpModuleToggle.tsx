@@ -23,7 +23,7 @@ export function ErpModuleToggle() {
             <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
               Módulo Administrativo & ERP
               {isErpEnabled ? (
-                <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-700">
+                <Badge variant="default" className="bg-success text-success-foreground hover:bg-success">
                   <CheckCircle2 className="w-3 h-3 mr-1" /> Activo en tu Plan
                 </Badge>
               ) : (
@@ -41,7 +41,7 @@ export function ErpModuleToggle() {
 
       <div className="border-t border-border pt-4 text-xs text-muted-foreground">
         {isErpEnabled ? (
-          <p className="text-emerald-700 dark:text-emerald-400">
+          <p className="text-success">
             ✓ Tu laboratorio <span className="font-semibold">{organization?.name}</span> tiene habilitadas todas las funciones de administración, finanzas, cobros mixtos e inventario.
           </p>
         ) : (

@@ -56,7 +56,7 @@ export const OrderResultItemEditor = memo(function OrderResultItemEditor({
     return (
       <div className="border-b last:border-b-0 pb-6 mb-6 last:mb-0 last:pb-0">
         <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-3">
-          <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+          <h4 className="text-base font-semibold">{item.test_name || "Examen"}</h4>
         </div>
         <MicrobiologyResultForm
           itemId={item.id}
@@ -79,7 +79,7 @@ export const OrderResultItemEditor = memo(function OrderResultItemEditor({
     <div className="p-4">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h4 className="text-[15px] font-semibold text-foreground">Examen : {item.test_name || ""}</h4>
+          <h4 className="text-base font-semibold">{item.test_name || "Examen"}</h4>
           {!readOnly || selectedMethod ? (
             <Select
               value={selectedMethod?.id ?? "__none__"}
@@ -104,9 +104,9 @@ export const OrderResultItemEditor = memo(function OrderResultItemEditor({
         {itemResultsData.sections?.map((section, sectionIdx) => (
           <div key={section.id || sectionIdx} className="space-y-3">
             {section.name && (
-              <h4 className="border-b border-border pb-1 text-[13px] font-semibold text-foreground">Seccion: {section.name}</h4>
+              <h5 className="border-b border-border pb-1 text-sm font-semibold text-muted-foreground">{section.name}</h5>
             )}
-            <div className="space-y-2 border-l-2 border-border pl-5">
+            <div className="space-y-3">
               {section.fields?.map((field, fieldIdx) => (
                 <OrderResultFieldRow
                   key={field.id || fieldIdx}
@@ -159,12 +159,13 @@ function OrderResultFieldRow({
     : "black";
 
   return (
-    <div className={`grid ${field.type !== 'text' ? 'grid-cols-12' : 'grid-cols-1'} items-center gap-3`}>
-      <Label className="col-span-12 text-xs sm:col-span-8 sm:text-sm">
+    // Label | value pressed into a well | reference range: the value is the largest thing on the row.
+    <div className={`grid ${field.type !== 'text' ? 'grid-cols-[minmax(0,1fr)_minmax(7rem,9rem)] sm:grid-cols-[minmax(0,1fr)_10rem_minmax(8rem,12rem)]' : 'grid-cols-1'} items-center gap-x-4 gap-y-1`}>
+      <Label htmlFor={`result-${itemId}-${sectionIdx}-${fieldIdx}`} className="text-sm font-medium">
         {field.label}
-        {field.unit && <span className="ml-1 text-[10px] text-muted-foreground sm:text-xs">({field.unit})</span>}
+        {field.unit && <span className="ml-1 text-xs font-normal text-muted-foreground">({field.unit})</span>}
       </Label>
-      <div className="col-span-12 sm:col-span-5">
+      <div>
         <OrderResultInput
           itemId={itemId}
           field={field}
@@ -178,8 +179,9 @@ function OrderResultFieldRow({
         />
       </div>
       {field.type !== "text" && (
-        <div className="col-span-12 text-[10px] text-muted-foreground sm:col-span-3 sm:text-xs">
-          {rangeDisplay ? <span>Ref: {rangeDisplay}</span> : null}
+        <div className="col-span-2 text-xs text-muted-foreground tabular-nums sm:col-span-1 sm:text-sm">
+          {rangeDisplay ? <span className="whitespace-nowrap">Ref. {rangeDisplay}</span> : null}
+          {isOutOfRange && <span className="block whitespace-nowrap font-semibold text-destructive">Fuera de rango</span>}
         </div>
       )}
     </div>
@@ -210,8 +212,8 @@ function OrderResultInput({
   if (field.type === "select") {
     return (
       <Select value={field.value || ""} onValueChange={(value) => updateFieldValue(itemId, sectionIdx, fieldIdx, value)} disabled={readOnly}>
-        <SelectTrigger className="h-8 text-sm">
-          <SelectValue placeholder="Seleccionar..." />
+        <SelectTrigger id={`result-${itemId}-${sectionIdx}-${fieldIdx}`} className="h-11 text-sm font-semibold shadow-[var(--neu-inset)]">
+          <SelectValue placeholder="Seleccionar" />
         </SelectTrigger>
         <SelectContent>
           {field.options?.map((option) => (
@@ -224,17 +226,24 @@ function OrderResultInput({
     );
   }
 
-  const inputTextColor = resultColor === "black" && isOutOfRange ? "#dc2626" : resultColor;
+  // A lab-defined category color wins; otherwise the theme's text color, or destructive when out of range
+  // ("black" is the helper's no-category default and would vanish in dark mode).
+  const inputTextColor = resultColor === "black" ? undefined : resultColor;
+  const inputId = `result-${itemId}-${sectionIdx}-${fieldIdx}`;
+  // Read-only results read as recorded values, not inputs: flat, no placeholder, full contrast.
+  const wellClass = `h-11 text-right text-lg font-semibold tabular-nums placeholder:text-sm placeholder:font-normal disabled:cursor-default disabled:opacity-100 disabled:border-transparent disabled:bg-transparent disabled:shadow-none ${isOutOfRange && !inputTextColor ? "border-destructive text-destructive" : ""}`;
 
   if (field.type === "number") {
     return (
       <Input
-        className={`h-8 text-sm ${isOutOfRange && resultColor === "black" ? "border-destructive/40 text-destructive" : ""}`}
-        type="number"
-        value={field.value || ""}
+        id={inputId}
+        className={wellClass}
+        aria-invalid={isOutOfRange || undefined}
+        type={readOnly ? "text" : "number"}
+        value={readOnly ? field.value || "—" : field.value || ""}
         onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
-        placeholder="Ingresar resultado"
+        placeholder={readOnly ? undefined : "Resultado"}
         style={{ color: inputTextColor }}
         onWheel={(e) => (e.target as HTMLInputElement).blur()}
       />
@@ -244,12 +253,14 @@ function OrderResultInput({
   if (field.type === "range") {
     return (
       <Input
-        className={`h-8 text-sm ${isOutOfRange && resultColor === "black" ? "border-destructive/40 text-destructive" : ""}`}
+        id={inputId}
+        className={wellClass}
+        aria-invalid={isOutOfRange || undefined}
         type="text"
-        value={field.value || ""}
+        value={readOnly ? field.value || "—" : field.value || ""}
         onChange={(event) => updateFieldValue(itemId, sectionIdx, fieldIdx, event.target.value)}
         disabled={readOnly}
-        placeholder="Ej: >100, <0.5 o Más de 80"
+        placeholder={readOnly ? undefined : "Ej.: >100"}
         style={{ color: inputTextColor }}
         onWheel={(e) => (e.target as HTMLInputElement).blur()}
       />
@@ -310,7 +321,7 @@ function OrderResultInput({
                             type="button"
                             variant="default"
                             size="sm"
-                            className="h-6 px-2 text-[11px]"
+                            className="h-6 px-2 text-xs"
                             onClick={() => updateFieldValue(itemId, sectionIdx, fieldIdx, option)}
                             disabled={readOnly}
                             title="Reemplaza todo el contenido del campo con esta plantilla"
@@ -322,7 +333,7 @@ function OrderResultInput({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="h-6 px-2 text-[11px]"
+                              className="h-6 px-2 text-xs"
                               onClick={() => appendTextOption(itemId, sectionIdx, fieldIdx, option)}
                               disabled={readOnly}
                               title="Añade esta plantilla al final del texto actual"
@@ -333,7 +344,7 @@ function OrderResultInput({
                         </div>
                       </div>
                       {isMultiline ? (
-                        <p className="line-clamp-3 text-[10px] text-muted-foreground whitespace-pre-wrap font-mono bg-background/80 p-1.5 rounded border border-border/50">
+                        <p className="line-clamp-3 text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-background/80 p-1.5 rounded border border-border/50">
                           {option}
                         </p>
                       ) : null}

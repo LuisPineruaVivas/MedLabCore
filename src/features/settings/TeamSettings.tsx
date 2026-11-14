@@ -27,7 +27,7 @@ const roleColors: Record<string, string> = {
   lab_admin: "border-primary/20 bg-primary/10 text-primary",
   bioanalyst: "border-success/20 bg-success/10 text-success",
   secretary: "border-warning/20 bg-warning/10 text-warning",
-  lab_affiliate: "border-sky-200 bg-sky-100 text-sky-700",
+  lab_affiliate: "border-info/40 bg-info/10 text-info",
 };
 
 interface TeamSettingsProps {
@@ -163,7 +163,7 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {form.role === "bioanalyst"
                   ? "Puede ingresar resultados de examenes. No tiene acceso a facturacion ni precios."
                   : form.role === "lab_affiliate"

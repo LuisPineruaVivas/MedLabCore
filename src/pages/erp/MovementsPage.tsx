@@ -101,9 +101,9 @@ export default function MovementsPage() {
             <TableRow>
               <TableHead>Fecha</TableHead>
               <TableHead>Detalle</TableHead>
-              <TableHead>Cuenta</TableHead>
+              <TableHead className="max-sm:hidden">Cuenta</TableHead>
               <TableHead className="text-right">Monto</TableHead>
-              {showBalance && <TableHead className="text-right">Saldo</TableHead>}
+              {showBalance && <TableHead className="text-right max-sm:hidden">Saldo</TableHead>}
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -157,11 +157,11 @@ function MovementRow({ row, showBalance, canVoid, onVoid }: { row: FinanceEntry;
           {row.invoice_id && <Link className="text-primary hover:underline" to={`/erp/invoices/${row.invoice_id}`}>· Ver factura</Link>}
         </div>
       </TableCell>
-      <TableCell className="whitespace-nowrap">{row.account_name}</TableCell>
-      <TableCell className={`whitespace-nowrap text-right font-medium ${row.is_void ? "line-through" : amount < 0 ? "text-destructive" : "text-emerald-600"}`}>
+      <TableCell className="whitespace-nowrap max-sm:hidden">{row.account_name}</TableCell>
+      <TableCell className={`whitespace-nowrap text-right font-medium ${row.is_void ? "line-through" : amount < 0 ? "text-destructive" : "text-success"}`}>
         {amount > 0 ? "+" : ""}{formatCurrency(amount, row.currency)}
       </TableCell>
-      {showBalance && <TableCell className="whitespace-nowrap text-right">{formatCurrency(row.running_balance, row.currency)}</TableCell>}
+      {showBalance && <TableCell className="whitespace-nowrap text-right max-sm:hidden">{formatCurrency(row.running_balance, row.currency)}</TableCell>}
       <TableCell>
         {canVoid && row.source === "movement" && !row.is_void && (
           <Button variant="ghost" size="icon" aria-label="Anular movimiento" onClick={() => onVoid(row)}><Ban className="h-4 w-4" /></Button>

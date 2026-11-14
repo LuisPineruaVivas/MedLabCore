@@ -146,7 +146,7 @@ export default function OrganizationsPage() {
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" className="gap-1" onClick={() => toggleErp.mutate({ id: org.id, has_erp_module: org.has_erp_module }, { onSuccess: () => toast.success(org.has_erp_module ? "ERP desactivado" : "ERP activado"), onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo cambiar el módulo ERP")) })}>
-                      <Sparkles className={`h-4 w-4 ${org.has_erp_module ? "text-amber-500" : "text-muted-foreground"}`} />
+                      <Sparkles className={`h-4 w-4 ${org.has_erp_module ? "text-warning" : "text-muted-foreground"}`} />
                       {org.has_erp_module ? "Activo" : "Inactivo"}
                     </Button>
                   </TableCell>

@@ -132,7 +132,7 @@ export default function TestsTemplatesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryColors[template.category] ?? "bg-muted text-muted-foreground"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${categoryColors[template.category] ?? "bg-muted text-muted-foreground"}`}>
                         {template.category}
                       </span>
                     </TableCell>
@@ -153,7 +153,7 @@ export default function TestsTemplatesPage() {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <DollarSign className="h-3.5 w-3.5 text-success" />
-                        <span className="mono text-sm font-semibold">{Number(template.base_price).toFixed(2)}</span>
+                        <span className="tabular-nums text-sm font-semibold">{Number(template.base_price).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     </TableCell>
                     <TableCell>

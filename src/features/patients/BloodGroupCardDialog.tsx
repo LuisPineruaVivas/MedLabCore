@@ -198,7 +198,7 @@ export function BloodGroupCardDialog({
                     Cédula / Identificación
                   </Label>
                   {!hasIdNumber && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                       Omitida (Sin renglón C.I.)
                     </span>
                   )}
@@ -210,7 +210,7 @@ export function BloodGroupCardDialog({
                   placeholder="Dejar en blanco si es menor sin cédula"
                   className="h-9 text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Si borras este campo el renglón <span className="font-semibold">C.I. No:</span> NO aparecerá en la tarjeta.
                 </p>
               </div>
@@ -222,7 +222,7 @@ export function BloodGroupCardDialog({
                     Fecha de Nacimiento
                   </Label>
                   {!hasDob && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                       Omitida de la tarjeta
                     </span>
                   )}
@@ -348,12 +348,12 @@ export function BloodGroupCardDialog({
                       style={{ borderColor: labData.primary_color }}
                     >
                       <span
-                        className="text-[10px] font-bold uppercase shrink-0"
+                        className="text-xs font-bold uppercase shrink-0"
                         style={{ color: labData.primary_color }}
                       >
                         NOMBRE:
                       </span>
-                      <span className="text-[11px] font-bold uppercase truncate text-slate-900">
+                      <span className="text-xs font-bold uppercase truncate text-slate-900">
                         {patientName || "—"}
                       </span>
                     </div>
@@ -365,12 +365,12 @@ export function BloodGroupCardDialog({
                         style={{ borderColor: labData.primary_color }}
                       >
                         <span
-                          className="text-[10px] font-bold uppercase shrink-0"
+                          className="text-xs font-bold uppercase shrink-0"
                           style={{ color: labData.primary_color }}
                         >
                           C.I. No:
                         </span>
-                        <span className="text-[11px] font-semibold uppercase text-slate-800">
+                        <span className="text-xs font-semibold uppercase text-slate-800">
                           {cleanIdNumber}
                         </span>
                       </div>
@@ -383,12 +383,12 @@ export function BloodGroupCardDialog({
                         style={{ borderColor: labData.primary_color }}
                       >
                         <span
-                          className="text-[10px] font-bold uppercase shrink-0"
+                          className="text-xs font-bold uppercase shrink-0"
                           style={{ color: labData.primary_color }}
                         >
                           FECHA NACIMIENTO:
                         </span>
-                        <span className="text-[11px] font-semibold text-slate-800">
+                        <span className="text-xs font-semibold text-slate-800">
                           {cleanDob}
                         </span>
                       </div>
@@ -401,7 +401,7 @@ export function BloodGroupCardDialog({
                     >
                       <div className="flex items-center gap-1">
                         <span
-                          className="text-[10px] font-bold uppercase"
+                          className="text-xs font-bold uppercase"
                           style={{ color: labData.primary_color }}
                         >
                           GRUPO SANGUÍNEO:
@@ -412,7 +412,7 @@ export function BloodGroupCardDialog({
                       </div>
                       <div className="flex items-center gap-1">
                         <span
-                          className="text-[10px] font-bold uppercase"
+                          className="text-xs font-bold uppercase"
                           style={{ color: labData.primary_color }}
                         >
                           FACTOR RH:
@@ -465,7 +465,7 @@ export function BloodGroupCardDialog({
                 </div>
 
                 {/* Hint about print size */}
-                <p className="mt-3 text-[11px] text-center text-muted-foreground max-w-[360px]">
+                <p className="mt-3 text-xs text-center text-muted-foreground max-w-[360px]">
                   💡 El PDF generado es tamaño carta. Al imprimir, selecciona{" "}
                   <span className="font-semibold">Tamaño real (100%)</span> para que la tarjeta
                   salga en la esquina superior izquierda con su tamaño físico correcto.

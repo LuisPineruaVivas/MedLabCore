@@ -72,7 +72,7 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                 <FlaskConical className="h-4 w-4 text-primary" />
                 <CardTitle className="text-sm font-semibold">{category}</CardTitle> 
                 {categoryStats.isCategoryModified && (
-                  <Badge variant="secondary" className="bg-primary/10 px-1.5 py-0 text-[10px] font-bold uppercase text-primary">
+                  <Badge variant="secondary" className="bg-primary/10 px-1.5 py-0 text-xs font-bold uppercase text-primary">
                     Modificado
                   </Badge>
                 )}
@@ -84,7 +84,7 @@ export const OrderResultsPanel = memo(function OrderResultsPanel({
                     Completado
                   </span>
                 ) : categoryStats.anyResultsEntered ? (
-                  <span className="text-xs font-medium text-amber-500">En Progreso</span>
+                  <span className="text-xs font-medium text-warning">En Progreso</span>
                 ) : (
                   <span className="text-xs text-muted-foreground">Pendiente</span>
                 )}
@@ -150,27 +150,49 @@ interface OrderMobileSaveBarProps {
   modifiedCount: number;
   isSavingAll: boolean;
   onSaveAll: () => void;
+  /** The action that moves the order forward (e.g. Aprobar y firmar); kept in reach on phones. */
+  primaryAction?: { label: string; onClick: () => void; disabled?: boolean } | null;
 }
 
 export const OrderMobileSaveBar = memo(function OrderMobileSaveBar({
   modifiedCount,
   isSavingAll,
   onSaveAll,
+  primaryAction,
 }: OrderMobileSaveBarProps) {
-  if (modifiedCount === 0) return null;
-
+  const changes = `${modifiedCount} ${modifiedCount === 1 ? "cambio" : "cambios"} sin guardar`;
   return (
-    <div className="animate-in fade-in fixed bottom-4 left-1/2 z-50 -translate-x-1/2 slide-in-from-bottom-5">
-      <div className="flex items-center gap-4 rounded-full border border-border/50 bg-card px-4 py-2 shadow-xl">
-        <span className="hidden whitespace-nowrap text-sm font-medium sm:inline-block">
-          {modifiedCount} {modifiedCount === 1 ? "cambio" : "cambios"} sin guardar
-        </span>
-        <span className="whitespace-nowrap text-sm font-medium sm:hidden">{modifiedCount} cambios</span>
-        <Button size="sm" className="rounded-full shadow-md" onClick={onSaveAll} disabled={isSavingAll}>
-          <Save className="mr-1.5 h-4 w-4" />
-          {isSavingAll ? "Guardar Todo" : "Guardar Todo"}
-        </Button>
-      </div>
-    </div>
+    <>
+      {/* Phone: fixed above the bottom navigation, so approving never scrolls out of reach. */}
+      {(primaryAction || modifiedCount > 0) && (
+        <div className="fixed inset-x-3 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] z-40 md:hidden">
+          <div className="flex items-center gap-2 rounded-2xl border bg-popover p-2 shadow-[var(--shadow-elevated)]">
+            {modifiedCount > 0 && (
+              <Button variant="outline" size="sm" className="flex-1" onClick={onSaveAll} disabled={isSavingAll} aria-label={`Guardar: ${changes}`}>
+                <Save />
+                {isSavingAll ? "Guardando…" : `Guardar (${modifiedCount})`}
+              </Button>
+            )}
+            {primaryAction && (
+              <Button size="sm" className="flex-1" onClick={primaryAction.onClick} disabled={primaryAction.disabled}>
+                {primaryAction.label}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Desktop: the header carries the actions; a floating reminder appears only with unsaved changes. */}
+      {modifiedCount > 0 && (
+        <div className="fixed bottom-4 left-1/2 z-50 hidden -translate-x-1/2 md:block">
+          <div className="flex items-center gap-4 rounded-full border bg-popover px-4 py-2 shadow-[var(--shadow-elevated)]">
+            <span className="whitespace-nowrap text-sm font-medium">{changes}</span>
+            <Button size="sm" className="rounded-full" onClick={onSaveAll} disabled={isSavingAll}>
+              <Save />
+              {isSavingAll ? "Guardando…" : "Guardar cambios"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 });

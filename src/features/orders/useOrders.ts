@@ -200,7 +200,9 @@ export function useOrderStats() {
 
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      const [total, month, day] = await Promise.all([
+      const byStatus = (status: "pendiente" | "por_aprobar" | "completada" | "cancelada") =>
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", status);
+      const [total, month, day, pending, toApprove, completed, cancelled] = await Promise.all([
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
@@ -215,12 +217,20 @@ export function useOrderStats() {
           .select("id", { count: "exact", head: true })
           .eq("org_id", orgId!)
           .gte("created_at", today.toISOString()),
+        byStatus("pendiente"),
+        byStatus("por_aprobar"),
+        byStatus("completada"),
+        byStatus("cancelada"),
       ]);
 
       return {
         total: total.count || 0,
         thisMonth: month.count || 0,
         today: day.count || 0,
+        pending: pending.count || 0,
+        toApprove: toApprove.count || 0,
+        completed: completed.count || 0,
+        cancelled: cancelled.count || 0,
       };
     },
     enabled: !!orgId,

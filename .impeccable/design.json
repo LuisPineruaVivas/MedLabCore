@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T00:00:00Z",
+  "title": "Design System: MedLabCore",
+  "extensions": {
+    "colorMeta": {
+      "porcelain-ground": { "role": "neutral", "displayName": "Porcelain Ground", "canonical": "hsl(213 24% 92%) /* --background, --card, --sidebar-background */", "tonalRamp": ["#22262b","#303e4f","#485c75","#5f7a9b","#8499b3","#aab8cb","#d0d8e2","#f1f2f4"] },
+      "porcelain-raised-popover": { "role": "neutral", "displayName": "Raised Porcelain", "canonical": "hsl(213 30% 96%) /* --popover */" },
+      "graphite-ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "hsl(215 30% 12%) /* --foreground */", "tonalRamp": ["#21252c","#2d3d53","#425a7b","#5777a2","#7e97b9","#a5b7cf","#cdd7e4","#f0f2f4"] },
+      "muted-ink": { "role": "neutral", "displayName": "Muted Ink", "canonical": "hsl(215 14% 36%) /* --muted-foreground */" },
+      "porcelain-secondary": { "role": "neutral", "displayName": "Porcelain Secondary", "canonical": "hsl(213 22% 88%) /* --secondary */" },
+      "porcelain-muted": { "role": "neutral", "displayName": "Porcelain Muted", "canonical": "hsl(213 20% 87%) /* --muted */" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "hsl(213 18% 82%) /* --border */", "tonalRamp": ["#23262a","#343f4b","#4d5d6f","#667b93","#8a9aad","#aeb9c7","#d2d8e0","#f1f2f3"] },
+      "slate-edge": { "role": "neutral", "displayName": "Slate Edge", "canonical": "hsl(214 14% 50%) /* --input, 3:1 control edge */", "tonalRamp": ["#242629","#373f49","#515d6c","#6b7b8e","#8e9aa9","#b1b9c4","#d3d8de","#f1f2f3"] },
+      "shade": { "role": "neutral", "displayName": "Shade", "canonical": "hsl(213 22% 72%) /* --neu-lo */", "tonalRamp": ["#22262a","#323e4e","#4a5c73","#617a98","#8699b1","#abb9c9","#d0d8e1","#f1f2f4"] },
+      "highlight": { "role": "neutral", "displayName": "Highlight", "canonical": "hsl(0 0% 100%) /* --neu-hi */" },
+      "lab-teal": { "role": "primary", "displayName": "Lab Teal (default lab ink; overwritten per lab by labThemeVars)", "canonical": "hsl(174 83% 25%) /* --primary, --ring */", "tonalRamp": ["#163633","#0b756a","#10ad9d","#15e5d0","#49eede","#81f3e8","#b9f8f2","#edf8f6"] },
+      "lab-teal-ink": { "role": "primary", "displayName": "Ink on Lab Teal", "canonical": "hsl(0 0% 100%) /* --primary-foreground */" },
+      "teal-wash": { "role": "primary", "displayName": "Teal Wash", "canonical": "hsl(174 40% 86%) /* --accent */", "tonalRamp": ["#1f2e2c","#265954","#39847d","#4bafa5","#74c3bb","#9fd6d0","#c9e8e5","#f0f5f4"] },
+      "teal-wash-ink": { "role": "primary", "displayName": "Ink on Teal Wash", "canonical": "hsl(174 83% 20%) /* --accent-foreground */" },
+      "clinical-red": { "role": "secondary", "displayName": "Clinical Red", "canonical": "hsl(0 70% 42%) /* --destructive */", "tonalRamp": ["#341919","#6c1313","#a01c1c","#d42525","#e15656","#ea8a8a","#f4bebe","#f7eeee"] },
+      "result-green": { "role": "secondary", "displayName": "Result Green", "canonical": "hsl(152 70% 26%) /* --success */", "tonalRamp": ["#193427","#136c43","#1ca063","#25d483","#56e1a0","#8aeabd","#bef4db","#eef7f3"] },
+      "amber-pending": { "role": "secondary", "displayName": "Amber Pending", "canonical": "hsl(30 95% 31%) /* --warning */", "tonalRamp": ["#382614","#7c4003","#b85e05","#f47d06","#fa9c3d","#fcba79","#fdd9b4","#f8f2ec"] },
+      "signal-blue": { "role": "secondary", "displayName": "Signal Blue", "canonical": "hsl(214 75% 40%) /* --info */", "tonalRamp": ["#182435","#103970","#1855a5","#1f70db","#5192e6","#87b3ee","#bcd5f5","#edf2f7"] },
+      "slate-ground": { "role": "neutral", "displayName": "Slate Ground (dark)", "canonical": "hsl(215 23% 12%) /* .dark --background */", "tonalRamp": ["#22262b","#313d4e","#495b74","#60789a","#8598b2","#aab8ca","#d0d7e2","#f1f2f4"] },
+      "slate-raised-popover": { "role": "neutral", "displayName": "Raised Slate (dark)", "canonical": "hsl(215 22% 16%) /* .dark --popover */" },
+      "frost-ink": { "role": "neutral", "displayName": "Frost Ink (dark)", "canonical": "hsl(210 25% 93%) /* .dark --foreground */" },
+      "frost-muted-ink": { "role": "neutral", "displayName": "Frost Muted Ink (dark)", "canonical": "hsl(213 15% 70%) /* .dark --muted-foreground */" },
+      "slate-secondary": { "role": "neutral", "displayName": "Slate Secondary (dark)", "canonical": "hsl(215 20% 17%) /* .dark --secondary, --muted */" },
+      "slate-hairline": { "role": "neutral", "displayName": "Slate Hairline (dark)", "canonical": "hsl(215 18% 21%) /* .dark --border */" },
+      "slate-edge-dark": { "role": "neutral", "displayName": "Slate Edge (dark)", "canonical": "hsl(214 12% 46%) /* .dark --input */" },
+      "slate-shade": { "role": "neutral", "displayName": "Slate Shade (dark)", "canonical": "hsl(216 40% 4%) /* .dark --neu-lo */" },
+      "slate-highlight": { "role": "neutral", "displayName": "Slate Highlight (dark)", "canonical": "hsl(214 18% 27%) /* .dark --neu-hi */" },
+      "night-teal": { "role": "primary", "displayName": "Night Teal (dark default lab ink)", "canonical": "hsl(172 55% 52%) /* .dark --primary */", "tonalRamp": ["#1c312e","#1d6359","#2a9284","#38c2af","#65d2c4","#94e0d6","#c4eee8","#eff6f5"] },
+      "night-teal-ink": { "role": "primary", "displayName": "Ink on Night Teal", "canonical": "hsl(215 30% 8%) /* .dark --primary-foreground */" },
+      "night-teal-wash": { "role": "primary", "displayName": "Night Teal Wash", "canonical": "hsl(172 30% 20%) /* .dark --accent */" },
+      "night-red": { "role": "secondary", "displayName": "Night Red", "canonical": "hsl(0 80% 68%) /* .dark --destructive */" },
+      "night-green": { "role": "secondary", "displayName": "Night Green", "canonical": "hsl(152 55% 55%) /* .dark --success */" },
+      "night-amber": { "role": "secondary", "displayName": "Night Amber", "canonical": "hsl(38 90% 60%) /* .dark --warning */" },
+      "night-blue": { "role": "secondary", "displayName": "Night Blue", "canonical": "hsl(213 85% 70%) /* .dark --info */" }
+    },
+    "labTheming": {
+      "source": "src/lib/labTheme.ts labThemeVars(), applied by src/contexts/BrandContext.tsx as a <style id=\"lab-theme\"> over index.css",
+      "rule": "Keep the lab hue; walk lightness down until 4.5:1 on the light ground (#e4e9ef) and up until 5:1 on the dark ground (#181e26, saturation capped at 75%). Writes --primary, --primary-foreground, --ring, --accent, --accent-foreground, --sidebar-primary, --sidebar-ring, --chart-1 for each theme.",
+      "fallback": "#0b766c"
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page title, one per screen." },
+      "title": { "displayName": "Title", "purpose": "Card and dialog titles." },
+      "subtitle": { "displayName": "Subtitle", "purpose": "Test names inside the results panel." },
+      "result-value": { "displayName": "Result Value", "purpose": "Values inside result wells, right-aligned, tabular." },
+      "body": { "displayName": "Body", "purpose": "Table cells, labels, buttons, descriptions. 16px on phones inside inputs." },
+      "label": { "displayName": "Label", "purpose": "Field captions, units, reference ranges on phones, rail section headings." },
+      "mono": { "displayName": "Mono", "purpose": "Opt-in via .mono for codes only." }
+    },
+    "shadows": [
+      { "name": "neu-raised-sm", "value": "3px 3px 7px hsl(var(--neu-lo) / 0.85), -3px -3px 7px hsl(var(--neu-hi) / 0.9)", "purpose": "Resting lift: cards, rail, select triggers, primary buttons, active status segment, done row cards." },
+      { "name": "neu-raised", "value": "6px 6px 14px hsl(var(--neu-lo) / 0.9), -6px -6px 14px hsl(var(--neu-hi) / 0.9)", "purpose": "Strongest in-plane lift: a finished order's number chip." },
+      { "name": "neu-inset", "value": "inset 3px 3px 7px hsl(var(--neu-lo) / 0.8), inset -3px -3px 7px hsl(var(--neu-hi) / 0.9)", "purpose": "Pressed: fields, result wells, status strip track, active nav, pending chips and cards, any button while pressed." },
+      { "name": "shadow-elevated", "value": "10px 10px 24px hsl(var(--neu-lo) / 0.9), -8px -8px 20px hsl(var(--neu-hi) / 0.9)", "purpose": "Layers that leave the plane: dialogs, popovers, menus, phone action bar, menu drawer." },
+      { "name": "pending-band", "value": "background: hsl(var(--neu-lo) / 0.16) (dark 0.55); td: linear-gradient(to bottom, hsl(var(--neu-lo) / 0.5), transparent 9px)", "purpose": "Sunken table row for pending and to-approve orders." },
+      { "name": "bottom-bar", "value": "0 -4px 12px hsl(var(--neu-lo) / 0.35)", "purpose": "Upward shade of the fixed phone bottom nav." }
+    ],
+    "motion": [
+      { "name": "neu-rise", "value": "box-shadow, transform 220ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The one authored motion: depth changes as work changes state." },
+      { "name": "control-press", "value": "box-shadow, background-color, color 150ms", "purpose": "Button hover and press." },
+      { "name": "rail-collapse", "value": "width 300ms", "purpose": "Rail collapse between 240px and 68px." },
+      { "name": "page-entrance", "value": "none", "purpose": "fade-in and counter-up are disabled; pages render at once." },
+      { "name": "reduced-motion", "value": "animation/transition 0.01ms under prefers-reduced-motion", "purpose": "Global override." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "Page padding 24px; status strip in one row; result row three columns." },
+      { "name": "md", "value": "768px", "purpose": "Rail and top bar replace compact header and bottom bar; tables replace row cards; phone action bar hidden." },
+      { "name": "lg", "value": "1024px", "purpose": "List filters move into one row." },
+      { "name": "2xl-container", "value": "1400px" }
+    ],
+    "shell": {
+      "rail": "240px (68px collapsed), fixed, raised small, hairline right edge",
+      "topBar": "56px sticky, hairline bottom edge",
+      "bottomBar": "56px fixed below md, plus safe-area inset",
+      "pagePadding": "12px phone, 24px from sm; 80px bottom reserve on phones"
+    },
+    "outOfScope": [
+      "Per-lab PDF result report layouts (default, rivalta, palermo in src/lib/orderReportDispatcher.tsx) are outside this system and must never be unified.",
+      "Pending coverage: every screen other than Órdenes, Pacientes and Detalle de orden inherits tokens and primitives but was not individually redesigned."
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single inked action per view (Nueva orden, Aprobar y firmar). Raised; presses in.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Aprobar y firmar</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 8px 16px; border: none; border-radius: 12px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 600 14px/1 'Public Sans', system-ui, sans-serif; box-shadow: var(--neu-raised-sm); transition: box-shadow 150ms, background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: hsl(var(--primary) / 0.9); } .ds-btn-primary:active { box-shadow: var(--neu-inset); } .ds-btn-primary:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions. Flat at rest with a 3:1 slate edge; presses in.",
+      "html": "<button class=\"ds-btn-outline\">Guardar cambios</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 8px 16px; border: 1px solid hsl(var(--input)); border-radius: 12px; background: hsl(var(--background)); color: hsl(var(--foreground)); font: 600 14px/1 'Public Sans', system-ui, sans-serif; transition: box-shadow 150ms, color 150ms; cursor: pointer; } .ds-btn-outline:hover { color: hsl(var(--primary)); } .ds-btn-outline:active { box-shadow: var(--neu-inset); } .ds-btn-outline:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Icon and back actions; no fill or edge at rest.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Cambiar tema\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4\"/></svg></button>",
+      "css": ".ds-btn-ghost { display: inline-grid; place-items: center; width: 40px; height: 40px; border: none; border-radius: 12px; background: transparent; color: hsl(var(--foreground)); transition: box-shadow 150ms, background-color 150ms; cursor: pointer; } .ds-btn-ghost:hover { background: hsl(var(--secondary)); } .ds-btn-ghost:active { box-shadow: var(--neu-inset); } .ds-btn-ghost:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Inset well with a slate edge; lab-ink focus ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Buscar por nombre o cédula\" />",
+      "css": ".ds-input { height: 40px; width: 280px; padding: 8px 12px; border: 1px solid hsl(var(--input)); border-radius: 12px; background: hsl(var(--background)); color: hsl(var(--foreground)); font: 400 14px 'Public Sans', system-ui, sans-serif; box-shadow: var(--neu-inset); } .ds-input::placeholder { color: hsl(var(--muted-foreground)); } .ds-input:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Result Well",
+      "kind": "custom",
+      "refersTo": "result-well",
+      "description": "Analyte row: label and unit, a right-aligned tabular value well, reference range beside it; red when out of range.",
+      "html": "<div class=\"ds-result\"><label class=\"ds-result-label\">Leucocitos <span>(x10³/µL)</span></label><input class=\"ds-result-well ds-out\" value=\"12,4\" aria-invalid=\"true\" /><div class=\"ds-result-ref\">Ref. 4.5-11.0<b>Fuera de rango</b></div></div>",
+      "css": ".ds-result { display: grid; grid-template-columns: minmax(0,1fr) 10rem minmax(8rem,12rem); align-items: center; gap: 4px 16px; font-family: 'Public Sans', system-ui, sans-serif; color: hsl(var(--foreground)); } .ds-result-label { font-size: 14px; font-weight: 500; } .ds-result-label span { font-size: 12px; font-weight: 400; color: hsl(var(--muted-foreground)); } .ds-result-well { height: 44px; padding: 8px 12px; text-align: right; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; border: 1px solid hsl(var(--input)); border-radius: 12px; background: hsl(var(--background)); color: inherit; box-shadow: var(--neu-inset); } .ds-result-well:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; } .ds-result-well.ds-out { border-color: hsl(var(--destructive)); color: hsl(var(--destructive)); } .ds-result-ref { font-size: 14px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; } .ds-result-ref b { display: block; font-weight: 600; color: hsl(var(--destructive)); }"
+    },
+    {
+      "name": "Status Strip",
+      "kind": "custom",
+      "refersTo": "status-strip",
+      "description": "Inset segmented track of order states with counts; the selected segment rises.",
+      "html": "<div class=\"ds-strip\" role=\"group\"><button class=\"ds-seg ds-on\" aria-pressed=\"true\">Pendientes<span>4</span></button><button class=\"ds-seg\" aria-pressed=\"false\">Por aprobar<span>2</span></button><button class=\"ds-seg\" aria-pressed=\"false\">Completadas<span>18</span></button></div>",
+      "css": ".ds-strip { display: flex; gap: 4px; padding: 6px; border: 1px solid hsl(var(--input)); border-radius: 16px; background: hsl(var(--background)); box-shadow: var(--neu-inset); font-family: 'Public Sans', system-ui, sans-serif; } .ds-seg { flex: 1; display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: hsl(var(--muted-foreground)); font-size: 14px; cursor: pointer; transition: box-shadow 220ms cubic-bezier(0.16,1,0.3,1); } .ds-seg span { font-weight: 700; font-variant-numeric: tabular-nums; } .ds-seg:hover { color: hsl(var(--foreground)); } .ds-seg.ds-on { border-color: hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); font-weight: 600; box-shadow: var(--neu-raised-sm); } .ds-seg.ds-on span { color: hsl(var(--primary)); } .ds-seg:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Order Chip (depth as state)",
+      "kind": "chip",
+      "refersTo": "status-segment-active",
+      "description": "Order number: pressed when it waits, raised when finished.",
+      "html": "<span class=\"ds-chip ds-wait\">#0003</span> <span class=\"ds-chip ds-done\">#0002</span>",
+      "css": ".ds-chip { display: inline-flex; padding: 4px 8px; border-radius: 14px; font: 600 14px 'Public Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: hsl(var(--primary)); transition: box-shadow 220ms cubic-bezier(0.16,1,0.3,1); } .ds-wait { border: 1px solid hsl(var(--input)); background: hsl(var(--background)); box-shadow: var(--neu-inset); } .ds-done { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); box-shadow: var(--neu-raised); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Order state as pill: state text on a 10% tint with a 20% border.",
+      "html": "<span class=\"ds-badge ds-pend\">Pendiente</span> <span class=\"ds-badge ds-ok\">Completado</span>",
+      "css": ".ds-badge { display: inline-flex; padding: 2px 10px; border-radius: 9999px; border: 1px solid; font: 500 12px 'Public Sans', system-ui, sans-serif; } .ds-pend { color: hsl(var(--warning)); background: hsl(var(--warning) / 0.1); border-color: hsl(var(--warning) / 0.2); } .ds-ok { color: hsl(var(--success)); background: hsl(var(--success) / 0.1); border-color: hsl(var(--success) / 0.2); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Container molded from the ground: same color, raised small, hairline edge.",
+      "html": "<div class=\"ds-card\"><h3>Paciente</h3><p>José Rodríguez · V-10000002</p></div>",
+      "css": ".ds-card { padding: 24px; border: 1px solid hsl(var(--border)); border-radius: 16px; background: hsl(var(--card)); color: hsl(var(--card-foreground)); box-shadow: var(--neu-raised-sm); font-family: 'Public Sans', system-ui, sans-serif; } .ds-card h3 { margin: 0 0 6px; font-size: 18px; font-weight: 600; letter-spacing: -0.025em; } .ds-card p { margin: 0; font-size: 14px; color: hsl(var(--muted-foreground)); }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Molded rail items; the active place is pressed in with lab ink.",
+      "html": "<nav class=\"ds-nav\"><p>Laboratorio</p><a href=\"#\">Pacientes</a><a href=\"#\" class=\"ds-active\" aria-current=\"page\">Órdenes</a><a href=\"#\">Exámenes</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 4px; width: 216px; padding: 16px 12px; background: hsl(var(--sidebar-background)); font-family: 'Public Sans', system-ui, sans-serif; } .ds-nav p { margin: 0; padding: 0 12px 4px; font-size: 12px; font-weight: 600; color: hsl(var(--sidebar-muted)); } .ds-nav a { padding: 10px 12px; border-radius: 12px; font-size: 14px; color: hsl(var(--sidebar-foreground)); text-decoration: none; } .ds-nav a:hover { background: hsl(var(--sidebar-accent)); } .ds-nav a.ds-active { font-weight: 600; color: hsl(var(--sidebar-primary)); background: hsl(var(--background)); box-shadow: var(--neu-inset); } .ds-nav a:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Molded Bench",
+    "overview": "The interface is one continuous material per theme, light porcelain or dark slate, and every surface is either extruded from that ground or pressed into it. Depth is not decoration here; it is the status channel. Work that still needs the bench (pending, awaiting approval) sits pressed in; finished, validated and signed work stands raised. A bioanalyst scanning a list reads state by relief before reading a single badge, and the one primary action (\"Aprobar y firmar\", \"Nueva orden\") is the only filled, inked control in view.\n\nColor is almost absent. The lab's own brand color is the only ink, recalculated per lab so it stays WCAG AA as text on both grounds, and it marks only the primary action, the active place, the focus ring and the selection. Semantic red, green, amber and blue appear only where they mean a state (out of range, completed, pending, affiliate). Density is operational, not airy: compact 56px top bar, a 240px molded rail, tables and result rows with tabular figures throughout.\n\nThe system was born to replace the flat white card grid with KPI tiles on top; it carries a light and a dark theme of equal standing, switched by the user (light, dark, or follow the device).",
+    "keyCharacteristics": [
+      "One molded ground per theme; surfaces raised or inset, never floating on a different color.",
+      "State by depth: pressed means waiting, raised means done.",
+      "The lab's color is the only ink, auto-fitted to AA in light and dark.",
+      "Every field and outline control keeps a 1px slate edge of at least 3:1; shadows never carry meaning alone.",
+      "Public Sans with tabular figures for every number, result and amount.",
+      "Pages appear at once; the only authored motion is a change of depth."
+    ],
+    "rules": [
+      { "name": "The Only Ink Rule", "body": "The lab's color is the only hue that is not a state. If something is colored and it is not the primary action, the active place, the focus or the selection, it must be a state.", "section": "colors" },
+      { "name": "The Fitted Ink Rule", "body": "Never apply a lab's raw brand hex to the interface. Pass it through `labThemeVars`, which keeps the hue and moves lightness until it is text-grade on each ground.", "section": "colors" },
+      { "name": "The State Means State Rule", "body": "Red, green, amber and blue are reserved for result and order states. They do not decorate icons, headers or charts of non-state data.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "Every number a lab reads (results, references, amounts in USD and Bs, order numbers, dates, counts) is set in tabular figures.", "section": "typography" },
+      { "name": "The Scale Not Color Rule", "body": "Hierarchy comes from size and weight. Emphasis is never gradient text; `.text-gradient-primary` resolves to flat lab ink.", "section": "typography" },
+      { "name": "The One Focus Rule (phone)", "body": "On phones a screen has one job: the order detail's save and approve move out of the header into a fixed action bar above the bottom nav, and the header copies are hidden so the action never appears twice.", "section": "layout" },
+      { "name": "The Depth Is State Rule", "body": "Pressed means it waits for someone (pending, to approve, the place you are, a value to fill). Raised means it is done or actionable. Never raise pending work or press finished work.", "section": "elevation" },
+      { "name": "The Earned Lift Rule", "body": "Raised depth is reserved for the primary action, finished work and containers. Outline, secondary and ghost buttons stay flat at rest and only press in when pushed.", "section": "elevation" },
+      { "name": "The Edge Backs the Shadow Rule", "body": "Every field, select and outline button keeps a 1px slate edge (at least 3:1). Shadows are allowed to fail (dark mode, high contrast, print) without the control disappearing.", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** read state by depth: pending and to-approve work pressed inset, finished and signed work raised.",
+      "**Do** derive every lab color through `labThemeVars` so it is 4.5:1 on the light ground and 5:1 on the dark ground before it touches the interface.",
+      "**Do** keep a 1px slate edge (at least 3:1) on every field, select and outline button, in both themes.",
+      "**Do** use exactly one filled primary button per view; every other action is outline, secondary or ghost.",
+      "**Do** set every result, amount, count and date in tabular figures, results at 18px semibold right-aligned with their reference range beside them.",
+      "**Do** design every new screen in both themes; molding uses the theme's own shade and highlight, never fixed black or white.",
+      "**Do** keep page entrances instant; animate only depth changes (220ms, cubic-bezier(0.16, 1, 0.3, 1)) and honor reduced motion.",
+      "**Do** give phones one focus per screen, moving the screen's main actions into a fixed bar above the bottom nav and hiding their header copies."
+    ],
+    "donts": [
+      "**Don't** build the flat white card grid with KPI tiles on top; cards share the ground color and lists open on the status strip.",
+      "**Don't** apply a lab's raw brand hex, a second brand color, or any decorative hue to the interface.",
+      "**Don't** use red, green, amber or blue for anything other than the state it names.",
+      "**Don't** raise outline, secondary or ghost buttons at rest; lift is earned.",
+      "**Don't** let a shadow be the only boundary of a control.",
+      "**Don't** use gradient text, white cards on a grey page, or entrance animations on page load.",
+      "**Don't** change, restyle or unify the per-lab PDF result report layouts (default, rivalta, palermo); they are outside this system and differ on purpose."
+    ]
+  }
+}

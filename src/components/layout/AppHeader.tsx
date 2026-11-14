@@ -1,46 +1,43 @@
 import { useBrand } from "@/contexts/BrandContext";
+import { ThemeToggle } from "./ThemeToggle";
 
+/** Lab initials for the logo tile when the lab has no logo. */
+export function labInitials(name: string) {
+  return name.split(/\s+/).filter((word) => /^[\p{L}\p{N}]/u.test(word) && !/^(de|del|la|el|los|las|y)$/i.test(word)).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "LC";
+}
+
+/**
+ * Compact bar. Phone: the lab's logo and name (there is no rail). Desktop: the rail already
+ * carries the lab, so the bar shows today's date. Theme switch on the right.
+ */
 export function AppHeader() {
-  const { brand, isLoading: isBrandLoading } = useBrand();
-
+  const { brand, isLoading } = useBrand();
   const labName = brand.name || "MedLabCore";
-  const labInfo = brand.email || brand.phone || brand.address || "Laboratorio";
-
-  if (isBrandLoading) {
-    return (
-      <header className="sticky top-0 z-30 ">
-        <div className="flex items-center justify-center px-4 sm:px-6 h-28 text-white bg-gray-200 animate-pulse">
-          <div className="h-10 w-32 bg-gray-300 rounded"></div>
-        </div>
-      </header>
-    );
-  }
+  const longDate = new Date().toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long" });
+  const today = longDate.charAt(0).toUpperCase() + longDate.slice(1);
 
   return (
-    <header className="sticky top-0 z-30 ">
-      <div
-        className="flex items-center justify-center px-4 sm:px-6 h-28 text-white"
-        style={{
-          background: `linear-gradient(90deg, ${brand.primaryColor}, ${brand.secondaryColor})`,
-          borderRadius: "0 0 50px 50px",
-        }}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-24 w-auto rounded-md overflow-hidden bg-white flex items-center justify-center">
+    <header className="sticky top-0 z-30 border-b bg-background">
+      <div className="flex h-14 items-center gap-3 px-3 sm:px-6">
+        {isLoading ? (
+          <div className="h-9 w-40 rounded-lg neu-inset" aria-hidden />
+        ) : (
+          <div className="flex min-w-0 items-center gap-3 md:hidden">
             {brand.logoUrl ? (
-              <img src={brand.logoUrl} alt={`${labName} logo`} className="h-full w-full object-contain" />
+              <img src={brand.logoUrl} alt={`Logo de ${labName}`} className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-0.5 neu-raised" />
             ) : (
-              <span className="text-xs uppercase tracking-wider">{labName.slice(0, 2)}</span>
+              <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+                {labInitials(labName)}
+              </span>
             )}
+            <p className="min-w-0 truncate text-sm font-semibold">{labName}</p>
           </div>
-          <div className="min-w-0 hidden sm:block">
-            <p className="truncate text-sm font-semibold">{labName}</p>
-            <p className="truncate text-xs text-white/90">{labInfo}</p>
-          </div>
+        )}
+        <p className="hidden text-sm text-muted-foreground md:block">{today}</p>
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
         </div>
-
       </div>
-
     </header>
   );
 }

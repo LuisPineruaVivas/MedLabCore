@@ -25,7 +25,7 @@ export function InventoryDashboard({ summary, isLoading }: { summary: InventoryS
             <ul className="divide-y text-sm">
               {summary.low_stock.map((item) => (
                 <li key={item.id} className="flex items-center justify-between gap-2 py-2">
-                  <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />{item.name}</span>
+                  <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-warning" aria-hidden />{item.name}</span>
                   <span className="tabular-nums">{formatQuantity(item.current_stock, item.unit_of_measure)} / mín. {formatQuantity(item.min_stock)}</span>
                 </li>
               ))}

@@ -232,7 +232,7 @@ export default function TemplateBuilderPage() {
               type="button"
               variant="ghost"
               size="sm"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hidden sm:inline-flex"
+              className="text-info hover:text-info hover:bg-info/10 hidden sm:inline-flex"
               onClick={() => setShowPreview(true)}
             >
               <Eye className="w-4 h-4 mr-2" />
@@ -242,7 +242,7 @@ export default function TemplateBuilderPage() {
               type="button"
               variant="ghost"
               size="icon"
-              className="text-blue-600 sm:hidden"
+              className="text-info sm:hidden"
               onClick={() => setShowPreview(true)}
             >
               {previewLoading ? (
@@ -322,13 +322,13 @@ export default function TemplateBuilderPage() {
         >
           {/* ── Validation errors ── */}
           {Object.keys(errors).length > 0 && (
-            <div className="p-3 rounded-md bg-red-50 border border-red-200">
-              <p className="text-sm font-bold text-red-600 mb-2">
+            <div className="p-3 rounded-md bg-destructive/10 border border-destructive/40">
+              <p className="text-sm font-bold text-destructive mb-2">
                 El formulario tiene campos inválidos:
               </p>
               <ul className="list-disc pl-5 space-y-1">
                 {Object.entries(errors).map(([key, value]) => (
-                  <li key={key} className="text-xs text-red-500 font-medium">
+                  <li key={key} className="text-xs text-destructive font-medium">
                     <span className="uppercase">{key}</span>:{" "}
                     {typeof value.message === "string"
                       ? value.message

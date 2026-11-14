@@ -114,7 +114,7 @@ export function useOrderResultsActions({
     statusAction === "mark_ready"
       ? { label: "Marcar por aprobar", onClick: handleMarkReadyForApproval }
       : statusAction === "approve_and_sign"
-        ? { label: "Aprobar y Firmar", onClick: handleApproveAndSign }
+        ? { label: "Aprobar y firmar", onClick: handleApproveAndSign }
         : null;
 
   async function handleFileUploadForOCR(

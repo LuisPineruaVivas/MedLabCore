@@ -73,7 +73,7 @@ export function CreateOrderExamPicker({
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-medium">{item.name}</p>
                       {item.type === "profile" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
                           Perfil · {item.templateCount} examenes
                         </span>
                       )}
@@ -84,7 +84,7 @@ export function CreateOrderExamPicker({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold mono">${item.price.toFixed(2)}</span>
+                  <span className="text-sm font-semibold tabular-nums">${item.price.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   {!inCart && <Plus className="w-4 h-4 text-primary" />}
                 </div>
               </button>

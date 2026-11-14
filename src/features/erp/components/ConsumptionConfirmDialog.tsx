@@ -156,7 +156,7 @@ export function ConsumptionConfirmDialog({ open, onOpenChange, order, signature,
                       </div>
                       {isChanged(line) && (
                         <Input
-                          className={cn("h-8 text-xs", !line.reason.trim() && "border-amber-400")}
+                          className={cn("h-8 text-xs", !line.reason.trim() && "border-warning")}
                           placeholder={line.recipe_quantity !== null ? `Receta: ${line.recipe_quantity}. Motivo del ajuste (obligatorio)` : "Motivo (obligatorio)"}
                           value={line.reason}
                           onChange={(event) => update(line.key, { reason: event.target.value })}

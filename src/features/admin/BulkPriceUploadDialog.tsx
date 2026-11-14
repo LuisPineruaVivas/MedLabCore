@@ -67,11 +67,11 @@ function useGlobalTemplates() {
 // ── Badge helpers ─────────────────────────────────────────────────
 function ConfidenceBadge({ label, score }: { label: MatchConfidence; score: number }) {
   if (label === "high")
-    return <Badge className="bg-green-100 text-green-800 border-green-300">✓ {score}%</Badge>;
+    return <Badge className="bg-success/10 text-success border-success/40">✓ {score}%</Badge>;
   if (label === "medium")
-    return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">~ {score}%</Badge>;
+    return <Badge className="bg-warning/10 text-warning border-warning/40">~ {score}%</Badge>;
   if (label === "low")
-    return <Badge className="bg-orange-100 text-orange-800 border-orange-300">? {score}%</Badge>;
+    return <Badge className="bg-warning/10 text-warning border-warning/40">? {score}%</Badge>;
   return <Badge variant="destructive">Sin coincidencia</Badge>;
 }
 
@@ -110,7 +110,7 @@ function StepDot({ active, done, label }: { active: boolean; done: boolean; labe
       >
         {done ? "✓" : label[0]}
       </div>
-      <span className={`text-[10px] ${active ? "text-primary font-medium" : "text-muted-foreground"}`}>
+      <span className={`text-xs ${active ? "text-primary font-medium" : "text-muted-foreground"}`}>
         {label}
       </span>
     </div>
@@ -221,7 +221,7 @@ export function BulkPriceUploadDialog({
 
           {/* Error banner */}
           {state.error && (
-            <div className="mx-1 mb-3 p-3 rounded-md bg-red-50 border border-red-200 flex items-start gap-2 text-sm text-red-700">
+            <div className="mx-1 mb-3 p-3 rounded-md bg-destructive/10 border border-destructive/40 flex items-start gap-2 text-sm text-destructive">
               <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {state.error}
             </div>
@@ -295,7 +295,7 @@ export function BulkPriceUploadDialog({
                 <span className="text-muted-foreground">
                   {state.matchedItems.length} exámenes extraídos:
                 </span>
-                <Badge className="bg-green-100 text-green-800 border-green-300">
+                <Badge className="bg-success/10 text-success border-success/40">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   {matchedCount} con coincidencia
                 </Badge>
@@ -362,7 +362,7 @@ export function BulkPriceUploadDialog({
           {/* ── Step: done ── */}
           {state.step === "done" && state.result && (
             <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-              <CheckCircle2 className="w-16 h-16 text-green-500" />
+              <CheckCircle2 className="w-16 h-16 text-success" />
               <div>
                 <p className="text-lg font-semibold">¡Precios actualizados!</p>
                 <p className="text-muted-foreground mt-1">
@@ -423,12 +423,12 @@ function ReviewRow({
 }) {
   const rowBg =
     item.global_template_id === null
-      ? "bg-red-50/50"
+      ? "bg-destructive/10"
       : item.confidence_label === "high"
       ? ""
       : item.confidence_label === "medium"
-      ? "bg-yellow-50/30"
-      : "bg-orange-50/30";
+      ? "bg-warning/10"
+      : "bg-warning/10";
 
   return (
     <TableRow className={rowBg}>

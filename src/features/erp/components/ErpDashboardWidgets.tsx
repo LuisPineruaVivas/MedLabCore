@@ -17,7 +17,7 @@ export function ErpDashboardWidgets({ orgId }: { orgId: string | null }) {
     <div className="space-y-3">
       {canViewFinancialReports && <FinancePanel orgId={orgId} />}
       {canManageInventory && lowStock.length > 0 && (
-        <Link to="/erp/inventory" className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+        <Link to="/erp/inventory" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning hover:bg-warning/10">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             {lowStock.length} insumo(s) bajo el stock mínimo:{" "}

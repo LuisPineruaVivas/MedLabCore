@@ -115,10 +115,10 @@ export default function ReportViewerPage() {
 
   if (error || !targetOrder || !patientInfo || !labData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-        <div className="max-w-md w-full bg-white p-6 rounded-xl shadow-lg text-center space-y-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-secondary p-4">
+        <div className="max-w-md w-full bg-card p-6 rounded-2xl shadow-[var(--shadow-elevated)] text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <h2 className="text-xl font-bold text-slate-800">No se pudo cargar el informe</h2>
+          <h2 className="text-xl font-bold text-foreground">No se pudo cargar el informe</h2>
           <p className="text-sm text-muted-foreground">{error || "No se encontraron datos de la orden solicitada."}</p>
           <Button onClick={() => window.location.href = "/portal-paciente"}>
             Ir al Portal del Paciente

@@ -31,18 +31,18 @@ export const OrderSidebar = memo(function OrderSidebar({
     <div className="w-[100%] shrink-0 space-y-6  lg:w-[30%]">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Datos del Paciente</CardTitle>
+          <CardTitle className="text-base">Paciente</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <InfoRow icon={User} label="Paciente" value={patientInfo.name} />
+            <InfoRow icon={User} label="Paciente" value={toTitleCase(patientInfo.name)} />
             <InfoRow icon={IdCard} label="Cédula" value={patientInfo.id} />
             <InfoRow
               icon={Calendar}
               label="Edad / Género"
-              value={`${patientInfo.age} ${typeof patientInfo.age === "number" ? "años" : ""} / ${patientInfo.gender}`}
+              value={`${String(patientInfo.age).replace(/Años?/, (word) => word.toLowerCase())}${typeof patientInfo.age === "number" ? " años" : ""} · ${toTitleCase(patientInfo.gender)}`}
             />
-            <InfoRow icon={Phone} label="Telefono" value={order.patients.phone || "No registrado"} />
+            <InfoRow icon={Phone} label="Teléfono" value={order.patients.phone || "No registrado"} />
             <InfoRow icon={Mail} label="Correo" value={order.patients.email || "No registrado"} />
           </div>
         </CardContent>
@@ -50,35 +50,35 @@ export const OrderSidebar = memo(function OrderSidebar({
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Datos de la Orden</CardTitle>
+          <CardTitle className="text-base">Orden</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center justify-between border-t border-border pt-3">
+            <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
               <InfoRow
               icon={DollarSign}
               label="Total USD"
-              value={`$${Number(order.total_amount).toFixed(2)}`}
-              iconClassName="bg-success/10 text-success"
-              valueClassName="font-semibold mono"
+              value={`USD ${Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              iconClassName="text-success"
+              valueClassName="font-semibold tabular-nums"
             />
             {order.total_bs != null && (
               <InfoRow
                 icon={DollarSign}
-                label="Total BS"
-                value={`Bs. ${Number(order.total_bs).toFixed(2)}`}
-                iconClassName="bg-muted text-muted-foreground"
-                valueClassName="font-medium mono"
+                label="Total Bs"
+                value={`Bs ${Number(order.total_bs).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                iconClassName="text-muted-foreground"
+                valueClassName="font-medium tabular-nums"
               />
             )}
             </div>
             {order.access_pin && showSharePortalAction && (
-              <div className="flex items-center justify-between border-t border-border pt-2">
-                <Button variant="ghost" size="sm" onClick={onSharePortalLink}>
-                  Compartir <LinkIcon className="h-4 w-4" />
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                <Button variant="outline" size="sm" onClick={onSharePortalLink}>
+                  <LinkIcon /> Compartir enlace
                 </Button>
-                <Button variant="ghost" size="sm" onClick={onSharePdfDirectLink}>
-                  Compartir pdf<LinkIcon className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={onSharePdfDirectLink}>
+                  <LinkIcon /> Compartir PDF
                 </Button>
               </div>
             )}
@@ -115,6 +115,9 @@ export const OrderSidebar = memo(function OrderSidebar({
 });
 
 
+/** Screen casing only; PDF documents format names on their own. */
+const toTitleCase = (value: string) => value.toLocaleLowerCase("es").replace(/(^|\s)\p{L}/gu, (match) => match.toLocaleUpperCase("es"));
+
 function InfoRow({
   icon: Icon,
   label,
@@ -130,7 +133,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 ${iconClassName ?? "text-primary"}`}>
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg neu-inset ${iconClassName ?? "text-primary"}`}>
         <Icon className="h-4 w-4" />
       </div>
       <div>

@@ -22,6 +22,9 @@ import { canEditOrderResults } from "@/features/orders/orderWorkflow";
 import { useDepartmentOrder } from "@/features/tests/useTestTemplates";
 import { useTestMethods } from "@/features/tests/useTestMethods";
 
+/** "MARÍA PÉREZ" → "María Pérez" for screen text; documents keep their own casing. */
+const toTitleCase = (value: string) => value.toLocaleLowerCase("es").replace(/(^|\s)\p{L}/gu, (match) => match.toLocaleUpperCase("es"));
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -68,46 +71,48 @@ export default function OrderDetailPage() {
   const { primaryStatusAction } = actions;
 
   return (
-    <div className="relative space-y-6 animate-fade-in pb-20">
+    <div className="relative space-y-6 pb-36 md:pb-20">
       <PageHeader
-        title={`Orden: ${order.order_seq.toString().padStart(4, "0")}`}
-        description={`Fecha: ${patientInfo.date}`}
+        title={`Orden #${order.order_seq.toString().padStart(4, "0")}`}
+        description={`${toTitleCase(patientInfo.name)} · ${patientInfo.id} · creada el ${patientInfo.date}`}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft />
               Volver
             </Button>
-            {primaryStatusAction && (
-              <Button variant="outline" size="sm" onClick={primaryStatusAction.onClick} disabled={actions.statusUpdating}>
-                <ClipboardCheck className="mr-2 h-4 w-4" />
-                {primaryStatusAction.label}
-              </Button>
-            )}
             {canViewOrderDocuments && (
               <Button variant="outline" size="sm" onClick={report.viewPdf} disabled={report.loading}>
-                <FileText className="mr-2 h-4 w-4" />
-                {report.loading ? "Generando..." : "Ver Informe"}
+                <FileText />
+                {report.loading ? "Generando…" : "Ver informe"}
               </Button>
             )}
             {canViewOrderDocuments && (
               <Button variant="outline" size="sm" onClick={receipt.view} disabled={receipt.loading}>
-                <Receipt className="mr-2 h-4 w-4" />
-                {receipt.loading ? "Generando..." : "Ver Nota"}
+                <Receipt />
+                {receipt.loading ? "Generando…" : "Ver nota"}
               </Button>
             )}
 
             {canEnterResults && order.status !== "completada" && (
-              <Button size="sm" onClick={actions.handleSaveAll} disabled={actions.isSavingAll || editor.modifiedIds.size === 0}>
-                <Save className="mr-2 h-4 w-4" />
-                {actions.isSavingAll ? "Guardando..." : "Guardar Todos"}
+              <Button variant="outline" size="sm" className="max-md:hidden" onClick={actions.handleSaveAll} disabled={actions.isSavingAll || editor.modifiedIds.size === 0}>
+                <Save />
+                {actions.isSavingAll ? "Guardando…" : "Guardar cambios"}
+              </Button>
+            )}
+            {/* The one filled action: what moves the order forward (e.g. Aprobar y firmar). */}
+            {primaryStatusAction && (
+              <Button size="sm" className="max-md:hidden" onClick={primaryStatusAction.onClick} disabled={actions.statusUpdating}>
+                <ClipboardCheck />
+                {primaryStatusAction.label}
               </Button>
             )}
           </div>
         }
       />
 
-      <div className="flex flex-col gap-6 lg:flex-row">
+      {/* Phone: results first (one focus per screen); patient and order details follow. */}
+      <div className="flex flex-col-reverse gap-6 lg:flex-row">
         <OrderSidebar
           order={order}
           patientInfo={patientInfo}
@@ -160,7 +165,12 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <OrderMobileSaveBar modifiedCount={editor.modifiedIds.size} isSavingAll={actions.isSavingAll} onSaveAll={actions.handleSaveAll} />
+      <OrderMobileSaveBar
+        modifiedCount={editor.modifiedIds.size}
+        isSavingAll={actions.isSavingAll}
+        onSaveAll={actions.handleSaveAll}
+        primaryAction={primaryStatusAction ? { ...primaryStatusAction, disabled: actions.statusUpdating } : null}
+      />
 
       <ReportItemSelectionDialog report={report} items={orderItems} />
       <CompanionCertificateFormDialog certificates={certificates} />

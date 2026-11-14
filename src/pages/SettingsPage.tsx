@@ -37,7 +37,7 @@ export default function SettingsPage() {
           {
             id: "profile" as const,
             icon: BadgeCheck,
-            title: "Configuracion de Perfil",
+            title: "Configuración de perfil",
             desc: "Sube tu firma y sello para aprobar y firmar resultados.",
           },
         ]
@@ -59,7 +59,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Configuracion"
+        title="Configuración"
         description={role === "bioanalyst" ? "Administra tu firma y sello profesional" : "Configura tu laboratorio"}
       />
 
@@ -79,7 +79,7 @@ export default function SettingsPage() {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-destructive px-4 py-2 text-destructive transition-colors hover:bg-destructive/10 md:w-auto"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="text-sm font-medium">Cerrar sesion</span>
+                <span className="text-sm font-medium">Cerrar sesión</span>
               </button>
             </div>
         </div>
@@ -131,7 +131,7 @@ export default function SettingsPage() {
       <Dialog open={activeDialog === "profile"} onOpenChange={(open) => !open && setActiveDialog(null)}>
         <DialogContent className="max-h-[85vh] w-[95vw] overflow-y-auto sm:max-w-[720px]">
           <DialogHeader>
-            <DialogTitle>Configuracion de Perfil</DialogTitle>
+            <DialogTitle>Configuración de perfil</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Configura la firma y el sello que se insertaran al completar una orden.
             </DialogDescription>

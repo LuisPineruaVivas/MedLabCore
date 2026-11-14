@@ -141,7 +141,7 @@ export default function TestsPage() {
   return (
     <div className="space-y-4 animate-fade-in sm:space-y-6">
       <PageHeader
-        title="Examenes de laboratorio"
+        title="Exámenes"
         description="Define y personaliza los examenes disponibles en tu laboratorio"
         actions={canManageTests && (
           <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export default function TestsPage() {
             ) : activeTab === "exams" ? (
               <Button size="sm" onClick={() => navigate("/tests/templates/new")}>
                 <Plus className="mr-1 h-4 w-4 sm:mr-2" />
-                Nuevo Examen
+                Nuevo examen
               </Button>
             ) : null}
           </div>
@@ -161,17 +161,17 @@ export default function TestsPage() {
       />
 
       <div className="grid grid-cols-2 gap-6 pt-4 md:grid-cols-3">
-        <StatCard title="Total Examenes" value={statsLoading ? "..." : (stats?.total ?? 0).toLocaleString()} icon={FlaskConical} className="border-border bg-white shadow-sm transition-shadow hover:shadow-md" />
-        <StatCard title="Examenes Activos" value={statsLoading ? "..." : String(stats?.active ?? 0)} icon={ToggleRight} className="hidden border-border bg-white shadow-sm transition-shadow hover:shadow-md md:block" />
-        <StatCard title="Perfiles" value={statsLoading ? "..." : String(stats?.profiles ?? 0)} icon={Package} className="border-border bg-white shadow-sm transition-shadow hover:shadow-md" />
+        <StatCard title="Exámenes" value={statsLoading ? "..." : (stats?.total ?? 0).toLocaleString()} icon={FlaskConical} />
+        <StatCard title="Activos" value={statsLoading ? "..." : String(stats?.active ?? 0)} icon={ToggleRight} className="hidden md:block" />
+        <StatCard title="Perfiles" value={statsLoading ? "..." : String(stats?.profiles ?? 0)} icon={Package} />
       </div>
 
       <div className="w-fit items-center gap-1 rounded-lg bg-muted/50 p-1 md:inline-flex">
-        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Examenes</button>
+        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "exams" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("exams")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Exámenes</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "profiles" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("profiles")}><Package className="mr-1.5 inline-block h-4 w-4" />Perfiles</button>
         <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "methods" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("methods")}><FlaskConical className="mr-1.5 inline-block h-4 w-4" />Métodos</button>
-        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "order" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("order")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Impresion</button>
-        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "departments" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("departments")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de Departamentos</button>
+        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "order" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("order")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de impresión</button>
+        <button className={cn("rounded-md px-4 py-2 text-sm font-medium transition-all", activeTab === "departments" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} onClick={() => setActiveTab("departments")}><ListOrdered className="mr-1.5 inline-block h-4 w-4" />Orden de departamentos</button>
       </div>
 
       {activeTab === "exams" ? (
@@ -188,7 +188,7 @@ export default function TestsPage() {
 
             <Table className="hidden w-full border-collapse text-left md:table">
               <TableHeader>
-                <TableRow className="border-b border-border bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <TableRow className="border-b border-border bg-muted/5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <TableHead>Examen</TableHead><TableHead>Departamento</TableHead><TableHead>Precio</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -200,15 +200,15 @@ export default function TestsPage() {
                     <Fragment key={tpl.id}>
                       <TableRow className="cursor-pointer">
                         <TableCell><div className="flex items-center gap-2"><FlaskConical className="h-4 w-4 text-primary" /><span className="text-sm font-medium">{tpl.name}</span></div></TableCell>
-                        <TableCell><span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>{tpl.category}</span></TableCell>
-                        <TableCell className="text-right"><div className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(tpl.base_price).toFixed(2)}</span></div></TableCell>
+                        <TableCell><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>{tpl.category}</span></TableCell>
+                        <TableCell className="text-right"><div className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(tpl.base_price).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div></TableCell>
                         <TableCell>
                           <button className="inline-flex items-center" onClick={() => (isSuperAdmin || tpl.org_id === orgId) && toggleMutation.mutate({ id: tpl.id, is_active: !tpl.is_active })} disabled={!isSuperAdmin && tpl.org_id !== orgId}>
                             {tpl.is_active ? <ToggleRight className="h-5 w-5 text-success" /> : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}
                           </button>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}><Eye className="h-3 w-3" />Visualizar</Button>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-info hover:bg-info/10 hover:text-info" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}><Eye className="h-3 w-3" />Visualizar</Button>
                           {canEdit && <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => handleEdit(tpl)}>{isGlobal && !isSuperAdmin ? <Copy className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}Editar</Button>}
                           {canViewRecipes && <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setRecipeTpl(tpl)}><Boxes className="h-3 w-3" />Insumos</Button>}
                         </TableCell>
@@ -231,9 +231,9 @@ export default function TestsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2"><FlaskConical className="h-4 w-4 flex-shrink-0 text-primary" /><p className="truncate text-sm font-semibold">{tpl.name}</p></div>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>{tpl.category}</span></div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2"><span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${categoryColors[tpl.category] ?? "bg-muted text-muted-foreground"}`}>{tpl.category}</span></div>
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-1"><DollarSign className="h-3 w-3 text-success" /><span className="mono text-sm font-bold">{Number(tpl.base_price).toFixed(2)}</span></div>
+                      <div className="flex flex-shrink-0 items-center gap-1"><DollarSign className="h-3 w-3 text-success" /><span className="mono text-sm font-bold">{Number(tpl.base_price).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                     </div>
                     <div className="mt-3 flex items-center gap-2">
                       <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={() => handleViewTemplatePreview(tpl)} disabled={previewLoading}><Eye className="mr-1 h-3 w-3" />Visualizar</Button>
@@ -295,7 +295,7 @@ export default function TestsPage() {
                         <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><Package className="h-4 w-4 flex-shrink-0 text-primary" /><div className="min-w-0"><span className="block truncate text-sm font-medium">{profile.name}</span>{profile.description && <p className="mt-0.5 truncate text-xs text-muted-foreground">{profile.description}</p>}</div></div></div>
                         <button className="inline-flex flex-shrink-0 items-center" onClick={(event) => { event.stopPropagation(); profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active }); }}>{profile.is_active ? <ToggleRight className="h-5 w-5 text-success" /> : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}</button>
                       </div>
-                      <div className="mt-3 flex items-center justify-between gap-4"><Badge variant="secondary" className="text-xs">{profile.profile_templates_junction.length} examenes</Badge><div className="flex flex-shrink-0 items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(profile.total_price).toFixed(2)}</span></div></div>
+                      <div className="mt-3 flex items-center justify-between gap-4"><Badge variant="secondary" className="text-xs">{profile.profile_templates_junction.length} examenes</Badge><div className="flex flex-shrink-0 items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(profile.total_price).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div></div>
                       <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                         <Button variant="ghost" size="sm" className="h-7 flex-1 gap-1 text-xs" onClick={() => handleEditProfile(profile)}><Pencil className="h-3 w-3" />Editar</Button>
                         <Button variant="ghost" size="sm" className="h-7 flex-1 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { if (confirm("¿Eliminar este perfil?")) profileDeleteMutation.mutate(profile.id); }}><Trash2 className="h-3 w-3" />Eliminar</Button>
@@ -307,13 +307,13 @@ export default function TestsPage() {
                 <div className="hidden overflow-x-auto lg:block">
                   <div className="min-w-[640px]">
                     <Table className="w-full border-collapse text-left">
-                      <TableHeader><TableRow className="border-b border-border bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground"><TableHead className="px-6 py-4 font-semibold">Perfil</TableHead><TableHead className="px-6 py-4 font-semibold">Examenes</TableHead><TableHead className="px-6 py-4 font-semibold">Precio</TableHead><TableHead className="px-6 py-4 font-semibold">Estado</TableHead><TableHead className="px-6 py-4 text-right font-semibold">Acciones</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow className="border-b border-border bg-muted/5 text-xs font-bold uppercase tracking-wider text-muted-foreground"><TableHead className="px-6 py-4 font-semibold">Perfil</TableHead><TableHead className="px-6 py-4 font-semibold">Examenes</TableHead><TableHead className="px-6 py-4 font-semibold">Precio</TableHead><TableHead className="px-6 py-4 font-semibold">Estado</TableHead><TableHead className="px-6 py-4 text-right font-semibold">Acciones</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {profiles.map((profile) => (
                           <TableRow key={profile.id} className="transition-colors hover:bg-muted/20">
                             <TableCell className="px-6 py-4"><div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><div><span className="text-sm font-medium">{profile.name}</span>{profile.description && <p className="mt-0.5 text-xs text-muted-foreground">{profile.description}</p>}</div></div></TableCell>
                             <TableCell className="px-6 py-4"><Badge variant="secondary" className="text-xs">{profile.profile_templates_junction.length} examenes</Badge></TableCell>
-                            <TableCell className="px-6 py-4"><div className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(profile.total_price).toFixed(2)}</span></div></TableCell>
+                            <TableCell className="px-6 py-4"><div className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-success" /><span className="mono text-sm font-semibold">{Number(profile.total_price).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div></TableCell>
                             <TableCell className="px-6 py-4"><button className="inline-flex items-center" onClick={() => profileToggleMutation.mutate({ id: profile.id, is_active: !profile.is_active })}>{profile.is_active ? <ToggleRight className="h-5 w-5 text-success" /> : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}</button></TableCell>
                             <TableCell className="px-6 py-4 text-right"><div className="flex items-center justify-end gap-1"><Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => handleEditProfile(profile)}><Pencil className="h-3 w-3" />Editar</Button><Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { if (confirm("¿Eliminar este perfil?")) profileDeleteMutation.mutate(profile.id); }}><Trash2 className="h-3 w-3" />Eliminar</Button></div></TableCell>
                           </TableRow>

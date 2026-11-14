@@ -1,4 +1,5 @@
 import { Package, X } from "lucide-react";
+import { formatCurrency } from "@/features/erp/utils/currencyFormatters";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -78,9 +79,9 @@ export function CreateOrderCartSummary({
                       <td className="px-3 py-2 text-xs text-muted-foreground">
                         {item.category}
                       </td>
-                      <td className="px-3 py-2 text-sm font-semibold mono text-right">
+                      <td className="px-3 py-2 text-sm font-semibold tabular-nums text-right">
                         {item.price > 0
-                          ? `$${item.price.toFixed(2)}`
+                          ? `$${item.price.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                           : item.parentProfileId
                             ? ""
                             : "$0.00"}
@@ -123,28 +124,28 @@ export function CreateOrderCartSummary({
                 </div>
                 <div className="flex items-center gap-2">
                   {isExempted && (
-                    <span className="text-sm mono text-muted-foreground line-through">
-                      ${total.toFixed(2)}
+                    <span className="text-sm tabular-nums text-muted-foreground line-through">
+                      ${total.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
-                  <span className="text-base font-bold mono text-primary">
-                    ${effectiveTotals.total.toFixed(2)}
+                  <span className="text-base font-bold tabular-nums text-primary">
+                    ${effectiveTotals.total.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
               {effectiveTotals.totalBs !== null && currentRate && (
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">
-                    Total BS (Tasa: {currentRate.toFixed(2)})
+                    Total BS (tasa: {currentRate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                   </span>
                   <div className="flex items-center gap-2">
                     {isExempted && totalBs !== null && (
-                      <span className="text-xs mono text-muted-foreground line-through">
-                        Bs. {totalBs.toFixed(2)}
+                      <span className="text-xs tabular-nums text-muted-foreground line-through">
+                        {formatCurrency(totalBs, "VES")}
                       </span>
                     )}
-                    <span className="text-sm font-bold mono text-foreground">
-                      Bs. {effectiveTotals.totalBs.toFixed(2)}
+                    <span className="text-sm font-bold tabular-nums text-foreground">
+                      {formatCurrency(effectiveTotals.totalBs, "VES")}
                     </span>
                   </div>
                 </div>

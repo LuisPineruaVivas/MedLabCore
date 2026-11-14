@@ -235,7 +235,7 @@ export function ReferenceRangesEditor({ ranges, onChange }: Props) {
               </div>
 
               {range.categories?.length ? (
-                <div className="space-y-2 rounded border border-border bg-white p-2">
+                <div className="space-y-2 rounded border border-border bg-card p-2">
                   <div className="grid grid-cols-[1fr_70px_70px_70px_30px] gap-2 text-[10px] font-semibold uppercase text-muted-foreground">
                     <div>Etiqueta</div>
                     <div className="text-center">Mín</div>

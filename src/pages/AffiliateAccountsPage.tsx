@@ -155,7 +155,7 @@ export default function AffiliateAccountsPage() {
 
         <StatCard
           title="Saldo total adeudado"
-          value={balanceLoading ? "..." : `$${Number(pendingBalance).toFixed(2)}`}
+          value={balanceLoading ? "..." : `$${Number(pendingBalance).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="Suma de ordenes en estado pendiente"
           icon={HandCoins}
           className="border border-border bg-card shadow-sm"
@@ -209,7 +209,7 @@ export default function AffiliateAccountsPage() {
 
         <Table className="hidden md:table">
           <TableHeader>
-            <TableRow className="border-b border-border bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <TableRow className="border-b border-border bg-muted/5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               <TableHead className="w-12">
                 <input
                   type="checkbox"
@@ -253,7 +253,7 @@ export default function AffiliateAccountsPage() {
                       <p className="text-xs text-muted-foreground">{order.patients?.id_number ?? ""}</p>
                     </div>
                   </TableCell>
-                  <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
+                  <TableCell>${Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="uppercase">{order.payment_status === "pending" ? "Pendiente" : "Pagada"}</TableCell>
                 </TableRow>
               );
@@ -302,7 +302,7 @@ export default function AffiliateAccountsPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span>{format(new Date(order.created_at), "dd/MM/yyyy")}</span>
-                  <span>${Number(order.total_amount).toFixed(2)}</span>
+                  <span>${Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="mt-1 text-xs uppercase text-muted-foreground">{order.payment_status}</div>
               </div>
