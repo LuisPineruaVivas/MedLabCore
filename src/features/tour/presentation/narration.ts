@@ -6,22 +6,22 @@
  * until it is recorded again (the manifest stores a hash of the recorded text).
  */
 export const NARRATION = {
-  intro: "Así se maneja un laboratorio de principio a fin, en menos de dos minutos.",
-  dashboard: "Tu panel te muestra el día de un vistazo: pacientes, pendientes y lo facturado.",
-  orderOpen: "Llega una paciente y le creas su orden.",
-  orderSearch: "La buscas por nombre o por cédula. Es nueva, así que la registras ahí mismo, sin salir de la orden.",
-  patientFill: "Registras sus datos en segundos. La edad se calcula sola.",
+  intro: "Maneja tu laboratorio de principio a fin.",
+  dashboard: "Tu panel te muestra el día de un vistazo: pacientes, órdenes creadas, ingresos y pruebas pendientes.",
+  orderOpen: "Llega una paciente a hacerse un examen, así que procedes a crearle una orden.",
+  orderSearch: "La buscas por nombre o por cédula. Es nueva, así que la registras ahí mismo.",
+  patientFill: "Registras sus datos e información personal.",
   patientSave: "Guardas, y ya queda lista para su orden.",
-  orderTests: "Agregas sus exámenes con solo escribir el nombre.",
+  orderTests: "Agregas los exámenes a realizar con solo escribir el nombre y seleccionar.",
   orderTotal: "El total sale al instante, en dólares y en bolívares, con la tasa del día.",
-  orderCreate: "Creas la orden, y la nota de entrega sale lista, con el PIN para consultar resultados.",
+  orderCreate: "Una vez lista verificas y creas la orden.",
   resultsOpen: "Cuando tienes los resultados, abres la orden…",
-  resultsFill: "…escribes los valores, con el rango de referencia siempre a la vista, y guardas.",
+  resultsFill: "…llenas los resultados para cada examen, guardas y listo",
   reportOpen: "Con un clic generas el informe en PDF…",
   reportShow: "…con tu logo, ordenado y listo para entregar.",
   shareSend: "Y lo mejor: se lo envías por WhatsApp.",
   shareOpen: "Tu paciente toca el enlace y ve sus resultados al instante, desde su teléfono.",
-  outro: "Sin papeles, sin transcribir y sin llamadas preguntando por resultados. Pruébalo gratis durante siete días.",
+  outro: "Sin papeles, sin transcribir y sin llamadas preguntando por resultados. Pruébalo",
 } as const;
 
 export type LineId = keyof typeof NARRATION;
