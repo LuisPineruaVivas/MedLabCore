@@ -57,6 +57,15 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Increase the limit to 4MB (4 * 1024 * 1024)
         maximumFileSizeToCacheInBytes: 4194304, 
+        // PDF fonts (~340 KB each): keep them after the first download, so a flaky phone connection
+        // doesn't fail the report with "Load failed" (Sentry MEDLABCORE-3).
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/fonts/"),
+            handler: "CacheFirst",
+            options: { cacheName: "pdf-fonts", expiration: { maxEntries: 20 } },
+          },
+        ],
       },
       includeAssets: ["favicon.ico", "favicon.png", "apple-touch-icon.png", "robots.txt"],
       manifest: {

@@ -6,8 +6,9 @@ const MAX_SAME_ERROR_PER_SESSION = 3;
 const seenErrors = new Map<string, number>();
 
 /**
- * Error monitoring only: no session replay and no tracing. The app handles patient data, so events
- * carry no PII, request bodies or form values, only the error, the page and who (by id) hit it.
+ * Error monitoring plus a replay of the moments before each error (no tracing). The app handles patient
+ * data, so events carry no PII, request bodies or form values, and replays mask every text and input:
+ * they show clicks, screens and layout, never names or results.
  */
 export function initSentry() {
   if (!env.enableSentry) return;
@@ -16,6 +17,10 @@ export function initSentry() {
     dsn: env.sentryDsn,
     environment: env.sentryEnvironment,
     sendDefaultPii: false,
+    integrations: [Sentry.replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true })],
+    // Record only sessions that hit an error (the free plan has 50 replays a month).
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 1,
     // Errors thrown by browser extensions or injected scripts are not ours to fix.
     denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//, /^safari-extension:\/\//],
     ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications"],
