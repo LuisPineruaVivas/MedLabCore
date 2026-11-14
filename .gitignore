@@ -49,3 +49,6 @@ supabase/data.sql
 backup_*.sql
 testsprite_tests/
 supabase/.temp/
+graphify-out
+.github/
+.cursor/
