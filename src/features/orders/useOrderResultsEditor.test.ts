@@ -3,6 +3,7 @@ import {
   buildAppendedText,
   groupEditableOrderItems,
   initializeResultsState,
+  keepUnsavedEdits,
   updateResultsField,
   type EditableOrderItem,
 } from "./useOrderResultsEditor";
@@ -54,5 +55,13 @@ describe("order results editor helpers", () => {
     expect(buildAppendedText("Muestra: Suero", "Resultado: Negativo\nGen: No detectado")).toBe(
       "Muestra: Suero\n\nResultado: Negativo\nGen: No detectado"
     );
+  });
+});
+
+describe("keepUnsavedEdits", () => {
+  it("takes the server state but keeps items the user edited and hasn't saved", () => {
+    const fresh = { a: "server-a", b: "server-b" };
+    const local = { a: "typed-a", b: "old-b", gone: "x" };
+    expect(keepUnsavedEdits(fresh, local, new Set(["a", "gone"]))).toEqual({ a: "typed-a", b: "server-b" });
   });
 });

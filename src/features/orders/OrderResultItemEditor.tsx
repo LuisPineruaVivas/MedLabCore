@@ -159,8 +159,9 @@ function OrderResultFieldRow({
     : "black";
 
   return (
-    // Label | value pressed into a well | reference range: the value is the largest thing on the row.
-    <div className={`grid ${field.type !== 'text' ? 'grid-cols-[minmax(0,1fr)_minmax(7rem,9rem)] sm:grid-cols-[minmax(0,1fr)_10rem_minmax(8rem,12rem)]' : 'grid-cols-1'} items-center gap-x-4 gap-y-1`}>
+    // Label | value pressed into a well | reference range, kept together (the label column is capped) so the eye
+    // doesn't travel across a wide screen; the value is the largest thing on the row.
+    <div className={`grid ${field.type !== 'text' ? 'grid-cols-[minmax(0,1fr)_minmax(7rem,9rem)] sm:grid-cols-[minmax(8rem,18rem)_10rem_minmax(8rem,1fr)]' : 'grid-cols-1'} items-center gap-x-4 gap-y-1`}>
       <Label htmlFor={`result-${itemId}-${sectionIdx}-${fieldIdx}`} className="text-sm font-medium">
         {field.label}
         {field.unit && <span className="ml-1 text-xs font-normal text-muted-foreground">({field.unit})</span>}

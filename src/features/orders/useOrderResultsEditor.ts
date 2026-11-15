@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isMicrobiologyResult, type MicrobiologyResultsData, type SensitivityValue, type AntibiogramEntry } from '@/features/microbiology/types';
 
 export function updateMicrobiologyField<
@@ -289,10 +289,21 @@ export function buildAppendedText(existingValue: string | undefined, option: str
   return `${trimmed}${separator}${option}`.trim();
 }
 
+/** Server state for every item, except items with unsaved edits, which keep their local value. */
+export function keepUnsavedEdits<T>(fresh: Record<string, T>, local: Record<string, T>, unsaved: Set<string>): Record<string, T> {
+  const next = { ...fresh };
+  for (const id of unsaved) {
+    if (id in fresh && id in local) next[id] = local[id];
+  }
+  return next;
+}
+
 export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
   const [resultsState, setResultsState] = useState<ResultsMap>({});
   const [methodsState, setMethodsState] = useState<MethodsMap>({});
   const [modifiedIds, setModifiedIds] = useState<Set<string>>(new Set());
+  const modifiedRef = useRef(modifiedIds);
+  modifiedRef.current = modifiedIds;
 
   useEffect(() => {
     if (orderItems.length === 0) {
@@ -302,12 +313,18 @@ export function useOrderResultsEditor(orderItems: EditableOrderItem[]) {
       return;
     }
 
-    setResultsState(initializeResultsState(orderItems));
-    setMethodsState(Object.fromEntries(orderItems.map((item) => [
+    // A background refetch (window focus, invalidation after another write) must not wipe what the user
+    // typed and hasn't saved: edited items keep their local state; saving clears them via resetModified.
+    const unsaved = modifiedRef.current;
+    setResultsState((prev) => keepUnsavedEdits(initializeResultsState(orderItems), prev, unsaved));
+    setMethodsState((prev) => keepUnsavedEdits(Object.fromEntries(orderItems.map((item) => [
       item.id,
       item.test_method_id && item.method_name ? { id: item.test_method_id, name: item.method_name } : null,
-    ])));
-    setModifiedIds(new Set());
+    ])), prev, unsaved));
+    setModifiedIds((prev) => {
+      const stillPresent = new Set([...prev].filter((id) => orderItems.some((item) => item.id === id)));
+      return stillPresent.size === prev.size ? prev : stillPresent;
+    });
   }, [orderItems]);
 
   const updateFieldValue = useCallback((itemId: string, sectionIdx: number, fieldIdx: number, value: string) => {

@@ -156,7 +156,7 @@ export const DEMO_SCRIPT: Scene[] = [
         run: async (h) => {
           for (let i = 0; i < RESULT_VALUES.length; i++) {
             await h.type(
-              () => document.querySelectorAll('[data-tour="results"] input[placeholder="Ingresar resultado"]')[i] ?? null,
+              () => document.querySelectorAll('[data-tour="results"] input[id^="result-"]')[i] ?? null,
               RESULT_VALUES[i]
             );
           }

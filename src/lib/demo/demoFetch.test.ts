@@ -84,6 +84,24 @@ describe("demoFetch", () => {
     expect(items.data).toEqual([{ test_name: "Glicemia", price_at_order: 4 }]);
   });
 
+  it("saves results through the save_order_results rpc, all or nothing", async () => {
+    const { data } = await client.rpc("create_lab_order", {
+      p_org_id: DEMO_ORG_ID,
+      p_patient_id: "00000000-0000-4000-b000-000000000200",
+      p_items: [{ template_id: "t1", test_name: "Glicemia", price: 4, schema: { sections: [] } }],
+    });
+    const { data: items } = await client.from("order_items").select("id").eq("order_id", data.orderId);
+    const results = { sections: [{ fields: [{ label: "Glicemia", value: "92" }] }] };
+
+    const bad = await client.rpc("save_order_results", { p_order_id: data.orderId, p_items: [{ item_id: items![0].id, results_data: results }, { item_id: "nope" }] });
+    expect(bad.error).toBeTruthy();
+
+    const saved = await client.rpc("save_order_results", { p_order_id: data.orderId, p_items: [{ item_id: items![0].id, results_data: results }] });
+    expect(saved.data).toBe(1);
+    const { data: after } = await client.from("order_items").select("results_data").eq("id", items![0].id).single();
+    expect(after!.results_data).toEqual(results);
+  });
+
   it("opens a shared report through the portal rpcs", async () => {
     const { data: order } = await client
       .from("orders")
