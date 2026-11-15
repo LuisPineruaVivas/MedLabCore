@@ -12,6 +12,7 @@ import { LetterHeadPDF } from "@/lib/letterhead";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
 import { buildPortalLink } from "@/features/patientPortal/portalLink";
+import { whatsappNumber } from "@/lib/whatsapp";
 import { DEMO_SHARE_EVENT, isDemo, type DemoShareDetail } from "@/lib/demo/isDemo";
 import type { OrderItemResultsState } from "./useOrderResultsEditor";
 import { buildOrderPatientInfo, buildThermalReceiptData, isMobileDevice } from "./orderDetailUtils";
@@ -291,7 +292,7 @@ export function useOrderDocuments({
       pin: String(order.access_pin ?? ""),
     });
 
-    const phoneDigits = (patients?.phone || "").replace(/\D/g, "");
+    const phoneDigits = whatsappNumber(patients?.phone);
     if (!phoneDigits) {
       toast.error("El paciente no tiene un número de teléfono registrado.");
       return;
@@ -300,7 +301,7 @@ export function useOrderDocuments({
     const message = `Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`;
     if (isDemo) return shareInDemo(message, portalUrl);
     const text = encodeURIComponent(message);
-    window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
+    window.open(`https://wa.me/${phoneDigits}?text=${text}`, "_blank");
   }
 
   function handleSharePdfDirectLink() {
@@ -312,12 +313,13 @@ export function useOrderDocuments({
       pin: String(order.access_pin ?? ""),
     });
 
-    const phoneDigits = (patients?.phone || "").replace(/\D/g, "");
+    // Without a phone, wa.me opens WhatsApp to pick the contact.
+    const phoneDigits = whatsappNumber(patients?.phone);
     const message = `Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`;
     if (isDemo) return shareInDemo(message, pdfUrl);
     const text = encodeURIComponent(message);
 
-    window.open(`https://wa.me/58${phoneDigits}?text=${text}`, "_blank");
+    window.open(`https://wa.me/${phoneDigits ?? ""}?text=${text}`, "_blank");
   }
 
   return {
