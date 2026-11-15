@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { amountInAccountCurrency, isOverdue, toUsd, transferRate, withLiveUsd } from "./finance";
+import { amountInAccountCurrency, dueLabel, installmentDueDate, isOverdue, splitInstallments, toUsd, transferRate, withLiveUsd } from "./finance";
 
 describe("transferRate", () => {
   it("is local per USD whichever side is USD", () => {
@@ -50,5 +50,30 @@ describe("withLiveUsd", () => {
     ];
     expect(withLiveUsd(rows, 90).map((row) => row.balance_usd)).toEqual([10, 10]);
     expect(withLiveUsd(rows, null)).toBe(rows);
+  });
+});
+
+describe("installment schedule", () => {
+  it("spaces due dates by the chosen frequency", () => {
+    expect([0, 1, 2].map((i) => installmentDueDate("2026-11-15", i, "weekly"))).toEqual(["2026-11-15", "2026-11-22", "2026-11-29"]);
+    expect([0, 1, 2].map((i) => installmentDueDate("2026-11-15", i, "biweekly"))).toEqual(["2026-11-15", "2026-11-30", "2026-12-15"]);
+    expect([0, 1, 2].map((i) => installmentDueDate("2026-11-15", i, "monthly"))).toEqual(["2026-11-15", "2026-12-15", "2027-01-15"]);
+  });
+  it("keeps month ends inside the month", () => {
+    expect([0, 1, 2].map((i) => installmentDueDate("2027-01-31", i, "monthly"))).toEqual(["2027-01-31", "2027-02-28", "2027-03-31"]);
+  });
+  it("splits the balance with the rounding on the last installment", () => {
+    expect(splitInstallments(100, 3)).toEqual([33.33, 33.33, 33.34]);
+    expect(splitInstallments(50, 1)).toEqual([50]);
+  });
+});
+
+describe("installment reminders", () => {
+  it("labels how far the due date is", () => {
+    expect(dueLabel("2026-11-12", "2026-11-15")).toBe("Vencida hace 3 días");
+    expect(dueLabel("2026-11-14", "2026-11-15")).toBe("Vencida ayer");
+    expect(dueLabel("2026-11-15", "2026-11-15")).toBe("Vence hoy");
+    expect(dueLabel("2026-11-16", "2026-11-15")).toBe("Vence mañana");
+    expect(dueLabel("2026-12-01", "2026-11-15")).toBe("En 16 días");
   });
 });

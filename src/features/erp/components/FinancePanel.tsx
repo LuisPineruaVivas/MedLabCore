@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { cn } from "@/lib/utils";
 import { useAccountBalances, useFinanceDashboard, useFinanceMovements } from "../hooks/useFinance";
 import { usePayablesSummary } from "../hooks/usePayables";
-import { useReceivablesOverview } from "../hooks/useReceivables";
+import { useInstallments, useReceivablesOverview } from "../hooks/useReceivables";
 import { formatCurrency } from "../utils/currencyFormatters";
-import { FINANCE_KIND_LABELS, formatMonthLabel, withLiveUsd } from "../utils/finance";
+import { FINANCE_KIND_LABELS, dueLabel, formatMonthLabel, todayIso, withLiveUsd } from "../utils/finance";
+import { whatsappNumber } from "@/lib/whatsapp";
 import { buildPeriod, formatShortDate, isValidPeriod, type ReportPeriod } from "../utils/reports";
 import { HorizontalBars, IncomeExpenseChart, PeriodFilter, ReportCard } from "./ReportCharts";
 
@@ -33,6 +35,9 @@ export function FinancePanel({ orgId }: { orgId: string | null }) {
   const { data: rawBalances = [] } = useAccountBalances(orgId);
   const { data: liveRate } = useExchangeRate(orgId);
   const { data: receivables } = useReceivablesOverview(orgId);
+  const today = todayIso();
+  // "upcoming" lists every open installment by due date, so overdue ones come first.
+  const { data: nextInstallments } = useInstallments(orgId, "upcoming", today, today, today, 1, 6);
   const { data: payables = [] } = usePayablesSummary(orgId);
   const { data: recent } = useFinanceMovements(orgId, { from: null, to: null, accountId: null, kind: null, page: 1, pageSize: 6 });
 
@@ -58,6 +63,56 @@ export function FinancePanel({ orgId }: { orgId: string | null }) {
         <Kpi label="Ganancia" value={formatCurrency(profit)} tone={profit < 0 ? "bad" : profit > 0 ? "good" : undefined} hint="Ingresos − egresos (en USD)" />
         <Kpi label="Disponible en cuentas" value={formatCurrency(available)} hint="Aprox. en USD, tasa del día" />
       </div>
+
+      <ReportCard
+        title="Cuotas por cobrar"
+        description={
+          nextInstallments?.total
+            ? `Vencidas y próximas a vencer${Number(receivables?.overdue_count) > 0 ? ` · ${receivables?.overdue_count} vencida(s)` : ""}`
+            : undefined
+        }
+      >
+        {nextInstallments?.items.length ? (
+          <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {nextInstallments.items.map((row) => {
+              const remaining = Math.round((Number(row.amount_due_usd) - Number(row.amount_paid_usd)) * 100) / 100;
+              const overdue = row.due_date < today;
+              const patient = row.invoices.patients;
+              const name = patient ? `${patient.first_name} ${patient.last_name}` : "—";
+              const phone = whatsappNumber(patient?.phone);
+              const message = `Hola ${patient?.first_name ?? ""}, te recordamos que tu cuota N.º ${row.installment_number} de ${formatCurrency(remaining)} ${overdue ? `venció el ${formatShortDate(row.due_date)}` : row.due_date === today ? "vence hoy" : `vence el ${formatShortDate(row.due_date)}`}. ¡Gracias!`;
+              return (
+                <li key={row.id} className={cn("flex items-center justify-between gap-2 rounded-lg border p-2", overdue && "border-destructive/40")}>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{name}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Badge variant={overdue ? "destructive" : row.due_date === today ? "default" : "secondary"} className="px-1.5 py-0 text-[10px]">{dueLabel(row.due_date, today)}</Badge>
+                      Cuota {row.installment_number} · <b className="tabular-nums text-foreground">{formatCurrency(remaining)}</b>
+                    </span>
+                  </span>
+                  {phone && (
+                    <a
+                      href={`https://wa.me/${phone}?text=${encodeURIComponent(message)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 rounded-md p-2 text-success hover:bg-muted"
+                      aria-label={`Recordar por WhatsApp a ${name}`}
+                      title="Recordar por WhatsApp"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No hay cuotas pendientes.</p>
+        )}
+        {(nextInstallments?.total ?? 0) > 0 && (
+          <div className="mt-3"><MoreLink to="/erp/receivables">Ver todas ({nextInstallments?.total})</MoreLink></div>
+        )}
+      </ReportCard>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ReportCard title="Ingresos y egresos" description="Últimos 6 meses, en USD" className="lg:col-span-2">

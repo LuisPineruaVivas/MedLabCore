@@ -68,3 +68,40 @@ export function formatMonthLabel(month: string) {
   const [year, value] = month.split("-").map(Number);
   return new Date(year, value - 1, 1).toLocaleDateString("es-VE", { month: "short", year: "2-digit" });
 }
+
+export type InstallmentFrequency = "weekly" | "biweekly" | "monthly" | "custom";
+
+export const INSTALLMENT_FREQUENCY_LABELS: Record<InstallmentFrequency, string> = {
+  weekly: "Semanal",
+  biweekly: "Quincenal (cada 15 días)",
+  monthly: "Mensual",
+  custom: "Personalizado",
+};
+
+/** Due date of installment `index` (0-based) counted from `first` ("YYYY-MM-DD"). Monthly keeps the day, or the month's last day. */
+export function installmentDueDate(first: string, index: number, frequency: Exclude<InstallmentFrequency, "custom">) {
+  const [year, month, day] = first.split("-").map(Number);
+  if (frequency !== "monthly") {
+    const date = new Date(Date.UTC(year, month - 1, day + index * (frequency === "weekly" ? 7 : 15)));
+    return date.toISOString().slice(0, 10);
+  }
+  const lastDay = new Date(Date.UTC(year, month + index, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - 1 + index, Math.min(day, lastDay))).toISOString().slice(0, 10);
+}
+
+/** Splits `balance` into `count` installments; the last one absorbs the rounding. */
+export function splitInstallments(balance: number, count: number) {
+  const base = Number((balance / count).toFixed(2));
+  return Array.from({ length: count }, (_, index) =>
+    index === count - 1 ? Number((balance - base * (count - 1)).toFixed(2)) : base,
+  );
+}
+
+/** "Vencida hace 3 días" / "Hoy" / "Mañana" / "En 5 días", comparing yyyy-MM-dd dates. */
+export function dueLabel(dueDate: string, today = todayIso()) {
+  const days = Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000);
+  if (days < 0) return days === -1 ? "Vencida ayer" : `Vencida hace ${-days} días`;
+  if (days === 0) return "Vence hoy";
+  return days === 1 ? "Vence mañana" : `En ${days} días`;
+}
+
