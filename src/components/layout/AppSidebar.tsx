@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useBrand } from "@/contexts/BrandContext";
 import { isEntryActive, isGroup, isPathActive, useNavigation, type NavGroup, type NavLink } from "./useNavigation";
-import { labInitials } from "./AppHeader";
 
 function SidebarLink({ item, collapsed, nested = false }: { item: NavLink; collapsed: boolean; nested?: boolean }) {
   const { pathname } = useLocation();
@@ -98,29 +97,21 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar shadow-[var(--neu-raised-sm)] transition-[width] duration-300",
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border shadow-[4px_0_12px_-4px_rgb(0_0_0/0.25)] transition-[width] duration-300",
         sidebarCollapsed ? "w-[68px]" : "w-[240px]"
       )}
+      // Tinted with the lab's color so the rail stands apart from the page, open or collapsed.
+      style={{ background: `color-mix(in srgb, ${brand.primaryColor} 12%, hsl(var(--sidebar-background)))` }}
     >
-      {/* The lab's own identity heads the rail; MedLabCore only for staff without a lab. */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-3.5">
-        {!isSuperAdmin && brand.logoUrl ? (
-          <img src={brand.logoUrl} alt={`Logo de ${brand.name}`} className="h-10 w-10 shrink-0 rounded-xl bg-white object-contain p-0.5 neu-raised" />
-        ) : !isSuperAdmin && brand.name ? (
-          <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">{labInitials(brand.name)}</span>
-        ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white neu-raised">
-            <img src="/logo.png" alt="MedLabCore" className="h-9 w-9 object-contain" />
-          </div>
-        )}
+      {/* The app's brand heads the rail, on the lab's color: it continues into the header band. */}
+      <div className="flex h-28 items-center gap-3 px-3" style={{ background: brand.primaryColor }}>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-md">
+          <img src="/logo.png" alt="MedLabCore" className="h-10 w-10 object-contain" />
+        </div>
         {!sidebarCollapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-sidebar-foreground">
-              {isSuperAdmin ? "MedLabCore Admin" : brand.name || "MedLabCore"}
-            </p>
-            <p className="mt-0.5 truncate text-xs leading-none text-sidebar-muted">
-              {isSuperAdmin ? "Administración" : "MedLabCore"}
-            </p>
+          <div className="min-w-0 animate-fade-in text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.35)]">
+            <p className="truncate text-sm font-bold">{isSuperAdmin ? "MedLabCore Admin" : "MedLabCore"}</p>
+            <p className="mt-0.5 truncate text-xs leading-none text-white/85">{isSuperAdmin ? "Administración" : "Gestión de laboratorio"}</p>
           </div>
         )}
       </div>
@@ -145,12 +136,6 @@ export function AppSidebar() {
         <div className="flex items-center gap-3 rounded-xl px-2 py-2 neu-inset">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar neu-raised">
             <User className="h-5 w-5 text-sidebar-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">{displayName}</p>
-            <p className="truncate text-xs font-medium text-sidebar-muted">
-              {roleLabel}
-            </p>
           </div>
           {!sidebarCollapsed && (
             <div className="min-w-0 flex-1 animate-fade-in">

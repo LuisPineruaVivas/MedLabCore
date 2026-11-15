@@ -10,13 +10,13 @@ const OPTIONS = [
 ] as const;
 
 /** Light, dark or follow the device; remembered per browser by next-themes. */
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const { theme = "system", resolvedTheme, setTheme } = useTheme();
   const Icon = resolvedTheme === "dark" ? Moon : Sun;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Cambiar tema (claro u oscuro)">
+        <Button variant="ghost" size="icon" aria-label="Cambiar tema (claro u oscuro)" className={className}>
           <Icon />
         </Button>
       </DropdownMenuTrigger>
