@@ -39,6 +39,8 @@ export type OrderItem = EditableOrderItem & {
 export type OrderWithPatient = {
   id: string;
   status: "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
+  order_seq: number;
+  created_at: string;
   total_amount: number;
   total_bs?: number | null;
   access_pin?: string | null;

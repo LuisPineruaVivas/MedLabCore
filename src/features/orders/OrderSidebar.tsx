@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, DollarSign, FileText, IdCard, Link as LinkIcon, Mail, Phone, User } from "lucide-react";
+import { Calendar, DollarSign, FileText, IdCard, Link as LinkIcon, Mail, Phone, User, Lock } from "lucide-react";
 import type { PatientInfo, OrderWithPatient } from "./orderDetailTypes";
 
 interface OrderSidebarProps {
@@ -50,7 +50,7 @@ export const OrderSidebar = memo(function OrderSidebar({
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Orden</CardTitle>
+          <CardTitle className="text-base">Orden #{order.order_seq.toString().padStart(4, "0")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -71,6 +71,17 @@ export const OrderSidebar = memo(function OrderSidebar({
                 valueClassName="font-medium tabular-nums"
               />
             )}
+            <InfoRow
+              icon={Calendar}
+              label="Fecha de creación"
+              value={new Date(order.created_at).toLocaleString()}
+            />
+            <InfoRow
+              icon={Lock}
+              label="Pin de Acceso"
+              value={(order.access_pin ? `${order.access_pin}` : "No disponible")}
+            />
+
             </div>
             {order.access_pin && showSharePortalAction && (
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">

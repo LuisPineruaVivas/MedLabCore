@@ -74,7 +74,7 @@ export default function OrderDetailPage() {
     <div className="relative space-y-6 pb-36 md:pb-20">
       <PageHeader
         title={`Orden #${order.order_seq.toString().padStart(4, "0")}`}
-        description={`${toTitleCase(patientInfo.name)} · ${patientInfo.id} · creada el ${patientInfo.date}`}
+        description={`Fecha de creación: ${new Date(order.created_at).toLocaleDateString("es-VE")}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
