@@ -83,14 +83,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, labData }: Cr
     >
       <DialogContent className={cn(
         "h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none overflow-y-auto p-4 sm:max-h-[70vh] sm:w-[70vw] sm:p-6",
-        receiptData ? "sm:max-w-4xl" : "sm:max-w-5xl sm:h-[90vh]",
+        receiptData ? "sm:max-h-[95vh] sm:max-w-2xl" : "sm:max-w-5xl sm:h-[90vh]",
         "sm:h-auto"
       )}>
         {receiptData ? (
           <CreateOrderReceiptStep
             receiptData={receiptData}
             labData={labData}
-            showRegisterPayment={isErpEnabled && canRegisterPayments && !!createdInvoiceId && !isExempted}
+            invoiceId={isErpEnabled && canRegisterPayments && !isExempted ? createdInvoiceId : null}
             onRegisterPayment={() => setPaymentOpen(true)}
             onClose={close}
           />

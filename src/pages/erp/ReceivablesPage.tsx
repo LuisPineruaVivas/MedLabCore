@@ -57,7 +57,7 @@ function Pager({ page, total, busy, onPage }: { page: number; total: number; bus
 export default function ReceivablesPage() {
   const { orgId } = useCurrentOrgContext();
   const { canManageFinances: isAdmin } = useErpModule();
-  const [tab, setTab] = useState<Tab>("installments");
+  const [tab, setTab] = useState<Tab>("balances");
   const [window, setWindow] = useState<InstallmentWindow>("upcoming");
   const [installmentsPage, setInstallmentsPage] = useState(1);
   const [balancesPage, setBalancesPage] = useState(1);
@@ -71,7 +71,7 @@ export default function ReceivablesPage() {
   const balances = useOpenBalances(orgId, balancesPage, PAGE_SIZE);
 
   const cards: { label: string; value?: number; count?: number; tone?: string; onClick?: () => void }[] = [
-    { label: "Total por cobrar", value: overview?.total_usd, count: overview?.open_invoices },
+    { label: "Total por cobrar", value: overview?.total_usd, count: overview?.open_invoices, onClick: () => setTab("balances") },
     { label: "Cuotas vencidas", value: overview?.overdue_usd, count: overview?.overdue_count, tone: Number(overview?.overdue_usd) > 0 ? "text-destructive" : "", onClick: () => { setTab("installments"); setWindow("overdue"); setInstallmentsPage(1); } },
     { label: "Cuotas próximos 7 días", value: overview?.due_week_usd, count: overview?.due_week_count, onClick: () => { setTab("installments"); setWindow("week"); setInstallmentsPage(1); } },
     { label: "Saldos sin plan de cuotas", value: overview?.unscheduled_usd, count: overview?.unscheduled_count, onClick: () => setTab("balances") },
@@ -79,7 +79,7 @@ export default function ReceivablesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Por cobrar" description="Lo que los pacientes deben: cuotas de órdenes financiadas y saldos pendientes. Cobra directamente desde aquí." />
+      <PageHeader title="Por cobrar" description="Todas las órdenes que los pacientes aún deben, pagadas en cuotas o no. Cobra directamente desde aquí." />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
@@ -98,8 +98,8 @@ export default function ReceivablesPage() {
       </section>
 
       <div className="flex flex-wrap gap-2" role="tablist">
+        <Button role="tab" aria-selected={tab === "balances"} variant={tab === "balances" ? "default" : "outline"} onClick={() => setTab("balances")}>Órdenes con saldo</Button>
         <Button role="tab" aria-selected={tab === "installments"} variant={tab === "installments" ? "default" : "outline"} onClick={() => setTab("installments")}>Cuotas</Button>
-        <Button role="tab" aria-selected={tab === "balances"} variant={tab === "balances" ? "default" : "outline"} onClick={() => setTab("balances")}>Saldos pendientes</Button>
         {isAdmin && <Button asChild variant="ghost"><Link to="/erp/reports">Antigüedad de saldos (Reportes)</Link></Button>}
       </div>
 
