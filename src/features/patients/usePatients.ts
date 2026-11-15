@@ -115,6 +115,7 @@ export function useCreatePatient() {
         },
       ]);
 
+      if (error?.code === "23505") throw new Error("Ya existe un paciente con ese número de cédula en el laboratorio");
       if (error) throw error;
     },
     onSuccess: (_, formData) => {

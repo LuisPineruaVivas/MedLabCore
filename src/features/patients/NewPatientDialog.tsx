@@ -73,6 +73,8 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       await onSubmit(data);
       form.reset();
       onOpenChange(false);
+    } catch {
+      // The caller already showed the error; keep the dialog open so the user can fix the data (Sentry MEDLABCORE-5).
     } finally {
       setLoading(false);
     }

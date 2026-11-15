@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, ChevronRight, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import { differenceInMonths, differenceInYears, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { NewPatientDialog } from "@/features/patients/NewPatientDialog";
@@ -239,12 +240,7 @@ export default function PatientsPage() {
             await createMutation.mutateAsync(data);
             toast.success("Paciente registrado.");
           } catch (error) {
-            const message = (error as { message?: string } | null)?.message ?? String(error);
-            if (message.includes("patients_id_number_org_unique") || message.includes("duplicate key value")) {
-              toast.error("Ya existe un paciente con ese número de cédula en el laboratorio");
-            } else {
-              toast.error(message);
-            }
+            toast.error(getUserFacingErrorMessage(error, "No se pudo registrar el paciente"));
             throw error;
           }
         }}
