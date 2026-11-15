@@ -11,7 +11,7 @@ import { testTemplateFormSchema, TestTemplateFormData, TemplateSection, Template
 import { getTestTemplateReportComponent } from "@/lib/orderReportDispatcher";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import { createEmptyTemplateField, createEmptyTemplateSection, useSaveTemplate, useTemplateById } from "@/features/admin/useTemplateBuilder";
-import { type MicrobiologyFieldDef, getMicrobiologyFields } from "@/features/microbiology/types";
+import { type MicrobiologyFieldDef, getMicrobiologyFields, isAfterCultureField } from "@/features/microbiology/types";
 import { TemplateMetaFieldsCard } from "@/features/admin/templateBuilder/TemplateMetaFieldsCard";
 import { MicrobiologyFieldsEditor } from "@/features/admin/templateBuilder/MicrobiologyFieldsEditor";
 import { TemplateSectionsEditor } from "@/features/admin/templateBuilder/TemplateSectionsEditor";
@@ -142,7 +142,8 @@ export default function TemplateBuilderPage() {
   const specimenFields = microbiologyFields.filter(
     (field) => field.key === "sample_type" || field.key === "gram_stain"
   );
-  const additionalMicroFields = microbiologyFields.filter((field) => !field.fixed);
+  const additionalMicroFields = microbiologyFields.filter((field) => !field.fixed && !isAfterCultureField(field));
+  const afterCultureFields = microbiologyFields.filter(isAfterCultureField);
   const cultureResultField = microbiologyFields.find((field) => field.key === "culture_result");
 
   // Sync microbiologyFields when existingTemplate finishes loading asynchronously
@@ -157,11 +158,11 @@ export default function TemplateBuilderPage() {
     }
   }, [existingTemplate]);
 
-  function addMicroField() {
+  function addMicroField(position?: "after") {
     const id = `custom-${Date.now()}`;
     setMicrobiologyFields(prev => [
       ...prev,
-      { id, key: id, label: "", fixed: false },
+      { id, key: id, label: "", fixed: false, ...(position ? { position } : {}) },
     ]);
   }
 
@@ -347,6 +348,7 @@ export default function TemplateBuilderPage() {
             <MicrobiologyFieldsEditor
               specimenFields={specimenFields}
               additionalMicroFields={additionalMicroFields}
+              afterCultureFields={afterCultureFields}
               cultureResultField={cultureResultField}
               addMicroField={addMicroField}
               removeMicroField={removeMicroField}

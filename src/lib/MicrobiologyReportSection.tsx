@@ -4,7 +4,8 @@ import {
   type MicrobiologyResultsData, 
   type MicrobiologyFieldDef, 
   getGermSensitivity, 
-  getMicrobiologyFields 
+  getMicrobiologyFields,
+  isAfterCultureField,
 } from "@/features/microbiology/types";
 
 interface MicrobiologyReportSectionProps {
@@ -110,6 +111,20 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
   const cultureFieldDef = fieldDefs.find(f => f.key === "culture_result");
   const cultureLabel = cultureFieldDef?.label || "Cultivo";
 
+  const renderExtraField = (fd: MicrobiologyFieldDef) => {
+    const extraValue = data.extra_fields?.[fd.key];
+    if (!extraValue) return null;
+    return (
+      <View key={fd.id} style={styles.textBlock}>
+        <Text>
+          <Text style={styles.boldLabel}>{fd.label || "Campo adicional"}</Text>
+          <Text style={styles.boldLabelNoUnderline}>: </Text>
+          {extraValue}
+        </Text>
+      </View>
+    );
+  };
+
   const germs = data.isolated_germs && data.isolated_germs.length > 0
     ? data.isolated_germs.map(g => g.trim()).filter(Boolean)
     : [];
@@ -164,19 +179,7 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
           );
         }
 
-        if (!FIXED_KEYS.has(fd.key)) {
-          const extraValue = data.extra_fields?.[fd.key];
-          if (!extraValue) return null;
-          return (
-            <View key={fd.id} style={styles.textBlock}>
-              <Text>
-                <Text style={styles.boldLabel}>{fd.label || "Campo adicional"}</Text>
-                <Text style={styles.boldLabelNoUnderline}>: </Text>
-                {extraValue}
-              </Text>
-            </View>
-          );
-        }
+        if (!FIXED_KEYS.has(fd.key) && !isAfterCultureField(fd)) return renderExtraField(fd);
 
         return null;
       })}
@@ -267,6 +270,9 @@ export const MicrobiologyReportSection = ({ data }: MicrobiologyReportSectionPro
           </View>
         </View>
       )}
+
+      {/* Fields the lab placed after the culture and antibiogram (notes, observations). */}
+      <View style={{ marginTop: 6 }}>{fieldDefs.filter(isAfterCultureField).map(renderExtraField)}</View>
     </View>
   );
 };

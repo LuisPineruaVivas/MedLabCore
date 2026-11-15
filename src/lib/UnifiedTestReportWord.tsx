@@ -15,7 +15,7 @@ import {
 import { format } from "date-fns";
 import type { OrderRow } from "@/features/orders/schemas";
 import { getFieldResultMeta } from "@/features/tests/schemas";
-import { getMicrobiologyFields, getGermSensitivity, type AntibiogramEntry } from "@/features/microbiology/types";
+import { getMicrobiologyFields, getGermSensitivity, isAfterCultureField, type AntibiogramEntry } from "@/features/microbiology/types";
 import { enhanceSignatureImage } from "./enhanceSignatureImage";
 
 interface WordReportProps {
@@ -317,6 +317,7 @@ function microbiologyRows(item: ReportItem): TableRow[] {
   const fixedKeys = new Set(["sample_type", "gram_stain", "culture_result"]);
 
   for (const field of fields) {
+    if (isAfterCultureField(field)) continue;
     const value = field.key === "sample_type"
       ? data.sample_type
       : field.key === "gram_stain"
@@ -357,6 +358,11 @@ function microbiologyRows(item: ReportItem): TableRow[] {
     rows.push(new TableRow({
       children: [tableCell([paragraph(`${cultureLabel}: ${data.culture_result}`)], { columnSpan: 4 })],
     }));
+  }
+
+  for (const field of fields.filter(isAfterCultureField)) {
+    const value = data.extra_fields?.[field.key];
+    if (value) rows.push(new TableRow({ children: [tableCell([paragraph(`${field.label}: ${value}`)], { columnSpan: 4 })] }));
   }
 
   return rows;

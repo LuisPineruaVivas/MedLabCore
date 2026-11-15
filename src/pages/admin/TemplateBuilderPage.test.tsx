@@ -132,6 +132,19 @@ describe("TemplateBuilderPage", () => {
     expect(payload.formData.schema.microbiology_fields.some((field: { key: string }) => field.key === "culture_result")).toBe(true);
   });
 
+  it("saves fields placed after the antibiogram with position 'after'", async () => {
+    renderBuilder("/tests/templates/3f6b2c1a-9d4e-4f7a-8b2c-1d0e9f8a7b62/edit");
+    fireEvent.click(view().getByRole("button", { name: /Agregar Campo Extra/ }));
+    fireEvent.click(view().getByRole("button", { name: /Agregar campo al final/ }));
+    const [before, after] = view().getAllByPlaceholderText("Ej. Observaciones, Notas...");
+    fireEvent.change(before, { target: { value: "Recuento de colonias" } });
+    fireEvent.change(after, { target: { value: "Observaciones" } });
+
+    const fields = (await save()).formData.schema.microbiology_fields as { label: string; position?: string }[];
+    expect(fields.find((field) => field.label === "Recuento de colonias")?.position).toBeUndefined();
+    expect(fields.find((field) => field.label === "Observaciones")?.position).toBe("after");
+  });
+
   it("personalizing (fork) creates a new template instead of editing", async () => {
     renderBuilder("/tests/templates/3f6b2c1a-9d4e-4f7a-8b2c-1d0e9f8a7b61/edit?fork=1");
     expect(view().getByText("Personalizar Plantilla")).toBeInTheDocument();

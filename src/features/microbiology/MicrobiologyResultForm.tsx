@@ -12,6 +12,7 @@ import {
   type MicrobiologyFieldDef,
   getGermSensitivity,
   getMicrobiologyFields,
+  isAfterCultureField,
 } from "./types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -143,6 +144,21 @@ export function MicrobiologyResultForm({
     (ab) => !antibiogram.some((entry) => entry.antibiotic_id === ab.id)
   );
 
+  // Custom extra field — stored in extra_fields[key]
+  const renderExtraField = (fd: MicrobiologyFieldDef) => (
+    <div key={fd.id} className="space-y-2">
+      <Label className="font-semibold text-foreground">{fd.label.toUpperCase() || "CAMPO EXTRA"}</Label>
+      <Textarea
+        value={itemResultsData.extra_fields?.[fd.key] ?? ""}
+        onChange={(e) => updateMicroExtraField(itemId, fd.key, e.target.value)}
+        disabled={readOnly}
+        placeholder={`${fd.label || "Campo adicional"}...`}
+        className="min-h-[60px] text-sm whitespace-pre-wrap"
+      />
+    </div>
+  );
+  const afterCultureFields = fieldDefs.filter(isAfterCultureField);
+
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
@@ -184,22 +200,7 @@ export function MicrobiologyResultForm({
             );
           }
 
-          if (!FIXED_KEYS.has(fd.key)) {
-            // Custom extra field — stored in extra_fields[key]
-            const extraValue = itemResultsData.extra_fields?.[fd.key] ?? "";
-            return (
-              <div key={fd.id} className="space-y-2">
-                <Label className="font-semibold text-foreground">{labelUpper || "CAMPO EXTRA"}</Label>
-                <Textarea
-                  value={extraValue}
-                  onChange={(e) => updateMicroExtraField(itemId, fd.key, e.target.value)}
-                  disabled={readOnly}
-                  placeholder={`${fd.label || "Campo adicional"}...`}
-                  className="min-h-[60px] text-sm whitespace-pre-wrap"
-                />
-              </div>
-            );
-          }
+          if (!FIXED_KEYS.has(fd.key) && !isAfterCultureField(fd)) return renderExtraField(fd);
 
           return null;
         })}
@@ -485,6 +486,10 @@ export function MicrobiologyResultForm({
           </div>
         )}
       </div>
+
+      {afterCultureFields.length > 0 && (
+        <div className="space-y-4 pt-2 border-t border-border">{afterCultureFields.map(renderExtraField)}</div>
+      )}
     </div>
   );
 }
