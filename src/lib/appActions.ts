@@ -2,6 +2,7 @@
 export const APP_ACTION_EVENT = "medlab:action";
 
 export type AppAction =
+  | { type: "lab_saved" }
   | { type: "patient_created"; firstName: string }
   | { type: "order_created"; orderId: string }
   | { type: "results_saved"; orderId: string };

@@ -185,7 +185,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2" data-tour="org-logo">
               <div className="relative w-full max-w-[240px] h-20 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                 {previewUrl ? (
                   <img src={previewUrl} alt="Logo Preview" className="w-full h-full object-contain" />
@@ -228,6 +228,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
 
 
           <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4" data-tour="org-info">
             <FormField
               control={form.control}
               name="name"
@@ -284,8 +285,9 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
                 </FormItem>
               )}
             />
+            </div>
 
-            <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-4 pt-4 border-t" data-tour="org-colors">
               <h4 className="text-sm font-medium">Colores de la empresa</h4>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -323,7 +325,7 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
               </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t">
+            <div className="space-y-2 pt-4 border-t" data-tour="org-footer">
               <FormField
                 control={form.control}
                 name="report_footer_text"
@@ -355,11 +357,12 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
               variant="outline"
               onClick={handlePreviewClick}
               disabled={isGeneratingPdf}
+              data-tour="org-preview"
             >
               {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
               Previsualizar informe
             </Button>
-            <Button type="submit" disabled={saveMutation.isPending}>
+            <Button type="submit" disabled={saveMutation.isPending} data-tour="org-save">
               {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Guardar Cambios
             </Button>

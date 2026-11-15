@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { emitAppAction } from "@/lib/appActions";
 import { toast } from "sonner";
 
 export interface OrganizationSettingsFormValues {
@@ -120,6 +121,7 @@ export function useSaveOrganizationSettings(orgId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.organization(orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.organization(orgId) });
       toast.success("Informacion actualizada exitosamente");
+      emitAppAction({ type: "lab_saved" });
       return data;
     },
 
