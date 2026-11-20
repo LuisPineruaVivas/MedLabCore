@@ -15,7 +15,7 @@ import {
 import { format } from "date-fns";
 import type { OrderRow } from "@/features/orders/schemas";
 import { getFieldResultMeta } from "@/features/tests/schemas";
-import { getMicrobiologyFields, getGermSensitivity } from "@/features/microbiology/types";
+import { getMicrobiologyFields, getGermSensitivity, isAfterCultureField, type AntibiogramEntry } from "@/features/microbiology/types";
 import { enhanceSignatureImage } from "./enhanceSignatureImage";
 
 interface WordReportProps {
@@ -72,12 +72,7 @@ interface ReportResults {
   culture_mode?: string;
   culture_result?: string;
   isolated_germs?: string[];
-  antibiogram?: Array<{
-    antibiotic_id: string;
-    antibiotic_name: string;
-    sensitivity?: string | null;
-    sensitivities?: Record<number, string | null>;
-  }>;
+  antibiogram?: AntibiogramEntry[];
   extra_fields?: Record<string, string>;
   sections?: ReportSection[];
   hide_table_header?: boolean;
@@ -252,7 +247,7 @@ function standardRows(item: ReportItem, age: number | undefined, gender: string)
 
     for (const field of populatedFields) {
       const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(
-        { ...field, type: field.type ?? "text" },
+        { ...field, type: field.type ?? "text" } as Parameters<typeof getFieldResultMeta>[0],
         gender,
         age,
       );
@@ -288,7 +283,7 @@ function standardRows(item: ReportItem, age: number | undefined, gender: string)
         alignment: AlignmentType.CENTER,
         spacing: { after: 50 },
         children: [new TextRun({
-          text: field.value,
+          text: String(field.value),
           font: "Arial",
           size: 20,
           color: hexColor(resultColor, isOutOfRange),
@@ -322,6 +317,7 @@ function microbiologyRows(item: ReportItem): TableRow[] {
   const fixedKeys = new Set(["sample_type", "gram_stain", "culture_result"]);
 
   for (const field of fields) {
+    if (isAfterCultureField(field)) continue;
     const value = field.key === "sample_type"
       ? data.sample_type
       : field.key === "gram_stain"
@@ -364,6 +360,11 @@ function microbiologyRows(item: ReportItem): TableRow[] {
     }));
   }
 
+  for (const field of fields.filter(isAfterCultureField)) {
+    const value = data.extra_fields?.[field.key];
+    if (value) rows.push(new TableRow({ children: [tableCell([paragraph(`${field.label}: ${value}`)], { columnSpan: 4 })] }));
+  }
+
   return rows;
 }
 
@@ -396,13 +397,13 @@ export async function generateUnifiedTestReportWord(props: WordReportProps): Pro
     labHeaderCells.push(tableCell([
       new Paragraph({
         alignment: AlignmentType.RIGHT,
-        children: [new ImageRun({ data: logo, transformation: { width: 185, height: 85 } })],
+        children: [new ImageRun({ type: "png", data: logo, transformation: { width: 185, height: 85 } })],
       }),
     ], { width: Math.round(CONTENT_WIDTH * 0.38) }));
   }
   children.push(new Table({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
-    columnWidths: labHeaderCells.map((cell) => cell.options.width?.size ?? Math.round(CONTENT_WIDTH / labHeaderCells.length)),
+    columnWidths: labHeaderCells.map((cell) => cell.options.width?.size ?? Math.round(CONTENT_WIDTH / labHeaderCells.length)) as number[],
     rows: [new TableRow({ children: labHeaderCells })],
     borders: {
       top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
@@ -488,7 +489,7 @@ export async function generateUnifiedTestReportWord(props: WordReportProps): Pro
       signatureCells.push(tableCell([
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new ImageRun({ data: signature, transformation: { width: 150, height: 60 } })],
+          children: [new ImageRun({ type: "png", data: signature, transformation: { width: 150, height: 60 } })],
         }),
       ]));
     }
@@ -497,7 +498,7 @@ export async function generateUnifiedTestReportWord(props: WordReportProps): Pro
       signatureCells.push(tableCell([
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new ImageRun({ data: stamp, transformation: { width: 150, height: 60 } })],
+          children: [new ImageRun({ type: "png", data: stamp, transformation: { width: 150, height: 60 } })],
         }),
       ]));
     }

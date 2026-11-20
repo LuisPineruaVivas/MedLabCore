@@ -5,6 +5,45 @@ export const queryKeys = {
   organizations: ["organizations"] as const,
   currentOrgContext: (userId: string | null | undefined) => ["current-org-context", userId ?? "anonymous"] as const,
   exchangeRate: (orgId: string | null | undefined) => ["exchange-rate", orgId ?? "none"] as const,
+  admin: {
+    users: ["admin-users"] as const,
+    globalTemplatesForBulk: ["global-templates-for-bulk"] as const,
+  },
+  erp: {
+    exchangeRates: (orgId: string | null | undefined) => ["erp", "exchange-rates", orgId ?? "none"] as const,
+    bankAccounts: (orgId: string | null | undefined, activeOnly: boolean) => ["erp", "bank-accounts", orgId ?? "none", activeOnly ? "active" : "all"] as const,
+    invoicesAll: (orgId: string | null | undefined) => ["erp", "invoices", orgId ?? "none"] as const,
+    invoices: (orgId: string | null | undefined, status: string) => ["erp", "invoices", orgId ?? "none", status] as const,
+    backfillPreview: (orgId: string | null | undefined) => ["erp", "backfill-preview", orgId ?? "none"] as const,
+    invoice: (invoiceId: string | null | undefined) => ["erp", "invoice", invoiceId ?? "none"] as const,
+    payments: (invoiceId: string | null | undefined) => ["erp", "payments", invoiceId ?? "none"] as const,
+    schedules: (invoiceId: string | null | undefined) => ["erp", "schedules", invoiceId ?? "none"] as const,
+    // Prefix: payments and new plans refresh every receivables list below.
+    receivables: (orgId: string | null | undefined) => ["erp", "receivables", orgId ?? "none"] as const,
+    receivablesOverview: (orgId: string | null | undefined) => ["erp", "receivables", orgId ?? "none", "overview"] as const,
+    receivablesList: (orgId: string | null | undefined, kind: "installments" | "balances", filters: Record<string, string | number>) =>
+      ["erp", "receivables", orgId ?? "none", kind, filters] as const,
+    // Prefix key: balances and movement lists change together with any payment or movement.
+    financeAll: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none"] as const,
+    accountBalances: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none", "balances"] as const,
+    financeMovements: (orgId: string | null | undefined, filters: Record<string, string | number | null>) =>
+      ["erp", "finance", orgId ?? "none", "movements", filters] as const,
+    payables: (orgId: string | null | undefined, filters: Record<string, string | number>) =>
+      ["erp", "finance", orgId ?? "none", "payables", filters] as const,
+    financeDashboard: (orgId: string | null | undefined, from: string, to: string) => ["erp", "finance", orgId ?? "none", "dashboard", from, to] as const,
+    payablesSummary: (orgId: string | null | undefined) => ["erp", "finance", orgId ?? "none", "payables-summary"] as const,
+    financeCategories: (orgId: string | null | undefined) => ["erp", "finance-categories", orgId ?? "none"] as const,
+    items: (orgId: string | null | undefined) => ["erp", "items", orgId ?? "none"] as const,
+    kardexAll: ["erp", "kardex"] as const,
+    kardex: (itemId: string | null | undefined) => ["erp", "kardex", itemId ?? "none"] as const,
+    testMaterials: (orgId: string | null | undefined, templateId: string | null | undefined) =>
+      ["erp", "test-materials", orgId ?? "none", templateId ?? "none"] as const,
+    bomPreviewAll: ["erp", "bom-preview"] as const,
+    bomPreview: (orderId: string | null | undefined) => ["erp", "bom-preview", orderId ?? "none"] as const,
+    reportsAll: ["erp", "report"] as const,
+    report: (kind: "financial" | "profitability" | "inventory" | "receivables", orgId: string | null | undefined, from?: string, to?: string) =>
+      ["erp", "report", kind, orgId ?? "none", from ?? "", to ?? ""] as const,
+  },
   orders: {
     all: (orgId: string | null | undefined) => ["orders", orgId ?? "none"] as const,
     list: (
@@ -32,7 +71,15 @@ export const queryKeys = {
     search: (orgId: string | null | undefined, search: string) =>
       ["patient-search", orgId ?? "none", search] as const,
   },
+  patientPortal: {
+    publicOrg: (orgId: string | null | undefined) => ["public-org", orgId ?? "none"] as const,
+    // Same prefix as patients.orders, so invalidating a patient's orders refreshes the portal too.
+    orders: (patientId: string | null | undefined, pin: string | null | undefined) =>
+      ["patient-orders", patientId ?? "none", pin ?? "none"] as const,
+  },
   testTemplates: {
+    all: ["test-templates"] as const,
+    detail: (templateId: string | null | undefined) => ["test-template", templateId ?? "none"] as const,
     list: (
       orgId: string | null | undefined,
       filters: Record<string, string | number | null | undefined>
@@ -63,6 +110,11 @@ export const queryKeys = {
     manualExchangeRate: (orgId: string | null | undefined) =>
       ["manual-exchange-rate", orgId ?? "none"] as const,
   },
+  antibiotics: {
+    all: (orgId: string | null | undefined) => ["antibiotics", orgId ?? "none"] as const,
+    list: (orgId: string | null | undefined, activeOnly = false) =>
+      ["antibiotics", orgId ?? "none", activeOnly ? "active" : "all"] as const,
+  },
   testMethods: {
     list: (orgId: string | null | undefined, activeOnly = false) => ["test-methods", orgId ?? "none", activeOnly ? "active" : "all"] as const,
   },
@@ -71,12 +123,14 @@ export const queryKeys = {
       orgId: string | null | undefined,
       filters: Record<string, string | number | null | undefined>
     ) => ["audit-logs", orgId ?? "none", filters] as const,
+    orgUsers: (orgId: string | null | undefined) => ["org-users-filter", orgId ?? "none"] as const,
   },
   affiliateAccounts: {
     affiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
       ["affiliate-accounts", "affiliates", orgId ?? "none", role ?? "none"] as const,
     hasAffiliates: (orgId: string | null | undefined, role: string | null | undefined) =>
       ["affiliate-accounts", "has-affiliates", orgId ?? "none", role ?? "none"] as const,
+    ordersAll: (affiliateId: string | null | undefined) => ["affiliate-accounts", "orders", affiliateId ?? "none"] as const,
     orders: (
       affiliateId: string | null | undefined,
       filters: Record<string, string | number | null | undefined>

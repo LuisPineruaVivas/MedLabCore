@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { IMPERSONATION_STORAGE_KEY } from "@/lib/impersonationStorage";
 
 interface ImpersonationState {
   originalSession: {
@@ -31,7 +33,7 @@ interface ImpersonationContextType {
   isLoading: boolean;
 }
 
-const STORAGE_KEY = "medlab_superadmin_impersonation_state";
+const STORAGE_KEY = IMPERSONATION_STORAGE_KEY;
 
 const ImpersonationContext = createContext<ImpersonationContextType>({
   isImpersonating: false,
@@ -52,6 +54,17 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   });
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
+
+  // The saved super admin tokens belong to one impersonated session: they only
+  // count while that user is signed in, and are dropped for anyone else.
+  const boundState = state && user?.id === state.impersonatedUser.id ? state : null;
+
+  useEffect(() => {
+    if (!authLoading && !isLoading && state && user?.id !== state.impersonatedUser.id) {
+      setState(null);
+    }
+  }, [authLoading, isLoading, state, user?.id]);
 
   useEffect(() => {
     if (state) {
@@ -168,19 +181,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
         return;
       }
 
-      // 1. Notify edge function to record SUPERADMIN_IMPERSONATION_END in audit_logs
-      try {
-        await supabase.functions.invoke("superadmin-impersonate", {
-          body: {
-            target_user_id: savedState.impersonatedUser.id,
-            action: "end",
-          },
-        });
-      } catch (logErr) {
-        console.warn("Could not log impersonation end to server:", logErr);
-      }
-
-      // 2. Restore Super Admin session
+      // 1. Restore Super Admin session first: the edge function only accepts a
+      // super_admin token, so the end call must not carry the impersonated one.
       const { error: restoreError } = await supabase.auth.setSession({
         access_token: savedState.originalSession.access_token,
         refresh_token: savedState.originalSession.refresh_token,
@@ -189,6 +191,20 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       if (restoreError) {
         // If restoring session token directly fails, refresh it
         toast.info("Restaurando sesión con credenciales originales...");
+      } else {
+        // 2. Record SUPERADMIN_IMPERSONATION_END in audit_logs as the super admin.
+        // functions.invoke reports HTTP errors in `error` instead of throwing.
+        try {
+          const { error: endError } = await supabase.functions.invoke("superadmin-impersonate", {
+            body: {
+              target_user_id: savedState.impersonatedUser.id,
+              action: "end",
+            },
+          });
+          if (endError) console.warn("Could not log impersonation end to server:", endError);
+        } catch (logErr) {
+          console.warn("Could not log impersonation end to server:", logErr);
+        }
       }
 
       // 3. Clear local state
@@ -213,8 +229,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   return (
     <ImpersonationContext.Provider
       value={{
-        isImpersonating: !!state,
-        impersonatedUser: state?.impersonatedUser ?? null,
+        isImpersonating: !!boundState,
+        impersonatedUser: boundState?.impersonatedUser ?? null,
         startImpersonation,
         stopImpersonation,
         isLoading,

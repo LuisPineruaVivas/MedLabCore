@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { APP_ACTION_EVENT, type AppAction } from "@/lib/appActions";
 import { dialogTitled, findVisible, runGuidedTask, type GuideStep } from "./guidedTask";
 
-type TaskId = "patient" | "order" | "results" | "report" | "share";
+type TaskId = "lab" | "patient" | "order" | "results" | "report" | "share";
 type ExploreId = "dashboard" | "patients" | "tests" | "billing" | "settings";
 
 interface Task {
@@ -55,7 +55,60 @@ function closedAfterOpen(title: string) {
   };
 }
 
+const labDialog = (selector: string) => () => dialogTitled("Datos del Laboratorio")?.querySelector(selector) ?? null;
+
 const TASKS: Task[] = [
+  {
+    id: "lab",
+    title: "Configura tu laboratorio",
+    hint: "Sube tu logo y elige tus colores y datos: así salen en cada informe.",
+    start: () => "/settings",
+    steps: (isDone) => [
+      {
+        target: '[data-tour="settings-org"]',
+        title: "Primero, tu laboratorio",
+        text: "Tus informes, notas de entrega y el portal del paciente llevan tu logo, tus colores y tus datos. Pulsa «Laboratorio» para configurarlos.",
+        doneWhen: () => Boolean(dialogTitled("Datos del Laboratorio")),
+      },
+      {
+        target: labDialog('[data-tour="org-logo"]'),
+        title: "1. Tu logo",
+        text: "Haz clic en el recuadro y elige el logo de tu laboratorio (PNG o JPG). Aparece en el encabezado de cada informe. A la derecha puedes poner una marca de agua opcional.",
+        fallbackTo: 0,
+      },
+      {
+        target: labDialog('[data-tour="org-info"]'),
+        title: "2. Tus datos",
+        text: "Revisa el nombre, el teléfono, el correo y la dirección: tus pacientes los ven en el informe.",
+        fallbackTo: 0,
+      },
+      {
+        target: labDialog('[data-tour="org-colors"]'),
+        title: "3. Tus colores",
+        text: "Elige el color principal y el secundario de tu marca. Se usan en los títulos y tablas del informe y en la app.",
+        fallbackTo: 0,
+      },
+      {
+        target: labDialog('[data-tour="org-footer"]'),
+        title: "4. Pie de página",
+        text: "Opcional: el texto que va al final de cada página del informe, por ejemplo el nombre y el número de colegio del bioanalista.",
+        fallbackTo: 0,
+      },
+      {
+        // Hidden while the preview is open so the overlay doesn't dim it; no fallback, so the step waits for it to close.
+        target: () => (dialogTitled("Vista previa del informe") ? null : labDialog('[data-tour="org-preview"]')()),
+        title: "5. Mira cómo queda",
+        text: "Pulsa «Previsualizar informe» para ver un informe de ejemplo con tu logo y tus colores. Ciérralo y pulsa «Siguiente».",
+      },
+      {
+        target: labDialog('[data-tour="org-save"]'),
+        title: "6. Guarda los cambios",
+        text: "Cuando te guste, pulsa «Guardar Cambios». Puedes volver a cambiarlo cuando quieras desde Configuración.",
+        doneWhen: () => isDone("lab"),
+        fallbackTo: 0,
+      },
+    ],
+  },
   {
     id: "patient",
     title: "Registra un paciente",
@@ -333,14 +386,9 @@ const EXPLORE: ExploreItem[] = [
   },
   {
     id: "settings",
-    title: "Configura tu laboratorio",
+    title: "Equipo y suscripción",
     route: () => "/settings",
     steps: [
-      {
-        selector: '[data-tour="settings-org"]',
-        title: "Datos del laboratorio",
-        text: "Nombre, logo, dirección y contacto: así aparecen en tus informes y notas de entrega.",
-      },
       {
         selector: '[data-tour="settings-users"]',
         title: "Tu equipo",
@@ -458,6 +506,7 @@ export default function OnboardingGuide({ userId, onFinish }: { userId: string; 
   useEffect(() => {
     const onAction = (event: Event) => {
       const action = (event as CustomEvent<AppAction>).detail;
+      if (action.type === "lab_saved") markDone("lab");
       if (action.type === "patient_created") {
         update({ patientName: action.firstName });
         markDone("patient");
@@ -541,8 +590,8 @@ export default function OnboardingGuide({ userId, onFinish }: { userId: string; 
           <DialogHeader>
             <DialogTitle>¡Bienvenido a MedLabCore!</DialogTitle>
             <DialogDescription>
-              Te acompañamos paso a paso a registrar tu primer paciente, crear su orden, cargar sus resultados y enviárselos.
-              Toma unos 5 minutos.
+              Te acompañamos paso a paso: primero configuras tu laboratorio (logo, colores y datos de tus informes) y luego
+              registras tu primer paciente, creas su orden, cargas sus resultados y se los envías. Toma unos 7 minutos.
             </DialogDescription>
           </DialogHeader>
           <ol className="space-y-2 text-sm">

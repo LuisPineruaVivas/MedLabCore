@@ -477,8 +477,41 @@ function createLabOrder(args: Row) {
   });
 }
 
+/** Same contract as the SQL function: every item of the order is updated, or none is. */
+function saveOrderResults(args: Row) {
+  const items = (args.p_items ?? []) as Row[];
+  if (!Array.isArray(items) || items.length === 0) return pgError("INVALID_RESULTS_PAYLOAD");
+  const rows = tableRows("order_items");
+  const targets = items.map((item) => rows.find((row) => row.id === item.item_id && row.order_id === args.p_order_id));
+  if (targets.some((row) => !row)) return pgError("ORDER_ITEMS_NOT_FOUND");
+  items.forEach((item, i) => {
+    Object.assign(targets[i]!, { results_data: item.results_data ?? null, test_method_id: item.test_method_id ?? null, method_name: item.method_name ?? null });
+  });
+  persist();
+  emitWrite({ table: "order_items", action: "update", rows: targets as Row[] });
+  return json(items.length);
+}
+
+/** Billing cards, with the same rules as get_billing_totals. */
+function billingTotals(args: Row) {
+  const time = (value: unknown) => (value == null ? null : Date.parse(String(value)));
+  const from = time(args.p_from), to = time(args.p_to), monthStart = time(args.p_month_start);
+  const orders = tableRows("orders").filter((o) => o.org_id === args.p_org_id);
+  const inRange = (o: Row) => (from == null || Date.parse(String(o.created_at)) >= from) && (to == null || Date.parse(String(o.created_at)) < to);
+  const sum = (list: Row[]) => list.reduce((total, o) => total + Number(o.total_amount ?? 0), 0);
+  return json({
+    total_revenue: sum(orders.filter(inRange)),
+    this_month_revenue: monthStart == null ? 0 : sum(orders.filter((o) => Date.parse(String(o.created_at)) >= monthStart)),
+    pending_count: orders.filter((o) => inRange(o) && o.status === "pendiente").length,
+  });
+}
+
 function handleRpc(name: string, args: Row) {
   switch (name) {
+    case "save_order_results":
+      return saveOrderResults(args);
+    case "get_billing_totals":
+      return billingTotals(args);
     case "create_lab_order":
       return createLabOrder(args);
     case "get_my_org_id":

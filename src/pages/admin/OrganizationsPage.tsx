@@ -6,15 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Building2, ToggleLeft, ToggleRight, Eye, EyeOff, MapPin } from "lucide-react";
+import { Plus, Building2, ToggleLeft, ToggleRight, Eye, EyeOff, MapPin, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { BulkPriceUploadDialog } from "@/features/admin/BulkPriceUploadDialog";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 import {
   getOrganizationMutationError,
   useCreateOrganization,
   useOrganizations,
   useToggleOrganizationActive,
   useToggleOrganizationSubscription,
+  useToggleOrganizationErp,
 } from "@/features/admin/useOrganizations";
 
 interface OrgForm {
@@ -49,6 +52,7 @@ export default function OrganizationsPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<OrgForm>(emptyForm);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedOrgForUpload, setSelectedOrgForUpload] = useState<{ id: string; name: string } | null>(null);
 
   const set = (key: keyof OrgForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -57,13 +61,13 @@ export default function OrganizationsPage() {
   const createOrg = useCreateOrganization();
   const toggleSubscription = useToggleOrganizationSubscription();
   const toggleActive = useToggleOrganizationActive();
+  const toggleErp = useToggleOrganizationErp();
 
   const isFormValid =
     form.org_name.trim() &&
     form.admin_full_name.trim() &&
     form.admin_email.trim() &&
-    form.admin_password.trim() &&
-    form.admin_password.length >= 6;
+    !getPasswordError(form.admin_password);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -85,6 +89,7 @@ export default function OrganizationsPage() {
               <TableHead>Locacion</TableHead>
               <TableHead>Subscripcion</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>ERP</TableHead>
               <TableHead>Creado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -92,13 +97,13 @@ export default function OrganizationsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Cargando…
                 </TableCell>
               </TableRow>
             ) : orgs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No hay laboratorios registrados.
                 </TableCell>
               </TableRow>
@@ -139,29 +144,47 @@ export default function OrganizationsPage() {
                       {org.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="gap-1" onClick={() => toggleErp.mutate({ id: org.id, has_erp_module: org.has_erp_module }, { onSuccess: () => toast.success(org.has_erp_module ? "ERP desactivado" : "ERP activado"), onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo cambiar el módulo ERP")) })}>
+                      <Sparkles className={`h-4 w-4 ${org.has_erp_module ? "text-warning" : "text-muted-foreground"}`} />
+                      {org.has_erp_module ? "Activo" : "Inactivo"}
+                    </Button>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(org.created_at!).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        toggleActive.mutate(
-                          { id: org.id, is_active: org.is_active ?? true },
-                          {
-                            onSuccess: () => toast.success("Status updated"),
-                            onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo actualizar el estado")),
-                          }
-                        )
-                      }
-                    >
-                      {org.is_active ? (
-                        <ToggleRight className="w-4 h-4 text-primary" />
-                      ) : (
-                        <ToggleLeft className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5"
+                        onClick={() => setSelectedOrgForUpload({ id: org.id, name: org.name })}
+                        title="Cargar precios en bulk des un baremo (imagen o Word)"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Cargar Precios</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          toggleActive.mutate(
+                            { id: org.id, is_active: org.is_active ?? true },
+                            {
+                              onSuccess: () => toast.success("Status updated"),
+                              onError: (error) => toast.error(getOrganizationMutationError(error, "No se pudo actualizar el estado")),
+                            }
+                          )
+                        }
+                      >
+                        {org.is_active ? (
+                          <ToggleRight className="w-4 h-4 text-primary" />
+                        ) : (
+                          <ToggleLeft className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -242,7 +265,7 @@ export default function OrganizationsPage() {
                 <Input type="email" placeholder="admin@lab.com" value={form.admin_email} onChange={set("admin_email")} />
               </div>
               <div className="space-y-2">
-                <Label>Contraseña * (6+ caracteres)</Label>
+                <Label>Contraseña *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -258,6 +281,9 @@ export default function OrganizationsPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className={`text-xs ${form.admin_password && getPasswordError(form.admin_password) ? "text-destructive" : "text-muted-foreground"}`}>
+                  {(form.admin_password && getPasswordError(form.admin_password)) || PASSWORD_RULE_TEXT}
+                </p>
               </div>
             </div>
           </div>
@@ -284,6 +310,16 @@ export default function OrganizationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Price Upload Dialog */}
+      {selectedOrgForUpload && (
+        <BulkPriceUploadDialog
+          open={!!selectedOrgForUpload}
+          onClose={() => setSelectedOrgForUpload(null)}
+          orgId={selectedOrgForUpload.id}
+          orgName={selectedOrgForUpload.name}
+        />
+      )}
     </div>
   );
 }

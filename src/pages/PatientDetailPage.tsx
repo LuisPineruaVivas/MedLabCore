@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatCurrency } from "@/features/erp/utils/currencyFormatters";
 import { useParams, useNavigate } from "react-router-dom";
 import { EditPatientDialog } from "@/features/patients/EditPatientDialog";
 import { BloodGroupCardDialog } from "@/features/patients/BloodGroupCardDialog";
@@ -64,7 +65,7 @@ export default function PatientDetailPage() {
       ? parse(patient.date_of_birth, "yyyy-MM-dd", new Date())
       : new Date(patient.date_of_birth);
   const age = differenceInYears(new Date(), new Date(patient.date_of_birth)) > 0 
-                ? `${differenceInYears(new Date(), new Date(patient.date_of_birth))} Años` 
+                ? `${differenceInYears(new Date(), new Date(patient.date_of_birth))} años` 
                 : `${differenceInMonths(new Date(), new Date(patient.date_of_birth))} Meses`
 
   const infoItems = [
@@ -90,11 +91,11 @@ export default function PatientDetailPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Edit className="w-4 h-4 mr-2" />
-              Editar Información
+              Editar información
             </Button>
-            <Button size="sm" onClick={() => setBloodCardOpen(true)} className="bg-red-600 hover:bg-red-700 text-white">
+            <Button size="sm" onClick={() => setBloodCardOpen(true)} variant="outline">
               <HeartPulse className="w-4 h-4 mr-2" />
-              Generar Tarjeta de Grupo Sanguíneo
+              Tarjeta de grupo sanguíneo
             </Button>
           </div>
         }
@@ -158,8 +159,8 @@ export default function PatientDetailPage() {
                     </div>
                     <p className="text-sm font-semibold mt-1">
                       <DollarSign className="inline w-3.5 h-3.5 text-success mr-1" />
-                      {Number(order.total_amount).toFixed(2)}
-                      {order.total_bs != null ? ` (Bs. ${Number(order.total_bs).toFixed(2)})` : ""}
+                      {Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {order.total_bs != null ? ` (${formatCurrency(order.total_bs, "VES")})` : ""}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 truncate">
                       {order.notes || "—"}
@@ -201,10 +202,10 @@ export default function PatientDetailPage() {
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1">
                                 <DollarSign className="w-3.5 h-3.5 text-success" />
-                                <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                                <span className="text-sm font-semibold mono">{Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               {order.total_bs != null && (
-                                <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                                <span className="text-xs text-muted-foreground mono">{formatCurrency(order.total_bs, "VES")}</span>
                               )}
                             </div>
                           </TableCell>

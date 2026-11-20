@@ -54,13 +54,14 @@ export function useReportSubscriptionPayment(orgId: string | null | undefined) {
       const { data, error } = await supabase.rpc("report_subscription_payment", {
         p_org_id: payload.org_id,
         p_amount_usd: payload.amount_usd,
-        p_amount_bs: payload.amount_bs ?? null,
-        p_exchange_rate: payload.exchange_rate ?? null,
+        // Generated RPC types mark every argument non-null; the SQL function accepts NULL for these.
+        p_amount_bs: (payload.amount_bs ?? null) as number,
+        p_exchange_rate: (payload.exchange_rate ?? null) as number,
         p_payment_method: payload.payment_method,
         p_reference_number: payload.reference_number,
         p_payment_date: payload.payment_date,
         p_proof_url: publicUrl,
-        p_notes: payload.notes ?? null,
+        p_notes: payload.notes ?? undefined,
       });
 
       if (error) throw error;

@@ -16,7 +16,7 @@ export interface GuideStep {
   advanceOnEnter?: boolean;
 }
 
-export const PASSIVE_CLASS = "medlab-tour-passive";
+const PASSIVE_CLASS = "medlab-tour-passive";
 const PASSIVE_POPOVER = "medlab-tour-popover-passive";
 const MISSING_GRACE_MS = 1200;
 
@@ -30,7 +30,7 @@ html.${PASSIVE_CLASS} :not(body):has(> .driver-active-element) { overflow: rever
 .${PASSIVE_POPOVER}, .${PASSIVE_POPOVER} * { pointer-events: none !important; }
 `;
 
-export function ensureStyles() {
+function ensureStyles() {
   if (document.getElementById("medlab-tour-styles")) return;
   const style = document.createElement("style");
   style.id = "medlab-tour-styles";

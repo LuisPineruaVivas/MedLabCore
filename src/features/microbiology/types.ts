@@ -18,6 +18,8 @@ export interface MicrobiologyFieldDef {
   key: string;
   label: string;
   fixed: boolean;
+  /** Custom fields only: "after" prints the field after the culture result and antibiogram (e.g. notes). Missing means before. */
+  position?: "after";
 }
 
 /** Default field definitions — used when a template has no custom microbiology_fields */
@@ -69,4 +71,9 @@ export function getMicrobiologyFields(schema: { microbiology_fields?: Microbiolo
     return fields;
   }
   return DEFAULT_MICROBIOLOGY_FIELDS;
+}
+
+/** Custom field printed after the culture result and antibiogram, instead of before it. */
+export function isAfterCultureField(field: MicrobiologyFieldDef): boolean {
+  return !field.fixed && field.position === "after";
 }

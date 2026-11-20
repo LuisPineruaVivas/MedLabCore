@@ -29,7 +29,7 @@ export function useAdminOrganizationsList() {
 
 export function useAdminUsers() {
   return useQuery({
-    queryKey: ["admin-users"],
+    queryKey: queryKeys.admin.users,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -56,7 +56,7 @@ export function useCreateAdminUser() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users });
     },
   });
 }

@@ -75,7 +75,7 @@ export function ExamOrderView() {
     <Card className="rounded-xl border border-border bg-card shadow-sm">
       <CardHeader className="flex flex-col justify-between gap-4 border-b border-border px-6 py-4 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1">
-          <h3 className="text-sm font-semibold">Configuracion de Orden de Impresion</h3>
+          <h3 className="text-sm font-semibold">Orden de impresión</h3>
           <p className="text-xs text-muted-foreground">
             Arrastra y suelta los examenes para definir el orden en que apareceran agrupados en el reporte
           </p>

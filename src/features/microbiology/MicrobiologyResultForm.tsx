@@ -12,6 +12,7 @@ import {
   type MicrobiologyFieldDef,
   getGermSensitivity,
   getMicrobiologyFields,
+  isAfterCultureField,
 } from "./types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -143,6 +144,21 @@ export function MicrobiologyResultForm({
     (ab) => !antibiogram.some((entry) => entry.antibiotic_id === ab.id)
   );
 
+  // Custom extra field — stored in extra_fields[key]
+  const renderExtraField = (fd: MicrobiologyFieldDef) => (
+    <div key={fd.id} className="space-y-2">
+      <Label className="font-semibold text-foreground">{fd.label.toUpperCase() || "CAMPO EXTRA"}</Label>
+      <Textarea
+        value={itemResultsData.extra_fields?.[fd.key] ?? ""}
+        onChange={(e) => updateMicroExtraField(itemId, fd.key, e.target.value)}
+        disabled={readOnly}
+        placeholder={`${fd.label || "Campo adicional"}...`}
+        className="min-h-[60px] text-sm whitespace-pre-wrap"
+      />
+    </div>
+  );
+  const afterCultureFields = fieldDefs.filter(isAfterCultureField);
+
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
@@ -184,22 +200,7 @@ export function MicrobiologyResultForm({
             );
           }
 
-          if (!FIXED_KEYS.has(fd.key)) {
-            // Custom extra field — stored in extra_fields[key]
-            const extraValue = itemResultsData.extra_fields?.[fd.key] ?? "";
-            return (
-              <div key={fd.id} className="space-y-2">
-                <Label className="font-semibold text-foreground">{labelUpper || "CAMPO EXTRA"}</Label>
-                <Textarea
-                  value={extraValue}
-                  onChange={(e) => updateMicroExtraField(itemId, fd.key, e.target.value)}
-                  disabled={readOnly}
-                  placeholder={`${fd.label || "Campo adicional"}...`}
-                  className="min-h-[60px] text-sm whitespace-pre-wrap"
-                />
-              </div>
-            );
-          }
+          if (!FIXED_KEYS.has(fd.key) && !isAfterCultureField(fd)) return renderExtraField(fd);
 
           return null;
         })}
@@ -250,7 +251,7 @@ export function MicrobiologyResultForm({
                 placeholder="Ej. Negativo el desarrollo de gérmenes enteropatógenos investigados..."
                 className="min-h-[90px] text-sm whitespace-pre-wrap font-sans"
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 * En modo texto libre (cultivo negativo), el informe mostrará la descripción anterior y omitirá el antibiograma.
               </p>
             </div>
@@ -302,7 +303,7 @@ export function MicrobiologyResultForm({
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 * Cada germen aislado creará su propia columna en la tabla del antibiograma.
               </p>
             </div>
@@ -384,10 +385,10 @@ export function MicrobiologyResultForm({
                         <span className="block truncate max-w-[150px]">
                           {germ.trim() ? `${gIdx + 1}. ${germ.trim()}` : `Germen ${gIdx + 1}`}
                         </span>
-                        <div className="flex justify-around text-[10px] mt-1 pt-1 border-t">
-                          <span className="text-green-600 font-bold" title="Sensible">S</span>
-                          <span className="text-yellow-600 font-bold" title="Intermedio">I</span>
-                          <span className="text-red-600 font-bold" title="Resistente">R</span>
+                        <div className="flex justify-around text-xs mt-1 pt-1 border-t">
+                          <span className="text-success font-bold" title="Sensible">S</span>
+                          <span className="text-warning font-bold" title="Intermedio">I</span>
+                          <span className="text-destructive font-bold" title="Resistente">R</span>
                         </div>
                       </th>
                     ))}
@@ -428,9 +429,9 @@ export function MicrobiologyResultForm({
                             <React.Fragment key={gIdx}>
                               <td className="px-1 py-1.5 text-center border-l">
                                 <button
-                                  className={`w-5 h-5 mx-auto rounded-full border text-[11px] flex items-center justify-center transition-colors ${
+                                  className={`w-5 h-5 mx-auto rounded-full border text-xs flex items-center justify-center transition-colors ${
                                     sens === "S"
-                                      ? "bg-green-100 border-green-500 text-green-700 font-bold shadow-sm"
+                                      ? "bg-success/10 border-success text-success font-bold shadow-sm"
                                       : "bg-transparent border-input text-transparent hover:bg-muted"
                                   } ${readOnly ? "cursor-default opacity-80" : "cursor-pointer"}`}
                                   onClick={() => handleSensitivityClick(idx, gIdx, sens, "S")}
@@ -443,9 +444,9 @@ export function MicrobiologyResultForm({
                               
                               <td className="px-1 py-1.5 text-center">
                                 <button
-                                  className={`w-5 h-5 mx-auto rounded-full border text-[11px] flex items-center justify-center transition-colors ${
+                                  className={`w-5 h-5 mx-auto rounded-full border text-xs flex items-center justify-center transition-colors ${
                                     sens === "I"
-                                      ? "bg-yellow-100 border-yellow-500 text-yellow-700 font-bold shadow-sm"
+                                      ? "bg-warning/10 border-warning text-warning font-bold shadow-sm"
                                       : "bg-transparent border-input text-transparent hover:bg-muted"
                                   } ${readOnly ? "cursor-default opacity-80" : "cursor-pointer"}`}
                                   onClick={() => handleSensitivityClick(idx, gIdx, sens, "I")}
@@ -458,9 +459,9 @@ export function MicrobiologyResultForm({
                               
                               <td className="px-1 py-1.5 text-center">
                                 <button
-                                  className={`w-5 h-5 mx-auto rounded-full border text-[11px] flex items-center justify-center transition-colors ${
+                                  className={`w-5 h-5 mx-auto rounded-full border text-xs flex items-center justify-center transition-colors ${
                                     sens === "R"
-                                      ? "bg-red-100 border-red-500 text-red-700 font-bold shadow-sm"
+                                      ? "bg-destructive/10 border-destructive text-destructive font-bold shadow-sm"
                                       : "bg-transparent border-input text-transparent hover:bg-muted"
                                   } ${readOnly ? "cursor-default opacity-80" : "cursor-pointer"}`}
                                   onClick={() => handleSensitivityClick(idx, gIdx, sens, "R")}
@@ -479,12 +480,16 @@ export function MicrobiologyResultForm({
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               * Los antibióticos sin sensibilidad asignada (S, I, R) no aparecerán en el informe impreso.
             </p>
           </div>
         )}
       </div>
+
+      {afterCultureFields.length > 0 && (
+        <div className="space-y-4 pt-2 border-t border-border">{afterCultureFields.map(renderExtraField)}</div>
+      )}
     </div>
   );
 }

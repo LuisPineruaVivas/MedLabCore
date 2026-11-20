@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { emitAppAction } from "@/lib/appActions";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
+import { matchAllWords } from "@/lib/postgrest";
 import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { OrderWithPatient, OrderStatus } from "./schemas";
+import type { EditableOrderItem } from "./useOrderResultsEditor";
+import type { MicrobiologyFieldDef } from "@/features/microbiology/types";
 import { toast } from "@/hooks/use-toast";
 
 export interface CreateOrderItemInput {
@@ -172,11 +175,7 @@ export function useOrdersList(
       }
 
       if (searchTerm) {
-        const searchFilter = `%${searchTerm}%`;
-        query = query.or(
-          `first_name.ilike.${searchFilter},last_name.ilike.${searchFilter},id_number.ilike.${searchFilter}`,
-          { foreignTable: "patients" }
-        );
+        query = query.or(matchAllWords(["first_name", "last_name", "id_number"], searchTerm), { foreignTable: "patients" });
       }
 
       const { data, error, count } = await query.range(offset, offset + pageSize - 1);
@@ -202,7 +201,9 @@ export function useOrderStats() {
 
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      const [total, month, day] = await Promise.all([
+      const byStatus = (status: "pendiente" | "por_aprobar" | "completada" | "cancelada") =>
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", status);
+      const [total, month, day, pending, toApprove, completed, cancelled] = await Promise.all([
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
@@ -217,12 +218,20 @@ export function useOrderStats() {
           .select("id", { count: "exact", head: true })
           .eq("org_id", orgId!)
           .gte("created_at", today.toISOString()),
+        byStatus("pendiente"),
+        byStatus("por_aprobar"),
+        byStatus("completada"),
+        byStatus("cancelada"),
       ]);
 
       return {
         total: total.count || 0,
         thisMonth: month.count || 0,
         today: day.count || 0,
+        pending: pending.count || 0,
+        toApprove: toApprove.count || 0,
+        completed: completed.count || 0,
+        cancelled: cancelled.count || 0,
       };
     },
     enabled: !!orgId,
@@ -248,10 +257,24 @@ export function useOrder(orderId: string | null) {
   });
 }
 
+/** An order item as loaded by useOrderItems: the selected columns plus derived fields. */
+export interface OrderDetailItem extends EditableOrderItem {
+  order_id: string;
+  template_id: string | null;
+  test_name: string;
+  price_at_order: number;
+  created_at: string;
+  parent_profile_id: string | null;
+  category: string;
+  template_schema: { microbiology_fields?: MicrobiologyFieldDef[] } | null;
+  resolved_sort_order: number;
+  [key: string]: unknown;
+}
+
 export function useOrderItems(orderId: string | null) {
   const { orgId } = useCurrentOrgContext();
 
-  return useQuery<Record<string, unknown>[]>({
+  return useQuery<OrderDetailItem[]>({
     queryKey: queryKeys.orders.items(orderId, orgId),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -302,7 +325,7 @@ export function useOrderItems(orderId: string | null) {
           category: item.test_templates?.category || "Pruebas Especiales",
           template_schema: templateSchema,
           resolved_sort_order: customOrder ?? item.test_templates?.sort_order ?? 9999,
-        };
+        } as OrderDetailItem;
       });
     },
     enabled: !!orderId && !!orgId,
@@ -332,6 +355,7 @@ export function useCreateOrder() {
       totalBs?: number | null;
       isExempted?: boolean;
     }) => {
+      // The generated Args mark every parameter non-null; the function accepts NULL notes/rate/total.
       const { data, error } = await supabase.rpc("create_lab_order", buildCreateLabOrderPayload({
         orgId,
         patientId,
@@ -341,7 +365,7 @@ export function useCreateOrder() {
         exchangeRate,
         totalBs,
         isExempted,
-      }));
+      }) as Database["public"]["Functions"]["create_lab_order"]["Args"]);
 
       if (error) throw error;
       return data as unknown as CreateLabOrderResponse;
@@ -356,29 +380,36 @@ export function useCreateOrder() {
   });
 }
 
+export interface SaveResultsItem {
+  itemId: string;
+  resultsData: Json;
+  testMethodId?: string | null;
+  methodName?: string | null;
+}
+
 export function useSaveResults() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // One request and one transaction for every modified exam: either all are saved
+    // or none is, and the order is refetched once.
     mutationFn: async ({
-      itemId,
       orderId,
-      orgId,
-      resultsData,
-      testMethodId,
-      methodName,
+      items,
     }: {
-      itemId: string;
       orderId: string;
       orgId: string | null | undefined;
-      resultsData: Json;
-      testMethodId?: string | null;
-      methodName?: string | null;
+      items: SaveResultsItem[];
     }) => {
-      const { error } = await supabase
-        .from("order_items")
-        .update({ results_data: resultsData, test_method_id: testMethodId ?? null, method_name: methodName ?? null })
-        .eq("id", itemId);
+      const { error } = await supabase.rpc("save_order_results", {
+        p_order_id: orderId,
+        p_items: items.map((item) => ({
+          item_id: item.itemId,
+          results_data: item.resultsData,
+          test_method_id: item.testMethodId ?? null,
+          method_name: item.methodName ?? null,
+        })),
+      });
       if (error) throw error;
     },
     onSuccess: (_, variables) => {

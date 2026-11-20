@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import type { OrderItemRow } from "@/features/orders/schemas";
 
@@ -21,7 +22,7 @@ interface PatientSession {
   };
 }
 
-interface OrderWithItems {
+export interface OrderWithItems {
   id: string;
   created_at: string;
   status: string;
@@ -40,15 +41,23 @@ interface OrderWithItems {
 export function usePatientSession() {
   const [session, setSession] = useState<PatientSession | null>(null);
 
-  const authenticate = async (dni: string, pin: string): Promise<{ success: boolean; error?: string }> => {
+  const authenticate = async (dni: string, pin: string): Promise<{ success: boolean; locked?: boolean; error?: string }> => {
     try {
       // Use the SECURITY DEFINER RPC — no direct table access as anon.
       // Only returns data if both DNI and PIN match an existing order.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)("portal_authenticate", {
+      const { data, error } = await supabase.rpc("portal_authenticate", {
         p_dni: dni.trim(),
         p_pin: pin.trim().toUpperCase(),
       });
+
+      // The server refuses a document ID for an hour after 10 wrong PINs (S-03).
+      if (error?.message?.includes("PORTAL_LOCKED")) {
+        return {
+          success: false,
+          locked: true,
+          error: "Por seguridad, este documento quedo bloqueado por una hora despues de varios intentos fallidos. Intenta mas tarde o contacta al laboratorio.",
+        };
+      }
 
       if (error || !data || (Array.isArray(data) && data.length === 0)) {
         return {
@@ -87,33 +96,19 @@ export function usePatientSession() {
 
 export function usePatientOrders(patientId: string | null, pin: string | null) {
   return useQuery({
-    queryKey: ["patient-orders", patientId, pin],
+    queryKey: queryKeys.patientPortal.orders(patientId, pin),
     queryFn: async (): Promise<OrderWithItems[]> => {
       if (!patientId) return [];
 
-      const { data, error } = await (supabase.rpc as any)("portal_get_patient_orders", {
+      const { data, error } = await supabase.rpc("portal_get_patient_orders", {
         p_patient_id: patientId,
-        p_pin: pin.trim().toUpperCase()
+        p_pin: pin!.trim().toUpperCase()
       });
 
       if (error) throw error;
       if (!data || !Array.isArray(data)) return [];
 
-      return data.map((row: {
-        order_id: string;
-        created_at: string;
-        status: string;
-        total_amount: number;
-        access_pin: string;
-        org_name: string;
-        org_logo_url: string | null;
-        order_seq: number;
-        firma_url: string | null;
-        sello_url: string | null;
-        report_template?: string | null;
-        department_order: unknown;
-        items: PatientPortalOrderItem[];
-      }) => ({
+      return data.map((row) => ({
         id:           row.order_id,
         created_at:   row.created_at,
         status:       row.status,
@@ -128,7 +123,8 @@ export function usePatientOrders(patientId: string | null, pin: string | null) {
         departmentOrder: Array.isArray(row.department_order)
           ? row.department_order.filter((item): item is string => typeof item === "string")
           : [],
-        items:        Array.isArray(row.items) ? row.items : [],
+        // items is a JSON array built by the RPC; its shape is order_items plus category/sort info.
+        items:        Array.isArray(row.items) ? (row.items as unknown as PatientPortalOrderItem[]) : [],
       }));
     },
     enabled: !!patientId && !!pin,

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { clearImpersonationStorage } from "@/lib/impersonationStorage";
 import { setSentryUser } from "@/lib/sentry";
 
 interface AuthContextType {
@@ -41,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === "SIGNED_OUT") clearImpersonationStorage();
         dispatch({ type: "SET_SESSION", session });
         if (!session) setSentryUser(null);
       }
@@ -55,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    // Drop any saved super admin tokens even if the sign-out request fails.
+    clearImpersonationStorage();
     await supabase.auth.signOut();
   };
 

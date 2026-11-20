@@ -1,0 +1,9 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "ignore": {
+    // Generated output, not source: vite-plugin-pwa dev service worker,
+    // production builds, and Unlighthouse audit reports. Plus archived,
+    // undeployed Supabase code (see CLAUDE.md).
+    "files": ["dev-dist/**", "dist/**", ".unlighthouse/**", "supabase/functions-old-2/**", "supabase/migrations-old/**"]
+  }
+}

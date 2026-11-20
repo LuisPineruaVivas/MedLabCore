@@ -8,6 +8,7 @@ import {
   calculateCartTotal,
   calculateCartTotalBs,
   filterSearchItems,
+  getCreateOrderErrorMessage,
   removeCartItem,
   resolveOrderTotals,
 } from "./createOrderUtils";
@@ -18,7 +19,7 @@ const templates = [
     name: "Hemograma",
     category: "Hematologia",
     base_price: "12.5",
-    schema: { sections: [] },
+    schema: { sections: [] as unknown[] },
   },
 ];
 
@@ -35,7 +36,7 @@ const profiles = [
           name: "Glucosa",
           category: "Quimica",
           base_price: "8",
-          schema: { sections: [] },
+          schema: { sections: [] as unknown[] },
         },
       },
       {
@@ -44,7 +45,7 @@ const profiles = [
           name: "Urea",
           category: "Quimica",
           base_price: "7",
-          schema: { sections: [] },
+          schema: { sections: [] as unknown[] },
         },
       },
     ],
@@ -117,6 +118,7 @@ describe("createOrderUtils", () => {
 
     const receipt = buildOrderReceiptData({
       orderId: "ord-1",
+      order_seq: 42,
       selectedPatient: {
         first_name: "Ana",
         last_name: "Perez",
@@ -138,6 +140,7 @@ describe("createOrderUtils", () => {
     ]);
     expect(receipt.patientName).toBe("ANA PEREZ");
     expect(receipt.totalBs).toBe(1300);
+    expect(receipt.order_seq).toBe(42);
   });
 
   it("resolves exempted orders to zero without losing non-exempt totals", () => {
@@ -202,5 +205,17 @@ describe("createOrderUtils", () => {
 
     expect(budgetPublic.patientName).toBe("PÚBLICO GENERAL");
     expect(budgetPublic.patientId).toBe("N/A");
+  });
+});
+
+describe("getCreateOrderErrorMessage", () => {
+  it("maps create_lab_order error codes to Spanish messages", () => {
+    expect(getCreateOrderErrorMessage({ message: "INVALID_TEMPLATE" }, "x")).toMatch(/lista de precios/);
+    expect(getCreateOrderErrorMessage({ message: "INVALID_PATIENT" }, "x")).toMatch(/paciente/);
+  });
+
+  it("falls back for unknown errors", () => {
+    expect(getCreateOrderErrorMessage(new Error("network"), "No se pudo crear la orden")).toBe("No se pudo crear la orden");
+    expect(getCreateOrderErrorMessage(null, "fallback")).toBe("fallback");
   });
 });

@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
+import { formatCurrency } from "@/features/erp/utils/currencyFormatters";
 import { format } from "date-fns";
 import { useBillingSummary } from "@/features/billing/useBilling";
 import { DollarSign, TrendingUp, Receipt, CreditCard, Search, ClipboardList, ChevronRight } from "lucide-react";
@@ -39,17 +40,17 @@ export default function BillingPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Facturación"
-        description="Monitorea ingresos y controla el estado de las órdenes de examen"
+        description="Lo cobrado por órdenes y lo que falta por cobrar."
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="billing-stats">
-        <StatCard title="Total Recaudado" value={`$${totalRevenue.toFixed(2)}`} icon={DollarSign} trend={{ value: Number(((totalRevenue - thisMonthRevenue) / Math.max(thisMonthRevenue, 1) * 100).toFixed(0)), label: "vs mes" }} />
-        <StatCard title="Mes Actual" value={`$${thisMonthRevenue.toFixed(2)}`} icon={TrendingUp} trend={{ value: 0, label: "" }} />
-        <StatCard title="Ordenes Totales" value={totalOrders.toLocaleString()} icon={Receipt} subtitle="Ordenes registradas" />
-        <StatCard title="Pendientes" value={pendingCount.toLocaleString()} icon={CreditCard} subtitle="Estado pendiente" />
+        <StatCard title="Total recaudado" value={formatCurrency(totalRevenue)} icon={DollarSign} />
+        <StatCard title="Este mes" value={formatCurrency(thisMonthRevenue)} icon={TrendingUp} />
+        <StatCard title="Órdenes" value={totalOrders.toLocaleString("es-VE")} icon={Receipt} />
+        <StatCard title="Pendientes de pago" value={pendingCount.toLocaleString("es-VE")} icon={CreditCard} />
       </div>
 
-      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm" data-tour="billing-table">
+      <Card className="overflow-hidden p-0" data-tour="billing-table">
         <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
           <div className="md:flex md:flex-1 md:space-y-0 space-y-3 gap-3">
             <div className="relative md:flex-1 w-full">
@@ -74,7 +75,7 @@ export default function BillingPage() {
 
         <Table className="w-full text-left border-collapse hidden md:table">
           <TableHeader>
-            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+            <TableRow className="bg-muted/5 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
               <TableHead>Paciente</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Monto</TableHead>
@@ -97,10 +98,10 @@ export default function BillingPage() {
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-3.5 h-3.5 text-success" />
-                        <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                        <span className="text-sm font-semibold mono">{Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       {order.total_bs != null && (
-                        <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                        <span className="text-xs text-muted-foreground mono">{formatCurrency(order.total_bs, "VES")}</span>
                       )}
                     </div>
                   </TableCell>
@@ -109,7 +110,7 @@ export default function BillingPage() {
                   </TableCell>
                   <TableCell>
                     <span className="font-mono font-bold text-primary">
-                      #{order.order_seq.toString().padStart(4, "0")}
+                      #{String(order.order_seq ?? "").padStart(4, "0")}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -152,10 +153,10 @@ export default function BillingPage() {
                   <div className="text-right">
                     <div className="flex items-center gap-1">
                       <DollarSign className="w-3 h-3 text-success" />
-                      <span className="text-md font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+                      <span className="text-md font-semibold mono">{Number(order.total_amount).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     {order.total_bs != null && (
-                      <span className="text-sm text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
+                      <span className="text-sm text-muted-foreground mono">{formatCurrency(order.total_bs, "VES")}</span>
                     )}
                   </div>
                 </div>

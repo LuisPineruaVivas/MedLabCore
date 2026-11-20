@@ -232,7 +232,7 @@ export function buildOrderReceiptData(params: {
     age: differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? "")) > 0 
       ? `${differenceInYears(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Años`
       : `${differenceInMonths(new Date(), new Date(selectedPatient.date_of_birth ?? ""))} Meses`,
-    gender: selectedPatient.gender,
+    gender: selectedPatient.gender ?? "",
     items: cart
       .filter((item) => item.price > 0)
       .map((item) => ({ test_name: item.test_name, price: item.price })),
@@ -295,4 +295,19 @@ export function buildSelectedPatientSummary(patient: SelectedPatient) {
   }
 
   return parts.join(" · ");
+}
+
+// Error codes raised by the create_lab_order RPC, shown as Spanish messages.
+const CREATE_ORDER_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_TEMPLATE: "Uno de los exámenes ya no está disponible en la lista de precios. Recarga la página e inténtalo de nuevo.",
+  INVALID_PATIENT: "El paciente no pertenece a este laboratorio o no fue registrado por ti.",
+  EXEMPTION_NOT_ALLOWED: "Tu rol no puede exonerar órdenes.",
+  INVALID_PRICE: "Los precios de la orden no son válidos.",
+  ORDER_ITEMS_REQUIRED: "Agrega al menos un examen a la orden.",
+};
+
+export function getCreateOrderErrorMessage(error: unknown, fallback: string) {
+  const message = typeof error === "object" && error !== null ? String((error as { message?: unknown }).message ?? "") : "";
+  const code = Object.keys(CREATE_ORDER_ERROR_MESSAGES).find((key) => message.includes(key));
+  return code ? CREATE_ORDER_ERROR_MESSAGES[code] : fallback;
 }

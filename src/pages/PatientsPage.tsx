@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Calendar, ChevronRight, Users, CheckCircle2 } from "lucide-react";
+import { Plus, Search, ChevronRight, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import { differenceInMonths, differenceInYears, format } from "date-fns";
+import { es } from "date-fns/locale";
 import { NewPatientDialog } from "@/features/patients/NewPatientDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,7 +23,7 @@ export default function PatientsPage() {
   const navigate = useNavigate();
   const debouncedSearch = useDebounce(search, 500);
   const { data: patientsData, isLoading } = usePatientsList(page, debouncedSearch);
-  const { data: stats, isLoading: statsLoading } = usePatientStats();
+  const { data: stats } = usePatientStats();
   const createMutation = useCreatePatient();
 
   const totalPatients = patientsData?.total ?? 0;
@@ -33,136 +34,98 @@ export default function PatientsPage() {
     setPage(1);
   }, [search]);
 
-  const avatarColors = [
-    "bg-blue-100 text-blue-600",
-    "bg-purple-100 text-purple-600",
-    "bg-pink-100 text-pink-600",
-    "bg-orange-100 text-orange-600",
-    "bg-emerald-100 text-emerald-600",
-  ];
-
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
   };
-
-  const getColor = (index: number) => {
-    return avatarColors[index % avatarColors.length];
+  const ageLabel = (dateOfBirth: string) => {
+    const years = differenceInYears(new Date(), new Date(dateOfBirth));
+    return years > 0 ? `${years} años` : `${differenceInMonths(new Date(), new Date(dateOfBirth))} meses`;
   };
+  const openPatient = (id: string) => navigate(`/patients/${id}`);
 
   return (
-    <div className="space-y-6 sm:space-y-4 animate-fade-in pb-10">
+    <div className="space-y-4 sm:space-y-6 pb-10">
       <PageHeader
-        title="Directorio de Pacientes"
-        description="Gestiona eficientemente los registros de pacientes"
+        title="Pacientes"
+        description={stats ? `${stats.total.toLocaleString("es-VE")} registrados · ${stats.thisMonth.toLocaleString("es-VE")} este mes · ${stats.today.toLocaleString("es-VE")} hoy` : "Busca un paciente por cédula, nombre o teléfono."}
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" data-tour="new-patient">
-            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span>Nuevo Paciente</span>
+          <Button onClick={() => setDialogOpen(true)} data-tour="new-patient">
+            <Plus />
+            Nuevo paciente
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
-        <StatCard
-          title="Total Pacientes Registrados"
-          value={statsLoading ? "..." : stats?.total.toLocaleString()}
-          icon={Users}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Registrados este Mes"
-          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString()}
-          icon={Calendar}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Registrados Hoy"
-          value={statsLoading ? "..." : stats?.today.toLocaleString()}
-          icon={Plus}
-          className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-      </div>
-
-      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
-        <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
+      <Card className="overflow-hidden p-0">
+        <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-4 py-4 sm:px-6 border-b border-border">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden />
             <Input
-              placeholder="Buscar por Cédula, Nombre o Número de Teléfono..."
+              aria-label="Buscar pacientes"
+              placeholder="Buscar por cédula, nombre o teléfono"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-11 bg-muted/20 border-border"
+              className="pl-9 h-11"
             />
           </div>
         </CardHeader>
 
         <Table className="w-full text-left border-collapse hidden md:table">
           <TableHeader>
-            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
-              <TableHead className="px-6 py-4 font-semibold">Cedula</TableHead>
-              <TableHead className="px-6 py-4 font-semibold">Nombre</TableHead>
-              <TableHead className="px-6 py-4 font-semibold">Contacto</TableHead>
-              <TableHead className="px-6 py-4 font-semibold">Registrado</TableHead>
-              <TableHead className="px-6 py-4 font-semibold">Examenes Pendiente</TableHead>
+            <TableRow>
+              <TableHead className="px-6">Paciente</TableHead>
+              <TableHead className="px-6">Cédula</TableHead>
+              <TableHead className="px-6">Contacto</TableHead>
+              <TableHead className="px-6">Registrado</TableHead>
+              <TableHead className="px-6">Exámenes pendientes</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {patientsToDisplay.map((patient, index) => (
+            {patientsToDisplay.map((patient) => (
               <TableRow
                 key={patient.id}
-                className="group hover:bg-muted/30 transition-colors cursor-pointer"
-                onClick={() => navigate(`/patients/${patient.id}`)}
+                className="cursor-pointer"
+                tabIndex={0}
+                aria-label={`Abrir ficha de ${patient.first_name} ${patient.last_name}`}
+                onClick={() => openPatient(patient.id)}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPatient(patient.id); } }}
               >
-                <TableCell className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[14px] font-bold bg-muted font-mono">
-                    {patient.id_number || patient.id.slice(0, 4)}
-                  </span>
-                </TableCell>
-                <TableCell className="px-6 py-4">
+                <TableCell className="px-6 py-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className={`h-9 w-9 border-none ${getColor(index)}`}>
-                      <AvatarFallback className="font-bold text-xs bg-transparent">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="neu-inset text-xs font-bold text-primary">
                         {getInitials(patient.first_name, patient.last_name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-foreground leading-tight">
-                        {patient.first_name} {patient.last_name}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground mt-0.5 capitalize">
-                        {patient.gender}, {differenceInYears(new Date(), new Date(patient.date_of_birth)) > 0 
-                                              ? `${differenceInYears(new Date(), new Date(patient.date_of_birth))} Años` 
-                                              : `${differenceInMonths(new Date(), new Date(patient.date_of_birth))} Meses`}
+                      <span className="text-sm font-semibold leading-tight">{patient.first_name} {patient.last_name}</span>
+                      <span className="mt-0.5 text-xs text-muted-foreground">
+                        <span className="capitalize">{patient.gender}</span> · {ageLabel(patient.date_of_birth)}
                       </span>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground leading-tight">
-                    {patient.phone || "[Sin Teléfono]"}
-                    </span>
-                    <span className="text-sm text-muted-foreground leading-tight">  
-                      {patient.email || "[Sin Email]"}
-                    </span>
+                <TableCell className="px-6 py-3 text-sm font-medium tabular-nums">{patient.id_number || "—"}</TableCell>
+                <TableCell className="px-6 py-3">
+                  <div className="flex flex-col text-sm leading-tight">
+                    <span className={patient.phone ? "font-medium tabular-nums" : "text-muted-foreground"}>{patient.phone || "Sin teléfono"}</span>
+                    <span className="text-muted-foreground">{patient.email || "Sin correo"}</span>
                   </div>
                 </TableCell>
-                <TableCell className="px-6 py-4 text-sm text-muted-foreground">
-                  <span className="text-sm font-semibold text-foreground leading-tight">
-                    {format(new Date(patient.created_at), "MMM d, yyyy")}
-                  </span>
+                <TableCell className="px-6 py-3 text-sm tabular-nums">
+                  {format(new Date(patient.created_at), "d MMM yyyy", { locale: es })}
                 </TableCell>
                 <TableCell className="px-6 py-4 text-sm text-muted-foreground">
                   {(() => {
                     const pendingCount = patient.pending_exams?.[0]?.count || 0;
 
                     return (
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${pendingCount > 0 ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700"}`}>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${pendingCount > 0 ? "border-warning/40 text-warning" : "border-success/40 text-success"}`}>
                         {pendingCount === 0 ? (
-                          <><CheckCircle2 className="w-3 h-3 mr-1" /> Al día</>
+                          <><CheckCircle2 className="w-3 h-3 mr-1" aria-hidden /> Al día</>
                         ) : (
-                          `${pendingCount} Pendiente${pendingCount > 1 ? "s" : ""}`
+                          `${pendingCount} pendiente${pendingCount > 1 ? "s" : ""}`
                         )}
                       </span>
                     );
@@ -176,51 +139,51 @@ export default function PatientsPage() {
         {isLoading && (
           <div className="py-20 text-center space-y-3">
             <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-            <p className="text-sm text-muted-foreground italic">Cargando pacientes...</p>
+            <p className="text-sm text-muted-foreground">Cargando pacientes…</p>
           </div>
         )}
 
         {!isLoading && patientsToDisplay.length === 0 && (
           <div className="py-20 text-center">
-            <Users className="w-12 h-12 text-muted/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No se encontraron pacientes con estos datos</p>
+            <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" aria-hidden />
+            <p className="text-sm font-medium">No hay pacientes con esa búsqueda.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Revisa la cédula o el nombre, o registra un paciente nuevo.</p>
           </div>
         )}
 
-        <div className="md:hidden space-y-3 mb-4">
-          {patientsToDisplay.map((patient, index) => (
-            <div
-              key={patient.id}
-              className="bg-card rounded-xl border border-border p-4 shadow-sm active:bg-muted/30 transition-colors m-2 cursor-pointer"
-              onClick={() => navigate(`/patients/${patient.id}`)}
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className={`h-10 w-10 ${getColor(index)}`}>
-                  <AvatarFallback className="font-bold text-xs bg-transparent">
+        <ul className="md:hidden space-y-3 p-3">
+          {patientsToDisplay.map((patient) => (
+            <li key={patient.id}>
+              <button
+                type="button"
+                onClick={() => openPatient(patient.id)}
+                className="neu-rise flex w-full items-center gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-[var(--neu-raised-sm)] active:shadow-[var(--neu-inset)]"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="neu-inset text-xs font-bold text-primary">
                     {getInitials(patient.first_name, patient.last_name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">
-                    {patient.first_name} {patient.last_name}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground font-mono">{patient.id_number || patient.id.slice(0, 4)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{patient.first_name} {patient.last_name}</p>
+                  <p className="text-sm text-muted-foreground tabular-nums">{patient.id_number || "Sin cédula"} · {ageLabel(patient.date_of_birth)}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
 
-        <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">
-          <span className="text-sm text-muted-foreground">
-            Mostrando <span className="text-foreground">{Math.min(totalPatients, (page - 1) * pageSize + 1)} a {Math.min(totalPatients, page * pageSize)}</span> de <span className="text-foreground">{totalPatients.toLocaleString()}</span> pacientes
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-4 sm:px-6">
+          <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="text-foreground">{Math.min(totalPatients, (page - 1) * pageSize + 1)}–{Math.min(totalPatients, page * pageSize)}</span> de <span className="text-foreground">{totalPatients.toLocaleString("es-VE")}</span> pacientes
           </span>
-          <div className="flex items-center gap-1.5 pb-4 sm:pb-0">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-md"
+              aria-label="Página anterior"
+              className="h-9 w-9"
               onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.max(prev - 1, 1)); }}
               disabled={page <= 1}
             >
@@ -233,7 +196,9 @@ export default function PatientsPage() {
                 <Button
                   key={p}
                   variant={p === page ? "default" : "outline"}
-                  className={`h-8 w-8 rounded-md text-xs font-bold ${p === page ? "bg-primary text-primary-foreground" : ""}`}
+                  aria-label={`Página ${p}`}
+                  aria-current={p === page ? "page" : undefined}
+                  className="h-9 w-9 tabular-nums"
                   onClick={(e) => { e.stopPropagation(); setPage(p); }}
                 >
                   {p}
@@ -245,7 +210,8 @@ export default function PatientsPage() {
             {pageCount > 5 && (
               <Button
                 variant={page === pageCount ? "default" : "outline"}
-                className="h-8 w-12 rounded-md text-xs font-bold"
+                aria-label={`Página ${pageCount}`}
+                className="h-9 min-w-9 px-2 tabular-nums"
                 onClick={(e) => { e.stopPropagation(); setPage(pageCount); }}
               >
                 {pageCount}
@@ -255,7 +221,8 @@ export default function PatientsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-md"
+              aria-label="Página siguiente"
+              className="h-9 w-9"
               onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.min(prev + 1, pageCount)); }}
               disabled={page >= pageCount}
             >
@@ -271,13 +238,9 @@ export default function PatientsPage() {
         onSubmit={async (data) => {
           try {
             await createMutation.mutateAsync(data);
-            toast.success("Paciente creado correctamente");
+            toast.success("Paciente registrado.");
           } catch (error) {
-            if (error.message.includes("patients_id_number_org_unique") || error.message.includes("duplicate key value")) {
-              toast.error("Ya existe un paciente con ese número de cédula en el laboratorio");
-            } else {
-              toast.error(error.message);
-            }
+            toast.error(getUserFacingErrorMessage(error, "No se pudo registrar el paciente"));
             throw error;
           }
         }}

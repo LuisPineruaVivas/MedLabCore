@@ -58,7 +58,7 @@ export default function LoginPage() {
             <img src="/logo.webp" alt="MedLabCore Logo" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl">Bienvenidos</CardTitle>
-          <CardDescription>Inicia Sesion en tu cuenta</CardDescription>
+          <CardDescription>Inicia sesión en tu cuenta</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
@@ -97,7 +97,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Iniciando Sesion..." : "Inicia Sesion"}
+              {loading ? "Iniciando sesión…" : "Iniciar sesión"}
             </Button>
             <p className="text-sm text-muted-foreground">
               ¿No tienes una cuenta?{" "}

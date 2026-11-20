@@ -18,7 +18,7 @@ interface PdfLabData {
   address?: string;
   phone?: string;
   email?: string;
-  logo?: string;
+  logo?: string | null;
   primary_color?: string;
   secondary_color?: string;
 }
@@ -181,7 +181,7 @@ export const TestReportPDF = ({ template, labData, patientData }: Props) => {
 
         {/* Secciones con encabezado + campos */}
         {template.result_type === "MICROBIOLOGY" ? (
-          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema)} />
+          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema as Parameters<typeof createMicrobiologyPreviewData>[0])} />
         ) : sections.map((section: TemplateSection) => (
           <View key={section.id}>
             {section.name === '' ?

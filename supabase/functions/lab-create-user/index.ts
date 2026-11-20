@@ -1,11 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { buildCorsHeaders, internalError } from "../_shared/http.ts";
+import { getPasswordError } from "../_shared/password.ts";
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -17,32 +16,39 @@ Deno.serve(async (req) => {
     );
 
     // Verify caller is lab_admin
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check caller is lab_admin or super_admin
-    //const { data: isLabAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "lab_admin" });
-    //const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
-    
-    //if (!isLabAdmin && !isSuperAdmin) {
-      //return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    //}
-
-    // Get caller's org_id
+    // Get caller's org_id and role
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("org_id")
+      .select("org_id, role")
       .eq("id", caller.id)
       .single();
+
+    // Check caller is lab_admin or super_admin. Lab admins are identified by
+    // profiles.role (what the app and the org RLS use); super admins by user_roles.
+    const { data: isSuperAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: caller.id, _role: "super_admin" });
+    if (callerProfile?.role !== "lab_admin" && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden: lab_admin or super_admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { email, password, full_name, role } = await req.json();
 
     if (!email || !password || !full_name || !role) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return new Response(JSON.stringify({ error: passwordError }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Only allow creating bioanalyst or secretary roles
@@ -60,25 +66,20 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, org_id: orgId },
+      user_metadata: { full_name },
+      // handle_new_user reads role/org_id only from app_metadata, which only the service role can set.
+      app_metadata: { role, org_id: orgId },
     });
 
     if (createError) {
       return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Update the role (trigger sets 'secretary' by default)
-    if (role !== "secretary") {
-      await supabaseAdmin
-        .from("user_roles")
-        .update({ role })
-        .eq("user_id", newUser.user.id);
-    }
-
-    // Update profile role
+    // Lab roles live only in profiles.role (S-09); user_roles holds super admins only.
+    // Update profile role and org (service role; also covers an older handle_new_user)
     await supabaseAdmin
       .from("profiles")
-      .update({ role })
+      .update({ role, org_id: orgId })
       .eq("id", newUser.user.id);
 
     return new Response(JSON.stringify({ user: newUser.user }), {
@@ -86,7 +87,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return internalError(corsHeaders, "lab-create-user", err);
   }
 });

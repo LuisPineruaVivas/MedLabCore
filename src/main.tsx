@@ -5,7 +5,7 @@ import "./index.css";
 import { Buffer } from 'buffer';
 import { initSentry } from "@/lib/sentry";
 import { reloadForNewVersion } from "@/lib/reloadForNewVersion";
-(window as any).Buffer = Buffer;
+(window as Window & { Buffer?: typeof Buffer }).Buffer = Buffer;
 
 initSentry();
 

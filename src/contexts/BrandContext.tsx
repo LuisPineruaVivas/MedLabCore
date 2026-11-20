@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo } from "react";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
+import { labThemeCss, labThemeVars } from "@/lib/labTheme";
 
 interface BrandConfig {
   logoUrl: string | null;
@@ -48,10 +49,19 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    // Inject CSS variables into the root
     document.documentElement.style.setProperty("--primary-brand", brand.primaryColor);
     document.documentElement.style.setProperty("--secondary-brand", brand.secondaryColor);
-  }, [brand.primaryColor, brand.secondaryColor]);
+    // The lab's color drives the whole interface, adjusted to stay AA in light and dark.
+    if (!organization?.primary_color) return;
+    let style = document.getElementById("lab-theme");
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "lab-theme";
+      document.head.appendChild(style);
+    }
+    style.textContent = labThemeCss(labThemeVars(organization.primary_color));
+    return () => style?.remove();
+  }, [brand.primaryColor, brand.secondaryColor, organization?.primary_color]);
 
   return (
     <BrandContext.Provider value={{ brand, isLoading }}>

@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/queryKeys";
-import type { TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
+import type { TemplateField, TestTemplateFormData, TestTemplateRow } from "@/features/tests/schemas";
 
-export function createEmptyTemplateField() {
+export function createEmptyTemplateField(): TemplateField {
   return {
     id: crypto.randomUUID(),
     label: "",
@@ -67,7 +67,7 @@ export function buildTemplateUpsertPayload(
 
 export function useTemplateById(id: string | undefined) {
   return useQuery({
-    queryKey: ["test-template", id],
+    queryKey: queryKeys.testTemplates.detail(id),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("test_templates")
@@ -123,9 +123,9 @@ export function useSaveTemplate() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["test-templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.list(variables.orgId, { scope: "admin" }) });
-      queryClient.invalidateQueries({ queryKey: ["test-template", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.testTemplates.detail(variables.id) });
     },
   });
 }

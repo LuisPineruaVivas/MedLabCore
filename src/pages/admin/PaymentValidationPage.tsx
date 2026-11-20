@@ -102,7 +102,7 @@ export default function PaymentValidationPage() {
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         {/* Tabs */}
-        <Tabs value={tabFilter} onValueChange={(val) => setTabFilter(val as any)}>
+        <Tabs value={tabFilter} onValueChange={(val) => setTabFilter(val as typeof tabFilter)}>
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="pending" className="text-xs">
               Pendientes

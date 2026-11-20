@@ -5,6 +5,8 @@ import { MicrobiologyReportSection } from './MicrobiologyReportSection';
 import { getFieldResultMeta } from "@/features/tests/schemas";
 import { getCategoryStyle } from "@/utils/validators";
 import type { OrderRow } from "@/features/orders/schemas";
+import type { ReportOrderItem, ReportResultsData } from "@/lib/unifiedTestReportPDF";
+import { parseJsonObject } from "@/lib/json";
 
 Font.register({
   family: "Inter",
@@ -18,7 +20,7 @@ Font.registerHyphenationCallback((word) => [word]);
 
 interface UnifiedProps {
   orden: OrderRow;
-  orderItems: Array<Record<string, unknown>>;
+  orderItems: ReportOrderItem[];
   departmentOrder?: string[];
   patientData: {
     name: string;
@@ -392,8 +394,9 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
   const grouped: Record<string, FlatRow[]> = {};
 
   for (const item of sortedItems) {
-    const resultsData = typeof item.results_data === "string" ? JSON.parse(item.results_data || "{}") : (item.results_data || {});
-    const templateSchema = typeof item.test_templates?.schema === "string" ? JSON.parse(item.test_templates.schema || "{}") : (item.test_templates?.schema || {});
+    // B-05: a malformed value gives {} instead of failing the whole report.
+    const resultsData = parseJsonObject(item.results_data) as ReportResultsData;
+    const templateSchema = parseJsonObject(item.test_templates?.schema) as { hide_table_header?: boolean };
 
     const category = item.category || resultsData?.category || item.test_templates?.category || "Pruebas Especiales";
     const isMicrobiology =
@@ -451,7 +454,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
 
       if (section.name !== "") {
         sectionRows.push({
-          fieldLabel: section.name,
+          fieldLabel: section.name!,
           value: "",
           unit: "",
           rangeDisplay: "",
@@ -465,7 +468,7 @@ export const UnifiedTestReportRivalta = ({ orden, orderItems, departmentOrder = 
         const { rangeDisplay, isOutOfRange, matchedRange } = getFieldResultMeta(field, patientGender, patientAge);
         const parsedValue = parseNumericResult(field.value);
         const resultColor = Number.isFinite(parsedValue)
-          ? getCategoryStyle(parsedValue, matchedRange)
+          ? getCategoryStyle(parsedValue!, matchedRange)
           : "black";
 
         sectionRows.push({

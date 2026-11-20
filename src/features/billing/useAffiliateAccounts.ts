@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { parseAmount } from "./billingUtils";
 import { toast } from "sonner";
 
 export interface AffiliateAccountOrderRow {
@@ -72,38 +73,42 @@ export function useAffiliatePendingBalance(affiliateId: string | null) {
   return useQuery({
     queryKey: queryKeys.affiliateAccounts.pendingBalance(affiliateId),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("total_amount")
-        .eq("created_by", affiliateId!)
-        .eq("payment_status", "pending");
-
+      // Summed in the database: downloading the orders stopped at 1,000 rows.
+      const { data, error } = await supabase.rpc("get_affiliate_pending_balance", { p_affiliate_id: affiliateId! });
       if (error) throw error;
-      return (data ?? []).reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0);
+      return parseAmount(data);
     },
     enabled: !!affiliateId,
   });
 }
 
-export function useAffiliateOrders(affiliateId: string | null, paymentStatus: string) {
+export const AFFILIATE_ORDERS_PAGE_SIZE = 50;
+
+export function useAffiliateOrders(affiliateId: string | null, paymentStatus: string, page: number) {
   return useQuery({
-    queryKey: queryKeys.affiliateAccounts.orders(affiliateId, { paymentStatus }),
+    queryKey: queryKeys.affiliateAccounts.orders(affiliateId, { paymentStatus, page }),
     queryFn: async () => {
+      const offset = (page - 1) * AFFILIATE_ORDERS_PAGE_SIZE;
       let query = supabase
         .from("orders")
         .select(
-          "id, order_seq, created_at, payment_status, total_amount, patients(first_name, last_name, id_number)"
+          "id, order_seq, created_at, payment_status, total_amount, patients(first_name, last_name, id_number)",
+          { count: "exact" }
         )
         .eq("created_by", affiliateId!)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
 
       if (paymentStatus !== "all") {
         query = query.eq("payment_status", paymentStatus as "pending" | "paid");
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query.range(offset, offset + AFFILIATE_ORDERS_PAGE_SIZE - 1);
+      // PGRST103 (HTTP 416): the page is past the end, e.g. after its orders were marked
+      // paid. Report it as empty; the page then moves back to a page that exists.
+      if (error?.code === "PGRST103") return { orders: [] as AffiliateAccountOrderRow[], total: 0 };
       if (error) throw error;
-      return (data ?? []) as AffiliateAccountOrderRow[];
+      return { orders: (data ?? []) as AffiliateAccountOrderRow[], total: count ?? 0 };
     },
     enabled: !!affiliateId,
   });
@@ -129,9 +134,7 @@ export function useMarkAffiliateOrdersPaid() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.affiliateAccounts.orders(variables.affiliateId, { paymentStatus: "all" }) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.affiliateAccounts.orders(variables.affiliateId, { paymentStatus: "pending" }) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.affiliateAccounts.orders(variables.affiliateId, { paymentStatus: "paid" }) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.affiliateAccounts.ordersAll(variables.affiliateId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.affiliateAccounts.pendingBalance(variables.affiliateId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(undefined) });
       toast.success("Ordenes marcadas como pagadas");

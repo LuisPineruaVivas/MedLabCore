@@ -50,7 +50,8 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       id_number: "",
       first_name: "",
       last_name: "",
-      date_of_birth: null,
+      // No date until the user picks one; zod requires it on submit.
+      date_of_birth: null as unknown as Date,
       gender: "masculino",
       phone: "",
       email: "",
@@ -72,6 +73,8 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
       await onSubmit(data);
       form.reset();
       onOpenChange(false);
+    } catch {
+      // The caller already showed the error; keep the dialog open so the user can fix the data (Sentry MEDLABCORE-5).
     } finally {
       setLoading(false);
     }
@@ -146,7 +149,7 @@ export function NewPatientDialog({ open, onOpenChange, onSubmit }: NewPatientDia
                     <FormControl>
                       <DatePicker
                         selected={field.value}
-                        onChange={(date) => field.onChange(date)}
+                        onChange={(date: Date | null) => field.onChange(date)}
                         dateFormat="dd/MM/yyyy"
                         locale={es}
                         showMonthDropdown

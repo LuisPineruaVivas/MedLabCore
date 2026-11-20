@@ -12,32 +12,168 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      antibiotics: {
+      account_movements: {
         Row: {
-          id: string
-          org_id: string
-          name: string
-          is_active: boolean
-          sort_order: number
+          account_id: string
+          amount: number
+          amount_usd: number | null
+          category_id: string | null
           created_at: string
+          created_by: string
+          currency: string
+          description: string | null
+          exchange_rate: number | null
+          id: string
+          inventory_transaction_id: string | null
+          is_void: boolean
+          kind: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date: string
+          org_id: string
+          payable_amount: number | null
+          payable_id: string | null
+          reference_number: string | null
+          transfer_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
-          id?: string
-          org_id: string
-          name: string
-          is_active?: boolean
-          sort_order?: number
+          account_id: string
+          amount: number
+          amount_usd?: number | null
+          category_id?: string | null
           created_at?: string
+          created_by: string
+          currency: string
+          description?: string | null
+          exchange_rate?: number | null
+          id?: string
+          inventory_transaction_id?: string | null
+          is_void?: boolean
+          kind: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date: string
+          org_id: string
+          payable_amount?: number | null
+          payable_id?: string | null
+          reference_number?: string | null
+          transfer_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
-          id?: string
-          org_id?: string
-          name?: string
-          is_active?: boolean
-          sort_order?: number
+          account_id?: string
+          amount?: number
+          amount_usd?: number | null
+          category_id?: string | null
           created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string | null
+          exchange_rate?: number | null
+          id?: string
+          inventory_transaction_id?: string | null
+          is_void?: boolean
+          kind?: Database["public"]["Enums"]["account_movement_kind"]
+          movement_date?: string
+          org_id?: string
+          payable_amount?: number | null
+          payable_id?: string | null
+          reference_number?: string | null
+          transfer_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_movements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "payables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      antibiotics: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string | null
+          sort_order?: number
         }
         Relationships: [
           {
@@ -46,42 +182,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          }
+          },
         ]
-      },
+      }
       audit_logs: {
         Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
           id: string
+          metadata: Json | null
           org_id: string
           user_id: string | null
           user_name: string | null
-          action: string
-          entity_type: string
-          entity_id: string | null
-          metadata: Json | null
-          created_at: string
         }
         Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
           id?: string
+          metadata?: Json | null
           org_id: string
           user_id?: string | null
           user_name?: string | null
-          action: string
-          entity_type: string
-          entity_id?: string | null
-          metadata?: Json | null
-          created_at?: string
         }
         Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
           id?: string
+          metadata?: Json | null
           org_id?: string
           user_id?: string | null
           user_name?: string | null
-          action?: string
-          entity_type?: string
-          entity_id?: string | null
-          metadata?: Json | null
-          created_at?: string
         }
         Relationships: [
           {
@@ -92,7 +228,152 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      },
+      }
+      bank_accounts: {
+        Row: {
+          account_holder: string | null
+          account_number: string | null
+          bank_name: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          method_type: Database["public"]["Enums"]["payment_method_type"]
+          name: string
+          opening_balance: number
+          opening_date: string
+          org_id: string
+          phone_number: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          method_type?: Database["public"]["Enums"]["payment_method_type"]
+          name: string
+          opening_balance?: number
+          opening_date?: string
+          org_id: string
+          phone_number?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          method_type?: Database["public"]["Enums"]["payment_method_type"]
+          name?: string
+          opening_balance?: number
+          opening_date?: string
+          org_id?: string
+          phone_number?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_register_sessions: {
+        Row: {
+          actual_totals: Json | null
+          closed_at: string | null
+          closed_by: string | null
+          closing_notes: string | null
+          created_at: string
+          difference: Json | null
+          expected_totals: Json | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_cash_usd: number
+          opening_cash_ves: number
+          operator_name: string
+          org_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["cash_session_status"]
+          updated_at: string
+        }
+        Insert: {
+          actual_totals?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_notes?: string | null
+          created_at?: string
+          difference?: Json | null
+          expected_totals?: Json | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by: string
+          opening_cash_usd?: number
+          opening_cash_ves?: number
+          operator_name: string
+          org_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["cash_session_status"]
+          updated_at?: string
+        }
+        Update: {
+          actual_totals?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_notes?: string | null
+          created_at?: string
+          difference?: Json | null
+          expected_totals?: Json | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_cash_usd?: number
+          opening_cash_ves?: number
+          operator_name?: string
+          org_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["cash_session_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_register_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_profiles: {
         Row: {
           created_at: string
@@ -124,6 +405,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "exam_profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exchange_rate_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_date: string
+          from_currency: string
+          id: string
+          org_id: string
+          rate: number
+          source: string
+          to_currency: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          from_currency?: string
+          id?: string
+          org_id: string
+          rate: number
+          source?: string
+          to_currency?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          from_currency?: string
+          id?: string
+          org_id?: string
+          rate?: number
+          source?: string
+          to_currency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rate_history_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -163,6 +488,450 @@ export type Database = {
           },
         ]
       }
+      finance_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          org_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          org_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          org_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          created_at: string
+          created_by: string
+          expiration_date: string | null
+          id: string
+          invoice_consumption_id: string | null
+          item_id: string
+          lot_number: string | null
+          new_stock: number
+          new_unit_cost: number
+          notes: string | null
+          org_id: string
+          prev_stock: number
+          prev_unit_cost: number
+          purchase_invoice_ref: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          supplier_name: string | null
+          transaction_date: string
+          transaction_type: Database["public"]["Enums"]["inventory_transaction_type"]
+          unit_cost_at_time: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expiration_date?: string | null
+          id?: string
+          invoice_consumption_id?: string | null
+          item_id: string
+          lot_number?: string | null
+          new_stock?: number
+          new_unit_cost?: number
+          notes?: string | null
+          org_id: string
+          prev_stock?: number
+          prev_unit_cost?: number
+          purchase_invoice_ref?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          supplier_name?: string | null
+          transaction_date?: string
+          transaction_type: Database["public"]["Enums"]["inventory_transaction_type"]
+          unit_cost_at_time?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expiration_date?: string | null
+          id?: string
+          invoice_consumption_id?: string | null
+          item_id?: string
+          lot_number?: string | null
+          new_stock?: number
+          new_unit_cost?: number
+          notes?: string | null
+          org_id?: string
+          prev_stock?: number
+          prev_unit_cost?: number
+          purchase_invoice_ref?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          supplier_name?: string | null
+          transaction_date?: string
+          transaction_type?: Database["public"]["Enums"]["inventory_transaction_type"]
+          unit_cost_at_time?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_invoice_consumption_fkey"
+            columns: ["invoice_consumption_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_consumptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_consumptions: {
+        Row: {
+          adjustment_reason: string | null
+          confirmed_by: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          is_extra: boolean
+          item_id: string
+          order_id: string
+          order_item_id: string | null
+          org_id: string
+          quantity_consumed: number
+          total_cost: number
+          unit_cost_at_consumption: number
+          was_adjusted: boolean
+        }
+        Insert: {
+          adjustment_reason?: string | null
+          confirmed_by: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_extra?: boolean
+          item_id: string
+          order_id: string
+          order_item_id?: string | null
+          org_id: string
+          quantity_consumed: number
+          total_cost?: number
+          unit_cost_at_consumption?: number
+          was_adjusted?: boolean
+        }
+        Update: {
+          adjustment_reason?: string | null
+          confirmed_by?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_extra?: boolean
+          item_id?: string
+          order_id?: string
+          order_item_id?: string | null
+          org_id?: string
+          quantity_consumed?: number
+          total_cost?: number
+          unit_cost_at_consumption?: number
+          was_adjusted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_consumptions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_consumptions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_consumptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_consumptions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_consumptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_sequences: {
+        Row: {
+          last_value: number
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_value?: number
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_value?: number
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_sequences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid_usd: number
+          balance_due_usd: number
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          discount_amount: number
+          discount_pct: number
+          due_date: string | null
+          exchange_rate: number | null
+          exchange_rate_id: string | null
+          id: string
+          invoice_number: string
+          invoice_seq: number
+          is_exempted: boolean
+          issued_at: string
+          notes: string | null
+          order_id: string
+          org_id: string
+          paid_at: string | null
+          patient_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal_usd: number
+          tax_amount: number
+          tax_pct: number
+          total_local: number | null
+          total_usd: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid_usd?: number
+          balance_due_usd?: number
+          cancelled_at?: string | null
+          created_at?: string
+          created_by: string
+          discount_amount?: number
+          discount_pct?: number
+          due_date?: string | null
+          exchange_rate?: number | null
+          exchange_rate_id?: string | null
+          id?: string
+          invoice_number: string
+          invoice_seq: number
+          is_exempted?: boolean
+          issued_at?: string
+          notes?: string | null
+          order_id: string
+          org_id: string
+          paid_at?: string | null
+          patient_id: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal_usd?: number
+          tax_amount?: number
+          tax_pct?: number
+          total_local?: number | null
+          total_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid_usd?: number
+          balance_due_usd?: number
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string
+          discount_amount?: number
+          discount_pct?: number
+          due_date?: string | null
+          exchange_rate?: number | null
+          exchange_rate_id?: string | null
+          id?: string
+          invoice_number?: string
+          invoice_seq?: number
+          is_exempted?: boolean
+          issued_at?: string
+          notes?: string | null
+          order_id?: string
+          org_id?: string
+          paid_at?: string | null
+          patient_id?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal_usd?: number
+          tax_amount?: number
+          tax_pct?: number
+          total_local?: number | null
+          total_usd?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_exchange_rate_id_fkey"
+            columns: ["exchange_rate_id"]
+            isOneToOne: false
+            referencedRelation: "exchange_rate_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          category: Database["public"]["Enums"]["item_category"]
+          code: string | null
+          created_at: string
+          created_by: string | null
+          current_stock: number
+          description: string | null
+          expiration_date: string | null
+          id: string
+          is_active: boolean
+          is_trackable: boolean
+          lot_number: string | null
+          max_stock: number | null
+          min_stock: number
+          name: string
+          org_id: string
+          storage_condition: string | null
+          total_value: number
+          unit_cost: number
+          unit_of_measure: Database["public"]["Enums"]["unit_of_measure"]
+          units_per_package: number
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["item_category"]
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_stock?: number
+          description?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_trackable?: boolean
+          lot_number?: string | null
+          max_stock?: number | null
+          min_stock?: number
+          name: string
+          org_id: string
+          storage_condition?: string | null
+          total_value?: number
+          unit_cost?: number
+          unit_of_measure?: Database["public"]["Enums"]["unit_of_measure"]
+          units_per_package?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["item_category"]
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_stock?: number
+          description?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_trackable?: boolean
+          lot_number?: string | null
+          max_stock?: number | null
+          min_stock?: number
+          name?: string
+          org_id?: string
+          storage_condition?: string | null
+          total_value?: number
+          unit_cost?: number
+          unit_of_measure?: Database["public"]["Enums"]["unit_of_measure"]
+          units_per_package?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -173,8 +942,8 @@ export type Database = {
           parent_profile_id: string | null
           price_at_order: number
           results_data: Json | null
-          test_method_id: string | null
           template_id: string | null
+          test_method_id: string | null
           test_name: string
         }
         Insert: {
@@ -186,8 +955,8 @@ export type Database = {
           parent_profile_id?: string | null
           price_at_order?: number
           results_data?: Json | null
-          test_method_id?: string | null
           template_id?: string | null
+          test_method_id?: string | null
           test_name: string
         }
         Update: {
@@ -199,8 +968,8 @@ export type Database = {
           parent_profile_id?: string | null
           price_at_order?: number
           results_data?: Json | null
-          test_method_id?: string | null
           template_id?: string | null
+          test_method_id?: string | null
           test_name?: string
         }
         Relationships: [
@@ -238,12 +1007,15 @@ export type Database = {
         Row: {
           access_pin: string | null
           completed_at: string | null
+          consumption_confirmed_at: string | null
+          consumption_confirmed_by: string | null
           created_at: string
           created_by: string
           exchange_rate: number | null
-          firma_url: string | null
           firma_name: string | null
+          firma_url: string | null
           id: string
+          invoice_id: string | null
           is_exempted: boolean
           notes: string | null
           order_seq: number | null
@@ -252,6 +1024,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           sello_url: string | null
           signature_footer_text: string | null
+          signed_by: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
           total_bs: number | null
@@ -260,12 +1033,15 @@ export type Database = {
         Insert: {
           access_pin?: string | null
           completed_at?: string | null
+          consumption_confirmed_at?: string | null
+          consumption_confirmed_by?: string | null
           created_at?: string
           created_by?: string
           exchange_rate?: number | null
-          firma_url?: string | null
           firma_name?: string | null
+          firma_url?: string | null
           id?: string
+          invoice_id?: string | null
           is_exempted?: boolean
           notes?: string | null
           order_seq?: number | null
@@ -274,6 +1050,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
           signature_footer_text?: string | null
+          signed_by?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -282,12 +1059,15 @@ export type Database = {
         Update: {
           access_pin?: string | null
           completed_at?: string | null
+          consumption_confirmed_at?: string | null
+          consumption_confirmed_by?: string | null
           created_at?: string
           created_by?: string
           exchange_rate?: number | null
-          firma_url?: string | null
           firma_name?: string | null
+          firma_url?: string | null
           id?: string
+          invoice_id?: string | null
           is_exempted?: boolean
           notes?: string | null
           order_seq?: number | null
@@ -296,6 +1076,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sello_url?: string | null
           signature_footer_text?: string | null
+          signed_by?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
           total_bs?: number | null
@@ -303,10 +1084,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "orders_invoice_id_fkey"
+            columns: ["invoice_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {
@@ -416,6 +1197,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           email: string | null
+          has_erp_module: boolean
           id: string
           is_active: boolean | null
           logo_url: string | null
@@ -428,6 +1210,9 @@ export type Database = {
           secondary_color: string | null
           state: string | null
           subscription_active: boolean
+          subscription_expires_at: string | null
+          subscription_grace_until: string | null
+          subscription_plan_price: number | null
           watermark_url: string | null
         }
         Insert: {
@@ -436,6 +1221,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           email?: string | null
+          has_erp_module?: boolean
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -448,6 +1234,9 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          subscription_expires_at?: string | null
+          subscription_grace_until?: string | null
+          subscription_plan_price?: number | null
           watermark_url?: string | null
         }
         Update: {
@@ -456,6 +1245,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           email?: string | null
+          has_erp_module?: boolean
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -468,6 +1258,9 @@ export type Database = {
           secondary_color?: string | null
           state?: string | null
           subscription_active?: boolean
+          subscription_expires_at?: string | null
+          subscription_grace_until?: string | null
+          subscription_plan_price?: number | null
           watermark_url?: string | null
         }
         Relationships: []
@@ -520,13 +1313,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "patients_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "patients_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -534,6 +1320,274 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payables: {
+        Row: {
+          amount: number
+          amount_paid: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          category_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          description: string
+          due_date: string | null
+          id: string
+          inventory_transaction_id: string | null
+          org_id: string
+          payee: string | null
+          reference_number: string | null
+          status: Database["public"]["Enums"]["payable_status"]
+        }
+        Insert: {
+          amount: number
+          amount_paid?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id: string
+          created_at?: string
+          created_by: string
+          currency: string
+          description: string
+          due_date?: string | null
+          id?: string
+          inventory_transaction_id?: string | null
+          org_id: string
+          payee?: string | null
+          reference_number?: string | null
+          status?: Database["public"]["Enums"]["payable_status"]
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          inventory_transaction_id?: string | null
+          org_id?: string
+          payee?: string | null
+          reference_number?: string | null
+          status?: Database["public"]["Enums"]["payable_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payables_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_schedules: {
+        Row: {
+          amount_due_usd: number
+          amount_paid_usd: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          invoice_id: string
+          notes: string | null
+          org_id: string
+          paid_at: string | null
+          status: Database["public"]["Enums"]["schedule_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_due_usd: number
+          amount_paid_usd?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          invoice_id: string
+          notes?: string | null
+          org_id: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["schedule_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_due_usd?: number
+          amount_paid_usd?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          invoice_id?: string
+          notes?: string | null
+          org_id?: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["schedule_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_schedules_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_schedules_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          amount_usd: number
+          bank_account_id: string | null
+          cash_session_id: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          exchange_rate: number | null
+          exchange_rate_id: string | null
+          id: string
+          invoice_id: string
+          is_void: boolean
+          method_type: Database["public"]["Enums"]["payment_method_type"]
+          org_id: string
+          payment_date: string
+          payment_method: string
+          receipt_url: string | null
+          reference_number: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          amount: number
+          amount_usd: number
+          bank_account_id?: string | null
+          cash_session_id?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          exchange_rate?: number | null
+          exchange_rate_id?: string | null
+          id?: string
+          invoice_id: string
+          is_void?: boolean
+          method_type?: Database["public"]["Enums"]["payment_method_type"]
+          org_id: string
+          payment_date?: string
+          payment_method: string
+          receipt_url?: string | null
+          reference_number?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount?: number
+          amount_usd?: number
+          bank_account_id?: string | null
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          exchange_rate?: number | null
+          exchange_rate_id?: string | null
+          id?: string
+          invoice_id?: string
+          is_void?: boolean
+          method_type?: Database["public"]["Enums"]["payment_method_type"]
+          org_id?: string
+          payment_date?: string
+          payment_method?: string
+          receipt_url?: string | null
+          reference_number?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_cash_session_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_register_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_exchange_rate_id_fkey"
+            columns: ["exchange_rate_id"]
+            isOneToOne: false
+            referencedRelation: "exchange_rate_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_login_attempts: {
+        Row: {
+          failures: number
+          id_number_hash: string
+          window_start: string
+        }
+        Insert: {
+          failures?: number
+          id_number_hash: string
+          window_start?: string
+        }
+        Update: {
+          failures?: number
+          id_number_hash?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       profile_templates_junction: {
         Row: {
@@ -580,7 +1634,6 @@ export type Database = {
           created_at: string | null
           email: string | null
           firma_url: string | null
-          firma_name: string | null
           full_name: string | null
           id: string
           onboarding_completed_at: string | null
@@ -593,7 +1646,6 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           firma_url?: string | null
-          firma_name?: string | null
           full_name?: string | null
           id: string
           onboarding_completed_at?: string | null
@@ -606,7 +1658,6 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           firma_url?: string | null
-          firma_name?: string | null
           full_name?: string | null
           id?: string
           onboarding_completed_at?: string | null
@@ -621,6 +1672,133 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_payments: {
+        Row: {
+          amount_bs: number | null
+          amount_usd: number
+          created_at: string
+          exchange_rate: number | null
+          id: string
+          notes: string | null
+          org_id: string
+          payment_date: string
+          payment_method: string
+          proof_url: string
+          reference_number: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_bs?: number | null
+          amount_usd?: number
+          created_at?: string
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          payment_date?: string
+          payment_method: string
+          proof_url: string
+          reference_number: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_bs?: number | null
+          amount_usd?: number
+          created_at?: string
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          payment_date?: string
+          payment_method?: string
+          proof_url?: string
+          reference_number?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["subscription_payment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_materials: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          notes: string | null
+          org_id: string
+          quantity_per_test: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          notes?: string | null
+          org_id: string
+          quantity_per_test?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          notes?: string | null
+          org_id?: string
+          quantity_per_test?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_materials_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_materials_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_materials_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "test_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_materials_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "v_test_templates_filtered"
             referencedColumns: ["id"]
           },
         ]
@@ -683,10 +1861,10 @@ export type Database = {
           is_active: boolean
           name: string
           org_id: string | null
+          result_type: string
           schema: Json
           sort_order: number | null
           updated_at: string
-          result_type: string
         }
         Insert: {
           base_price?: number
@@ -697,10 +1875,10 @@ export type Database = {
           is_active?: boolean
           name: string
           org_id?: string | null
+          result_type?: string
           schema?: Json
           sort_order?: number | null
           updated_at?: string
-          result_type?: string
         }
         Update: {
           base_price?: number
@@ -711,10 +1889,10 @@ export type Database = {
           is_active?: boolean
           name?: string
           org_id?: string | null
+          result_type?: string
           schema?: Json
           sort_order?: number | null
           updated_at?: string
-          result_type?: string
         }
         Relationships: [
           {
@@ -739,6 +1917,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      test_templates_backup: {
+        Row: {
+          base_price: number | null
+          category: string | null
+          created_at: string | null
+          id: string | null
+          id_global_ref: string | null
+          is_active: boolean | null
+          name: string | null
+          org_id: string | null
+          schema: Json | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string | null
+          id_global_ref?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          org_id?: string | null
+          schema?: Json | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string | null
+          id_global_ref?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          org_id?: string | null
+          schema?: Json | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -799,6 +2019,59 @@ export type Database = {
       }
     }
     Functions: {
+      approve_subscription_payment: {
+        Args: { p_payment_id: string }
+        Returns: Json
+      }
+      assert_org_member: { Args: { p_org_id: string }; Returns: undefined }
+      bulk_upsert_org_prices: {
+        Args: { p_items: Json; p_org_id: string }
+        Returns: Json
+      }
+      cancel_payable: {
+        Args: { p_payable_id: string; p_reason: string }
+        Returns: Json
+      }
+      close_cash_session: {
+        Args: {
+          p_actual_totals: Json
+          p_closing_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      complete_onboarding: { Args: never; Returns: undefined }
+      confirm_order_consumption: {
+        Args: { p_consumptions: Json; p_order_id: string; p_signature?: Json }
+        Returns: Json
+      }
+      create_account_movement: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_category_id?: string
+          p_description?: string
+          p_exchange_rate?: number
+          p_kind: string
+          p_movement_date?: string
+          p_org_id: string
+          p_reference_number?: string
+        }
+        Returns: Json
+      }
+      create_account_transfer: {
+        Args: {
+          p_description?: string
+          p_from_account_id: string
+          p_from_amount: number
+          p_movement_date?: string
+          p_org_id: string
+          p_reference_number?: string
+          p_to_account_id: string
+          p_to_amount?: number
+        }
+        Returns: Json
+      }
       create_lab_order: {
         Args: {
           p_created_by: string
@@ -812,6 +2085,131 @@ export type Database = {
         }
         Returns: Json
       }
+      create_payable: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_currency?: string
+          p_description: string
+          p_due_date?: string
+          p_org_id: string
+          p_payee?: string
+          p_reference_number?: string
+        }
+        Returns: Json
+      }
+      create_payment_schedule: {
+        Args: { p_installments: Json; p_invoice_id: string; p_org_id: string }
+        Returns: Json
+      }
+      erp_amount_usd: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_org_id: string
+          p_rate: number
+        }
+        Returns: {
+          amount_usd: number
+          rate: number
+        }[]
+      }
+      erp_assert_access: {
+        Args: {
+          p_org_id: string
+          p_roles: Database["public"]["Enums"]["user_role"][]
+        }
+        Returns: undefined
+      }
+      erp_backfill_invoices: {
+        Args: { p_dry_run?: boolean; p_from?: string; p_org_id: string }
+        Returns: Json
+      }
+      erp_cash_session_totals: { Args: { p_session_id: string }; Returns: Json }
+      erp_finance_entries: {
+        Args: { p_org_id: string }
+        Returns: {
+          account_id: string
+          amount_usd: number
+          category_id: string
+          category_name: string
+          created_at: string
+          created_by: string
+          currency: string
+          description: string
+          entry_date: string
+          exchange_rate: number
+          id: string
+          invoice_id: string
+          is_void: boolean
+          kind: string
+          order_id: string
+          reference_number: string
+          signed_amount: number
+          source: string
+          transfer_id: string
+          void_reason: string
+        }[]
+      }
+      erp_invoice_overdue_amount: {
+        Args: { p_invoice_id: string }
+        Returns: number
+      }
+      erp_local_date: { Args: { p_ts: string }; Returns: string }
+      erp_reference_rate: {
+        Args: { p_currency: string; p_org_id: string }
+        Returns: number
+      }
+      erp_refresh_payable: {
+        Args: { p_payable_id: string }
+        Returns: undefined
+      }
+      erp_report_range: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: {
+          date_from: string
+          date_to: string
+        }[]
+      }
+      erp_user_has_role: {
+        Args: {
+          p_org_id: string
+          p_roles: Database["public"]["Enums"]["user_role"][]
+        }
+        Returns: boolean
+      }
+      fn_log_audit_event: {
+        Args: {
+          p_action: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_org_id: string
+        }
+        Returns: undefined
+      }
+      get_account_balances: { Args: { p_org_id: string }; Returns: Json }
+      get_accounts_receivable_report: {
+        Args: { p_limit?: number; p_offset?: number; p_org_id: string }
+        Returns: Json
+      }
+      get_affiliate_pending_balance: {
+        Args: { p_affiliate_id: string }
+        Returns: number
+      }
+      get_billing_totals: {
+        Args: {
+          p_from?: string
+          p_month_start?: string
+          p_org_id: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      get_cash_session_summary: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       get_dashboard_summary: { Args: { p_org_id: string }; Returns: Json }
       get_dashboard_top_tests: {
         Args: { p_limit?: number; p_org_id: string }
@@ -821,14 +2219,100 @@ export type Database = {
           pct: number
         }[]
       }
-      complete_onboarding: { Args: never; Returns: undefined }
+      get_erp_financial_summary: {
+        Args: { p_date_from?: string; p_date_to?: string; p_org_id: string }
+        Returns: Json
+      }
+      get_erp_inventory_summary: {
+        Args: { p_date_from?: string; p_date_to?: string; p_org_id: string }
+        Returns: Json
+      }
+      get_erp_profitability_report: {
+        Args: { p_date_from?: string; p_date_to?: string; p_org_id: string }
+        Returns: Json
+      }
+      get_exchange_rate: {
+        Args: {
+          p_date?: string
+          p_from?: string
+          p_org_id: string
+          p_to?: string
+        }
+        Returns: number
+      }
+      get_finance_dashboard: {
+        Args: { p_date_from?: string; p_date_to?: string; p_org_id: string }
+        Returns: Json
+      }
+      get_finance_movements: {
+        Args: {
+          p_account_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_kind?: string
+          p_limit?: number
+          p_offset?: number
+          p_org_id: string
+        }
+        Returns: Json
+      }
       get_my_org_id: { Args: never; Returns: string }
+      get_my_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_order_bom_preview: { Args: { p_order_id: string }; Returns: Json }
+      get_payables_summary: { Args: { p_org_id: string }; Returns: Json }
+      get_public_org_brand: {
+        Args: { p_org_id: string }
+        Returns: {
+          address: string
+          email: string
+          logo_url: string
+          name: string
+          phone: string
+          primary_color: string
+          report_template: string
+          secondary_color: string
+        }[]
+      }
+      get_receivables_overview: { Args: { p_org_id: string }; Returns: Json }
+      get_superadmin_metrics: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_api_caller: { Args: never; Returns: boolean }
+      mark_overdue_invoices: { Args: never; Returns: Json }
+      open_cash_session: {
+        Args: {
+          p_notes?: string
+          p_opening_usd?: number
+          p_opening_ves?: number
+          p_org_id: string
+        }
+        Returns: Json
+      }
+      order_template_for_org: {
+        Args: { p_org_id: string; p_template_id: string }
+        Returns: {
+          base_price: number
+          schema: Json
+        }[]
+      }
+      pay_payable: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_exchange_rate?: number
+          p_movement_date?: string
+          p_payable_id: string
+          p_reference_number?: string
+        }
+        Returns: Json
       }
       portal_authenticate: {
         Args: { p_dni: string; p_pin: string }
@@ -843,6 +2327,7 @@ export type Database = {
           phone: string
         }[]
       }
+      portal_client_key: { Args: never; Returns: string }
       portal_get_patient_orders: {
         Args: { p_patient_id: string; p_pin: string }
         Returns: {
@@ -855,10 +2340,69 @@ export type Database = {
           order_seq: number
           org_logo_url: string
           org_name: string
+          report_template: string
           sello_url: string
           status: string
           total_amount: number
         }[]
+      }
+      register_adjustment: {
+        Args: {
+          p_direction: string
+          p_item_id: string
+          p_org_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: Json
+      }
+      register_payment: {
+        Args: { p_invoice_id: string; p_org_id: string; p_payments: Json }
+        Returns: Json
+      }
+      register_purchase: {
+        Args: {
+          p_account_id?: string
+          p_due_date?: string
+          p_exchange_rate?: number
+          p_expiration_date?: string
+          p_is_initial?: boolean
+          p_item_id: string
+          p_lot_number?: string
+          p_notes?: string
+          p_org_id: string
+          p_purchase_invoice_ref?: string
+          p_quantity: number
+          p_supplier_name?: string
+          p_unit_cost: number
+        }
+        Returns: Json
+      }
+      reject_subscription_payment: {
+        Args: { p_payment_id: string; p_rejection_reason: string }
+        Returns: Json
+      }
+      report_subscription_payment: {
+        Args: {
+          p_amount_bs: number
+          p_amount_usd: number
+          p_exchange_rate: number
+          p_notes?: string
+          p_org_id: string
+          p_payment_date: string
+          p_payment_method: string
+          p_proof_url: string
+          p_reference_number: string
+        }
+        Returns: Json
+      }
+      review_cash_session: {
+        Args: { p_notes?: string; p_session_id: string }
+        Returns: Json
+      }
+      save_order_results: {
+        Args: { p_items: Json; p_order_id: string }
+        Returns: number
       }
       upsert_exam_profile: {
         Args: {
@@ -882,16 +2426,82 @@ export type Database = {
         }
         Returns: undefined
       }
+      void_account_movement: {
+        Args: { p_movement_id: string; p_reason: string }
+        Returns: Json
+      }
+      void_payment: {
+        Args: { p_payment_id: string; p_reason: string }
+        Returns: Json
+      }
     }
     Enums: {
+      account_movement_kind:
+        | "income"
+        | "expense"
+        | "transfer_in"
+        | "transfer_out"
+        | "adjustment_in"
+        | "adjustment_out"
+      cash_session_status: "open" | "closed" | "reviewed"
+      inventory_transaction_type:
+        | "purchase"
+        | "consumption"
+        | "adjustment_in"
+        | "adjustment_out"
+        | "return"
+        | "transfer_in"
+        | "transfer_out"
+        | "initial"
+      invoice_status:
+        | "draft"
+        | "issued"
+        | "partial"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+        | "credit_note"
+      item_category:
+        | "reagent"
+        | "consumable"
+        | "equipment_part"
+        | "office_supply"
+        | "other"
       order_status:
         | "pendiente"
         | "procesando"
         | "por_aprobar"
         | "completada"
         | "cancelada"
+      payable_status: "pending" | "partial" | "paid" | "cancelled"
+      payment_method_type:
+        | "cash"
+        | "bank_transfer"
+        | "mobile_payment"
+        | "zelle"
+        | "pos_terminal"
+        | "other"
       payment_status: "unpaid" | "partial" | "paid" | "pending"
-      user_role: "super_admin" | "lab_admin" | "bioanalyst" | "secretary" | "lab_affiliate"
+      schedule_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
+      subscription_payment_status: "pending" | "approved" | "rejected"
+      unit_of_measure:
+        | "units"
+        | "boxes"
+        | "packs"
+        | "ml"
+        | "l"
+        | "mg"
+        | "g"
+        | "kg"
+        | "tests"
+        | "strips"
+        | "other"
+      user_role:
+        | "super_admin"
+        | "lab_admin"
+        | "bioanalyst"
+        | "secretary"
+        | "lab_affiliate"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -907,12 +2517,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -936,11 +2546,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -961,11 +2571,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -986,11 +2596,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1003,11 +2613,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1017,8 +2627,46 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
+      account_movement_kind: [
+        "income",
+        "expense",
+        "transfer_in",
+        "transfer_out",
+        "adjustment_in",
+        "adjustment_out",
+      ],
+      cash_session_status: ["open", "closed", "reviewed"],
+      inventory_transaction_type: [
+        "purchase",
+        "consumption",
+        "adjustment_in",
+        "adjustment_out",
+        "return",
+        "transfer_in",
+        "transfer_out",
+        "initial",
+      ],
+      invoice_status: [
+        "draft",
+        "issued",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+        "credit_note",
+      ],
+      item_category: [
+        "reagent",
+        "consumable",
+        "equipment_part",
+        "office_supply",
+        "other",
+      ],
       order_status: [
         "pendiente",
         "procesando",
@@ -1026,8 +2674,38 @@ export const Constants = {
         "completada",
         "cancelada",
       ],
+      payable_status: ["pending", "partial", "paid", "cancelled"],
+      payment_method_type: [
+        "cash",
+        "bank_transfer",
+        "mobile_payment",
+        "zelle",
+        "pos_terminal",
+        "other",
+      ],
       payment_status: ["unpaid", "partial", "paid", "pending"],
-      user_role: ["super_admin", "lab_admin", "bioanalyst", "secretary", "lab_affiliate"],
+      schedule_status: ["pending", "partial", "paid", "overdue", "cancelled"],
+      subscription_payment_status: ["pending", "approved", "rejected"],
+      unit_of_measure: [
+        "units",
+        "boxes",
+        "packs",
+        "ml",
+        "l",
+        "mg",
+        "g",
+        "kg",
+        "tests",
+        "strips",
+        "other",
+      ],
+      user_role: [
+        "super_admin",
+        "lab_admin",
+        "bioanalyst",
+        "secretary",
+        "lab_affiliate",
+      ],
     },
   },
 } as const

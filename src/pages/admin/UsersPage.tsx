@@ -13,6 +13,7 @@ import type { UserRole } from "@/hooks/useUserRole";
 import { getAdminUserError, useAdminOrganizationsList, useAdminUsers, useCreateAdminUser } from "@/features/admin/useAdminUsers";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useAuth } from "@/hooks/useAuth";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 
 export default function UsersPage() {
   const [open, setOpen] = useState(false);
@@ -108,13 +109,13 @@ export default function UsersPage() {
                           size="sm"
                           onClick={() => handleImpersonate(u.id, u.full_name || u.email || "Usuario")}
                           disabled={isImpersonatingLoading}
-                          className="h-8 text-xs font-medium text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800 transition-colors"
+                          className="h-8 text-xs font-medium text-warning border-warning/40 hover:bg-warning/10 hover:text-warning transition-colors"
                           title="Iniciar sesión como este usuario para soporte"
                         >
                           {isThisLoading ? (
                             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                           ) : (
-                            <LogIn className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                            <LogIn className="w-3.5 h-3.5 mr-1.5 text-warning" />
                           )}
                           <span>Iniciar sesión como</span>
                         </Button>
@@ -145,6 +146,9 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label>Password</Label>
               <Input type="password" placeholder="••••••••" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <p className={`text-xs ${form.password && getPasswordError(form.password) ? "text-destructive" : "text-muted-foreground"}`}>
+                {(form.password && getPasswordError(form.password)) || PASSWORD_RULE_TEXT}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Organization</Label>
@@ -183,7 +187,7 @@ export default function UsersPage() {
                   onError: (error) => toast.error(getAdminUserError(error, "No se pudo crear el usuario")),
                 })
               }
-              disabled={!form.email || !form.password || !form.full_name || !form.org_id || createUser.isPending}
+              disabled={!form.email || !!getPasswordError(form.password) || !form.full_name || !form.org_id || createUser.isPending}
             >
               {createUser.isPending ? "Creando..." : "Crear Usuario"}
             </Button>

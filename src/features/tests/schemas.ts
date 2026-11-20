@@ -140,8 +140,9 @@ function parseReferenceBounds(
 ): ReferenceBounds | null {
   if (matchedRange) {
     return {
-      min: Math.min(matchedRange.min_value, matchedRange.max_value),
-      max: Math.max(matchedRange.min_value, matchedRange.max_value),
+      // Type-only: a missing limit is treated as 0 here, as before (affects report flags; see plan).
+      min: Math.min(matchedRange.min_value as number, matchedRange.max_value as number),
+      max: Math.max(matchedRange.min_value as number, matchedRange.max_value as number),
     };
   }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +11,29 @@ import { getReportComponent } from "@/lib/orderReportDispatcher";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { Search, FlaskConical, FileText, ShieldCheck, AlertCircle, Loader2, LogOut, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePatientSession, usePatientOrders } from "@/features/patients/usePatientPortal";
+import { usePatientSession, usePatientOrders, type OrderWithItems } from "@/features/patients/usePatientPortal";
 import { usePublicOrgBrand } from "@/features/patientPortal/useOrgPatientPortal";
+import { forgetPortalCredentials, hasCredentialsInUrl, resolvePortalCredentials, withoutCredentials } from "@/features/patientPortal/portalLink";
 
 export default function PatientPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
-  const [dni, setDni] = useState(searchParams.get("dni") || "");
-  const [pin, setPin] = useState(searchParams.get("pin") || "");
+  // Read once from the link (#dni=…&pin=…, or ?dni=…&pin=… in older links; remembered
+  // for this tab so a refresh works), then
+  // removed from the address bar so they don't stay in the browser history.
+  const [linkCredentials] = useState(() => resolvePortalCredentials(window.location.search, window.location.hash));
+  const [dni, setDni] = useState(linkCredentials.dni);
+  const [pin, setPin] = useState(linkCredentials.pin);
+  useEffect(() => {
+    if (hasCredentialsInUrl(window.location.search, window.location.hash)) {
+      setSearchParams(withoutCredentials(window.location.search), { replace: true });
+    }
+  }, [setSearchParams]);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   const { data: brand, isLoading: isBrandLoading } = usePublicOrgBrand(orgId);
   const headerStyle = brand ? {
@@ -40,17 +50,20 @@ export default function PatientPortalPage() {
   const { session, authenticate, logout } = usePatientSession();
   const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null, pin);
 
-  // Auto-login if URL has params
+  // Auto-login if the link had credentials (once per dni/pin pair in the link).
+  // handleAuth is recreated every render; the ref always points at the latest one.
+  const handleAuthRef = useRef<(dniValue?: string, pinValue?: string) => Promise<void>>(async () => {});
+  const autoLoginFor = useRef<string | null>(null);
   useEffect(() => {
-    const dniParam = searchParams.get("dni");
-    const pinParam = searchParams.get("pin");
-    if (dniParam && pinParam && !session) {
-      setDni(dniParam);
-      setPin(pinParam);
-      handleAuth(dniParam, pinParam);
-    }
-  }, [session]);
+    const { dni: dniParam, pin: pinParam } = linkCredentials;
+    if (!dniParam || !pinParam || session) return;
+    const attemptKey = `${dniParam}|${pinParam}`;
+    if (autoLoginFor.current === attemptKey) return;
+    autoLoginFor.current = attemptKey;
+    handleAuthRef.current(dniParam, pinParam);
+  }, [linkCredentials, session]);
 
+  handleAuthRef.current = handleAuth;
   async function handleAuth(dniValue?: string, pinValue?: string) {
     const dniToUse = dniValue || dni;
     const pinToUse = pinValue || pin;
@@ -74,8 +87,11 @@ export default function PatientPortalPage() {
     setError(null);
 
     const result = await authenticate(dniToUse, pinToUse);
-    
-    if (!result.success) {
+
+    if (result.locked) {
+      // Locked by the server (10 wrong PINs in an hour): don't count it again here.
+      setError(result.error ?? null);
+    } else if (!result.success) {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
       
@@ -106,6 +122,7 @@ export default function PatientPortalPage() {
     newParams.delete("pdf");
 
     setSearchParams(newParams, { replace: true });
+    forgetPortalCredentials();
     logout();
     setDni("");
     setPin("");
@@ -114,13 +131,13 @@ export default function PatientPortalPage() {
     setPdfOpen(false);
   }
 
-  async function handleViewReport(order) {
+  async function handleViewReport(order: (typeof orders)[number]) {
     const isMobile = typeof window !== "undefined" && (window.matchMedia("(max-width: 768px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
     if (isMobile) {
       setReportLoading(true);
       try {
-        const ReportComponent = getReportComponent(order.report_template || (brand as any)?.report_template);
+        const ReportComponent = getReportComponent(order.report_template || brand?.report_template);
         const reportBlob = await pdf(
           <ReportComponent
             orden={order}
@@ -204,9 +221,9 @@ export default function PatientPortalPage() {
               <CardTitle className="text-2xl">Consulta de Resultados</CardTitle>
               <CardDescription className="text-base">
                 Ingresa tu número de cédula y el PIN de acceso.
-                EJ: <span className="font-bold bg-slate-200 p-1 rounded">19458302</span> <br></br>  
+                EJ: <span className="font-bold bg-secondary p-1 rounded">19458302</span> <br></br>  
                 En caso de ser menor de edad el paciente, agrega un guion y un 1 al final <br></br> 
-                de la cedula del representante EJ: <span className="font-bold bg-slate-200 p-1 rounded">11948302-1</span>
+                de la cedula del representante EJ: <span className="font-bold bg-secondary p-1 rounded">11948302-1</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -225,10 +242,10 @@ export default function PatientPortalPage() {
                   <Label htmlFor="pin">PIN de Acceso</Label>
                   <Input
                     id="pin"
-                    placeholder="Ej: A3F2B1"
+                    placeholder="Ej: 7KQ2M9XH4P"
                     value={pin}
                     onChange={(e) => setPin(e.target.value.toUpperCase())}
-                    maxLength={6}
+                    maxLength={12}
                     className="font-mono tracking-widest text-center text-lg"
                     required
                   />
@@ -334,7 +351,7 @@ export default function PatientPortalPage() {
                               </div>
                             </div>
                           </div>
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                          <Badge className="bg-success/10 text-success border-success/40">
                             Completada
                           </Badge>
                         </div>
@@ -383,7 +400,7 @@ export default function PatientPortalPage() {
             {selectedOrder && patientInfo ? (
               (() => {
                 const ReportComponent = getReportComponent(
-                  selectedOrder.report_template || (brand as any)?.report_template
+                  selectedOrder.report_template || brand?.report_template
                 );
                 return (
                   <PDFViewer width="100%" height="100%" className="border-none">
@@ -400,7 +417,7 @@ export default function PatientPortalPage() {
                         phone: brand?.phone || "",
                         email: brand?.email || "",
                         logo: selectedOrder.org_logo_url || null,
-                        primary_color: brand?.primary_color,
+                        primary_color: brand?.primary_color ?? undefined,
                       }}
                     />
                   </PDFViewer>
@@ -419,7 +436,7 @@ export default function PatientPortalPage() {
       </Dialog>
 
       {/* Footer */}
-      <footer className="border-t bg-white/50 mt-16">
+      <footer className="border-t bg-card/50 mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-muted-foreground">
           <p>Portal seguro de consulta de resultados. Sus datos están protegidos.</p>
         </div>

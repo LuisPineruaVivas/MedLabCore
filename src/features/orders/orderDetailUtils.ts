@@ -66,10 +66,23 @@ export function buildThermalReceiptData(
     total: Number(order.total_amount),
     accessPin: order.access_pin,
     portalUrl: `${origin}/portal-paciente`,
-    exchangeRate: order.exchange_rate ? Number(order.exchange_rate) : null,
-    totalBs: order.total_bs ? Number(order.total_bs) : null,
+    // != null keeps 0 (exempted orders) as 0 instead of turning it into "unknown".
+    exchangeRate: order.exchange_rate != null ? Number(order.exchange_rate) : null,
+    totalBs: order.total_bs != null ? Number(order.total_bs) : null,
     labData,
   };
+}
+
+/** Spanish message for a failed "Guardar todo" (nothing is saved when it fails). */
+export function getSaveResultsErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? "");
+  if (message.includes("ORDER_RESULTS_LOCKED")) {
+    return "La orden esta completada o cancelada: sus resultados ya no se pueden modificar.";
+  }
+  if (message.includes("ORDER_ITEMS_NOT_FOUND")) {
+    return "Algunos examenes ya no existen en esta orden. Recarga la pagina e intenta de nuevo.";
+  }
+  return "No se pudieron guardar los resultados. No se guardo ningun cambio; intenta de nuevo.";
 }
 
 export function isMobileDevice() {

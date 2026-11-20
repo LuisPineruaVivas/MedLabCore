@@ -67,5 +67,5 @@ select pg_temp.assert(
    where p.id = '22222222-2222-4222-8222-222222222222'),
   'an account created already confirmed gets its lab');
 
-select 'Trial signup passed';
+do $$ begin raise notice 'Trial signup passed'; end $$;
 rollback;

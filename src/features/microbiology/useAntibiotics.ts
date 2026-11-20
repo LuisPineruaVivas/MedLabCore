@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 
@@ -15,7 +16,7 @@ export function useAntibiotics(options?: { activeOnly?: boolean }) {
   const orgId = organization?.id;
 
   return useQuery({
-    queryKey: ["antibiotics", orgId, options?.activeOnly],
+    queryKey: queryKeys.antibiotics.list(orgId, options?.activeOnly),
     queryFn: async () => {
       if (!orgId) throw new Error("No organization selected");
 
@@ -73,7 +74,7 @@ export function useCreateAntibiotic() {
       return data as Antibiotic;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["antibiotics", orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.antibiotics.all(orgId) });
     },
   });
 }

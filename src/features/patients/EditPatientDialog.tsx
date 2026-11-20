@@ -79,7 +79,8 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
         id_number: patient.id_number,
         first_name: patient.first_name,
         last_name: patient.last_name,
-        date_of_birth: normalizeDateOfBirth(patient.date_of_birth),
+        // date_of_birth is a required column, so normalizing always gives a date here.
+        date_of_birth: normalizeDateOfBirth(patient.date_of_birth) as Date,
         gender: patient.gender,
         phone: patient.phone || "",
         email: patient.email || "",
@@ -90,9 +91,9 @@ export function EditPatientDialog({ open, onOpenChange, onSubmit, patient }: Edi
   }, [patient, open, form]);
 
   const dobValue = form.watch("date_of_birth");
-  const age = dobValue ? differenceInYears(new Date(), normalizeDateOfBirth(dobValue)) > 0
-    ? `${differenceInYears(new Date(), normalizeDateOfBirth(dobValue))} años`
-    : `${differenceInMonths(new Date(), normalizeDateOfBirth(dobValue))} meses`
+  const age = dobValue ? differenceInYears(new Date(), normalizeDateOfBirth(dobValue)!) > 0
+    ? `${differenceInYears(new Date(), normalizeDateOfBirth(dobValue)!)} años`
+    : `${differenceInMonths(new Date(), normalizeDateOfBirth(dobValue)!)} meses`
     : null;
 
   async function handleSubmit(data: PatientFormData) {

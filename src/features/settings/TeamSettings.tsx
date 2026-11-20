@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { UserPlus, Users, Shield, FlaskConical, ClipboardList } from "lucide-react";
 import { useCreateTeamMember, useTeamMembers } from "./useTeamSettings";
+import { PASSWORD_RULE_TEXT, getPasswordError } from "@/lib/passwordPolicy";
 
 const roleLabels: Record<string, string> = {
   lab_admin: "Administrador",
@@ -26,7 +27,7 @@ const roleColors: Record<string, string> = {
   lab_admin: "border-primary/20 bg-primary/10 text-primary",
   bioanalyst: "border-success/20 bg-success/10 text-success",
   secretary: "border-warning/20 bg-warning/10 text-warning",
-  lab_affiliate: "border-sky-200 bg-sky-100 text-sky-700",
+  lab_affiliate: "border-info/40 bg-info/10 text-info",
 };
 
 interface TeamSettingsProps {
@@ -131,6 +132,9 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
               />
+              <p className={`text-xs ${form.password && getPasswordError(form.password) ? "text-destructive" : "text-muted-foreground"}`}>
+                {(form.password && getPasswordError(form.password)) || PASSWORD_RULE_TEXT}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Rol</Label>
@@ -159,7 +163,7 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {form.role === "bioanalyst"
                   ? "Puede ingresar resultados de examenes. No tiene acceso a facturacion ni precios."
                   : form.role === "lab_affiliate"
@@ -174,7 +178,7 @@ export function TeamSettings({ orgId }: TeamSettingsProps) {
             </Button>
             <Button
               onClick={handleCreateUser}
-              disabled={!form.email || !form.password || !form.full_name || createUser.isPending}
+              disabled={!form.email || !!getPasswordError(form.password) || !form.full_name || createUser.isPending}
             >
               {createUser.isPending ? "Creando..." : "Crear Usuario"}
             </Button>

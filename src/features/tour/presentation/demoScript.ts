@@ -1,6 +1,7 @@
 import { dialogTitled, findVisible } from "../guidedTask";
 import { SHARE_CHAT_TITLE, SHARE_VIEWER_TITLE } from "../DemoShareSimulator";
 import type { Helpers, Scene, Target } from "./scriptRunner";
+import { NARRATION, type LineId } from "./narration";
 
 const PATIENT = {
   idNumber: "27456123",
@@ -11,8 +12,12 @@ const PATIENT = {
 };
 const RESULT_VALUES = ["13.5", "41", "7.2", "250", "92"]; // Hematología completa (4 fields) + Glicemia
 
-const inDialog = (selector: string) => `[role="dialog"]:not([data-state="closed"]) ${selector}`;
 const navLink = (path: string) => `a[href="${path}"]`;
+// The patient form opens on top of the order dialog: look only inside it.
+const inPatientForm =
+  (selector: string): Target =>
+  () =>
+    dialogTitled("Nuevo Paciente")?.querySelector(selector) ?? null;
 
 /** Clicks the menu link when it is on screen (desktop sidebar or mobile bottom bar), else navigates. */
 const openPage = (h: Helpers, path: string) => (findVisible(navLink(path)) ? h.click(navLink(path)) : h.navigate(path));
@@ -54,78 +59,68 @@ async function closeDialogs(h: Helpers) {
   }
 }
 
+/** A beat's narration: its text and the id of its recording. */
+const line = (id: LineId) => ({ voice: id, say: NARRATION[id] });
+
 export const DEMO_SCRIPT: Scene[] = [
   {
     title: "Bienvenida",
     beats: [
-      {
-        say: "Maneja tu laboratorio con MedLabCore: registra un paciente, crea su orden y comparte sus resultados en menos de dos minutos.",
-        focus: '[data-tour="dashboard-stats"]',
-      },
-      {
-        say: "Desde el panel ves de un vistazo tus pacientes, las pruebas del día, lo pendiente y lo que has facturado.",
-        focus: '[data-tour="dashboard-pending"]',
-      },
+      { ...line("intro"), focus: '[data-tour="dashboard-stats"]' },
+      { ...line("dashboard"), focus: '[data-tour="dashboard-pending"]' },
     ],
   },
   {
-    title: "Registrar un paciente",
+    title: "Nueva orden y paciente",
     beats: [
       {
-        say: "Empecemos registrando a una paciente.",
-        run: async (h) => {
-          await openPage(h, "/patients");
-          await h.click('[data-tour="new-patient"]');
-        },
-      },
-      {
-        say: "Escribes su cédula, su nombre y su apellido.",
-        run: async (h) => {
-          await h.type(inDialog('input[name="id_number"]'), PATIENT.idNumber);
-          await h.type(inDialog('input[name="first_name"]'), PATIENT.firstName);
-          await h.type(inDialog('input[name="last_name"]'), PATIENT.lastName);
-        },
-      },
-      {
-        say: "Su fecha de nacimiento, y la edad se calcula sola. Indicas el sexo y un teléfono para enviarle sus resultados.",
-        run: async (h) => {
-          await h.type(inDialog('input[placeholder="Seleccionar fecha"]'), PATIENT.birthDate);
-          // Closes the calendar the date field opened (react-datepicker closes on a mousedown outside it),
-          // so it doesn't cover the next fields.
-          dialogTitled("Nuevo Paciente")?.querySelector("h2")?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-          await h.pickSelect(inDialog("button[role='combobox']"), "Femenino");
-          await h.type(inDialog('input[name="phone"]'), PATIENT.phone);
-        },
-      },
-      {
-        say: "Guardas, y listo: la paciente queda registrada.",
-        run: async (h) => {
-          await h.click(inDialog('button[type="submit"]'));
-          await h.waitFor(() => (dialogTitled("Nuevo Paciente") ? null : document.body));
-          await h.pause(600);
-        },
-      },
-    ],
-  },
-  {
-    title: "Crear la orden",
-    beats: [
-      {
-        say: "Ahora le creamos una orden con los exámenes que se va a hacer.",
+        ...line("orderOpen"),
         run: async (h) => {
           await openPage(h, "/orders");
           await h.click('[data-tour="new-order"]');
         },
       },
       {
-        say: "La buscas por su nombre o cédula y la seleccionas.",
+        // She isn't registered yet, so the search offers to register her without leaving the order.
+        ...line("orderSearch"),
         run: async (h) => {
           await h.type('[data-tour="order-patient-search"]', PATIENT.firstName);
-          await h.click(button(`${PATIENT.firstName} ${PATIENT.lastName}`, '[role="dialog"]'));
+          await h.pause(900); // the search is debounced: let it finish before reading its result
+          await h.click(button("Registrar paciente", '[role="dialog"]'));
+          await h.waitFor(() => dialogTitled("Nuevo Paciente"));
         },
       },
       {
-        say: "Agregas sus exámenes buscándolos por nombre: una hematología completa y una glicemia.",
+        ...line("patientFill"),
+        run: async (h) => {
+          await h.type(inPatientForm('input[name="id_number"]'), PATIENT.idNumber);
+          await h.type(inPatientForm('input[name="first_name"]'), PATIENT.firstName);
+          await h.type(inPatientForm('input[name="last_name"]'), PATIENT.lastName);
+          await h.type(inPatientForm('input[placeholder="Seleccionar fecha"]'), PATIENT.birthDate);
+          // Closes the calendar the date field opened (react-datepicker closes on a mousedown outside it),
+          // so it doesn't cover the next fields.
+          dialogTitled("Nuevo Paciente")?.querySelector("h2")?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+          await h.pickSelect(inPatientForm("button[role='combobox']"), "Femenino");
+          await h.type(inPatientForm('input[name="phone"]'), PATIENT.phone);
+        },
+      },
+      {
+        ...line("patientSave"),
+        run: async (h) => {
+          await h.click(inPatientForm('button[type="submit"]'));
+          await h.waitFor(() => (dialogTitled("Nuevo Paciente") ? null : document.body));
+          // The search under the order refreshes and now finds her.
+          await h.click(button(`${PATIENT.firstName} ${PATIENT.lastName}`, '[role="dialog"]'));
+          await h.waitFor('[data-tour="order-patient-selected"]');
+        },
+      },
+    ],
+  },
+  {
+    title: "Exámenes y orden",
+    beats: [
+      {
+        ...line("orderTests"),
         run: async (h) => {
           const search = '[data-tour="order-tests"] input[placeholder="Buscar examen..."]';
           await h.type(search, "Hemato");
@@ -134,13 +129,9 @@ export const DEMO_SCRIPT: Scene[] = [
           await h.click(button("Glicemia", '[data-tour="order-tests"]'));
         },
       },
+      { ...line("orderTotal"), focus: '[data-tour="order-summary"]' },
       {
-        say: "El total se calcula solo, en dólares y en bolívares con la tasa del día.",
-        focus: '[data-tour="order-summary"]',
-        run: (h) => h.pause(800),
-      },
-      {
-        say: "Creas la orden y se genera la nota de entrega, con el PIN para que tu paciente consulte sus resultados.",
+        ...line("orderCreate"),
         run: async (h) => {
           await h.click(button("Crear Orden", '[role="dialog"]'));
           await h.waitFor(pdfShown("Nota de Entrega"), 15000);
@@ -152,29 +143,26 @@ export const DEMO_SCRIPT: Scene[] = [
     title: "Cargar resultados",
     beats: [
       {
-        say: "Cuando están listos los resultados, abres la orden.",
+        ...line("resultsOpen"),
         run: async (h) => {
           await closeDialogs(h);
-          await h.click('[data-tour="order-row"]');
+          // Wait for the refreshed list: the first row may still be an older order right after creating hers.
+          await h.click(() => [...document.querySelectorAll('[data-tour="order-row"]')].find((row) => row.getClientRects().length > 0 && row.textContent?.includes(PATIENT.lastName)) ?? null);
           await h.waitFor('[data-tour="results"]');
         },
       },
       {
-        say: "Escribes cada valor, y al lado ves su rango de referencia.",
+        ...line("resultsFill"),
         run: async (h) => {
           for (let i = 0; i < RESULT_VALUES.length; i++) {
             await h.type(
-              () => document.querySelectorAll('[data-tour="results"] input[placeholder="Ingresar resultado"]')[i] ?? null,
+              () => document.querySelectorAll('[data-tour="results"] input[id^="result-"]')[i] ?? null,
               RESULT_VALUES[i]
             );
           }
-        },
-      },
-      {
-        say: "Y los guardas.",
-        run: async (h) => {
           await h.click('[data-tour="save-results"]');
-          await h.waitFor('[data-tour="save-results"][disabled]');
+          // Saved: the desktop button turns disabled, the phone save bar goes away.
+          await h.waitFor(() => (findVisible('[data-tour="save-results"]:not([disabled])') ? null : document.body));
         },
       },
     ],
@@ -183,7 +171,7 @@ export const DEMO_SCRIPT: Scene[] = [
     title: "El informe",
     beats: [
       {
-        say: "Con un clic generas el informe en PDF.",
+        ...line("reportOpen"),
         run: async (h) => {
           await h.click('[data-tour="view-report"]');
           await h.click(button("Continuar", '[role="dialog"]'));
@@ -191,11 +179,9 @@ export const DEMO_SCRIPT: Scene[] = [
         },
       },
       {
-        say: "Con el logo y los datos de tu laboratorio, y cada resultado con su valor de referencia. Listo para imprimir o descargar.",
+        ...line("reportShow"),
         focus: () => dialogTitled("Informe de Resultados"),
-        run: async (h) => {
-          await h.waitFor(pdfShown("Informe de Resultados"), 15000);
-        },
+        run: (h) => h.waitFor(pdfShown("Informe de Resultados"), 15000).then(() => undefined),
       },
     ],
   },
@@ -203,7 +189,7 @@ export const DEMO_SCRIPT: Scene[] = [
     title: "Compartir con el paciente",
     beats: [
       {
-        say: "Y lo mejor: se lo envías a tu paciente por WhatsApp.",
+        ...line("shareSend"),
         run: async (h) => {
           await closeDialogs(h);
           await h.click('[data-tour="share-pdf"]');
@@ -211,14 +197,9 @@ export const DEMO_SCRIPT: Scene[] = [
         },
       },
       {
-        say: "Tu paciente recibe el enlace, lo toca…",
-        focus: '[data-tour="demo-share-link"]',
-        run: (h) => h.click('[data-tour="demo-share-link"]'),
-      },
-      {
-        say: "…y ve su informe al instante, desde su teléfono, sin descargar nada ni crear cuentas.",
-        focus: () => dialogTitled(SHARE_VIEWER_TITLE),
+        ...line("shareOpen"),
         run: async (h) => {
+          await h.click('[data-tour="demo-share-link"]');
           await h.waitFor(pdfShown(SHARE_VIEWER_TITLE), 15000);
         },
       },
@@ -228,15 +209,12 @@ export const DEMO_SCRIPT: Scene[] = [
     title: "Cierre",
     beats: [
       {
-        say: "Pacientes, órdenes, resultados, informes y cobros: todo tu laboratorio en un solo lugar.",
+        ...line("outro"),
         run: async (h) => {
           await closeDialogs(h);
           await h.navigate("/dashboard");
           await h.waitFor('[data-tour="dashboard-stats"]');
         },
-      },
-      {
-        say: "Pruébalo gratis durante siete días.",
       },
     ],
   },

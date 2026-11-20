@@ -47,7 +47,7 @@ export default function VisitsPage() {
                   <td className="px-5 py-3.5">
                     <div className="flex flex-wrap gap-1">
                       {visit.tests.map((t) => (
-                        <span key={t} className="text-[11px] bg-secondary px-2 py-0.5 rounded-md font-medium">
+                        <span key={t} className="text-xs bg-secondary px-2 py-0.5 rounded-md font-medium">
                           {t}
                         </span>
                       ))}
@@ -57,7 +57,7 @@ export default function VisitsPage() {
                     <StatusBadge status={visit.status} />
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="text-sm font-semibold mono">${visit.total.toFixed(2)}</span>
+                    <span className="text-sm font-semibold tabular-nums">${visit.total.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     <span className="text-sm text-muted-foreground">{visit.date}</span>

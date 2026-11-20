@@ -328,7 +328,7 @@ export function ProfileSettings({ userId }: { userId: string }) {
       </div>
 
       {/* Vista Previa de Firma en Tiempo Real */}
-      <Card className="border bg-slate-50/50 dark:bg-slate-900/40">
+      <Card className="border bg-secondary">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Vista Previa de Firma (Tiempo Real)</CardTitle>
           <CardDescription>
@@ -336,7 +336,7 @@ export function ProfileSettings({ userId }: { userId: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-6 shadow-sm min-h-[160px] dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-white p-6 shadow-sm min-h-[160px]">
             {/* Signature & Stamp images container */}
             <div className="flex items-end justify-center gap-6 mb-2 min-h-[70px]">
               {firmaPreviewUrl && (
@@ -353,10 +353,10 @@ export function ProfileSettings({ userId }: { userId: string }) {
             </div>
 
             {/* Horizontal Line */}
-            <div className="w-60 border-t border-slate-700 dark:border-slate-300 my-2" />
+            <div className="w-60 border-t border-slate-700 my-2" />
 
             {/* Multi-line footer text */}
-            <div className="text-center text-xs font-medium text-slate-800 dark:text-slate-200 leading-snug whitespace-pre-line">
+            <div className="text-center text-xs font-medium text-foreground leading-snug whitespace-pre-line">
               {signatureFooterText.trim()
                 ? signatureFooterText
                 : ""}

@@ -6,17 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, DollarSign, ClipboardList, ChevronRight, Calendar } from "lucide-react";
+import { Plus, Search, ClipboardList, ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CreateOrderDialog } from "@/features/orders/CreateOrderDialog";
 import React from "react";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { useDebounce } from "@/hooks/useDebounce";
-import { StatCard } from "@/components/ui/StatCard";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { cn } from "@/lib/utils";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
 import { useOrderStats, useOrdersList } from "@/features/orders/useOrders";
 import { useAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
 import { Badge } from "@/components/ui/badge";
+
+const formatUsd = (value: number | string | null) => `USD ${Number(value ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatBs = (value: number | string) => `Bs ${Number(value).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const orderNumber = (seq: number | null | undefined) => `#${String(seq ?? "").padStart(4, "0")}`;
 
 export default function OrdersPage() {
   const { organization } = useCurrentOrgContext();
@@ -41,7 +46,25 @@ export default function OrdersPage() {
     affiliateUserId,
     affiliateUserIds,
   );
-  const { data: stats, isLoading: statsLoading } = useOrderStats();
+  const { data: stats } = useOrderStats();
+  // The Bs amounts in every row come from this rate; the screen names it.
+  const { data: liveRate } = useExchangeRate(organization?.id);
+  // The status strip replaces the old KPI tiles: what needs the bench first, with its count.
+  const statusTabs = [
+    { value: "all", label: "Todas", count: stats?.total },
+    { value: "pendiente", label: "Pendientes", count: stats?.pending },
+    { value: "por_aprobar", label: "Por aprobar", count: stats?.toApprove },
+    { value: "completada", label: "Completadas", count: stats?.completed },
+    { value: "cancelada", label: "Canceladas", count: stats?.cancelled },
+  ];
+  // Open on the work that waits for the bench, once, until the user picks a filter.
+  const [filterTouched, setFilterTouched] = useState(false);
+  useEffect(() => {
+    if (filterTouched || !stats) return;
+    if (stats.pending > 0) setStatusFilter("pendiente");
+    else if (stats.toApprove > 0) setStatusFilter("por_aprobar");
+  }, [filterTouched, stats]);
+  const awaitingWork = (status: string) => status === "pendiente" || status === "por_aprobar";
 
   const orders = ordersData?.items ?? [];
   const totalOrders = ordersData?.total ?? 0;
@@ -60,56 +83,44 @@ export default function OrdersPage() {
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <PageHeader
-        title="Ordenes de Laboratorio"
-        description="Gestiona y administra tus ordenes de laboratorio."
+        title="Órdenes"
+        description={liveRate?.rate ? `Tasa BCV de hoy: ${Number(liveRate.rate).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs/USD` : "Busca una orden o filtra por estado."}
         actions={
-          <Button onClick={() => setCreateOpen(true)} size="sm" data-tour="new-order">
-            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span>Nueva Orden</span>
+          <Button onClick={() => setCreateOpen(true)} data-tour="new-order">
+            <Plus />
+            Nueva orden
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
-        <StatCard
-          title="Total Ordenes Creadas"
-          value={statsLoading ? "..." : stats?.total.toLocaleString()}
-          icon={ClipboardList}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Creadas este Mes"
-          value={statsLoading ? "..." : stats?.thisMonth.toLocaleString()}
-          icon={Calendar}
-          className="bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
-        <StatCard
-          title="Creadas Hoy"
-          value={statsLoading ? "..." : stats?.today.toLocaleString()}
-          icon={Plus}
-          className="hidden md:block bg-white border-border shadow-sm hover:shadow-md transition-shadow"
-        />
+      <div role="group" aria-label="Filtrar por estado" className="grid grid-cols-2 gap-1 rounded-2xl border border-input p-1.5 neu-inset sm:flex">
+        {statusTabs.map((tab) => {
+          const active = statusFilter === tab.value;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => { setFilterTouched(true); setStatusFilter(tab.value); }}
+              className={cn(
+                "neu-rise flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2 text-sm first:col-span-2 sm:flex-1",
+                active ? "border-border bg-card font-semibold text-foreground shadow-[var(--neu-raised-sm)]" : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              {tab.count != null && <span className={cn("tabular-nums font-bold", active && tab.value !== "all" && "text-primary")}>{tab.count}</span>}
+            </button>
+          );
+        })}
       </div>
 
-      <Card className="bg-card rounded-xl border border-border p-0 shadow-sm">
-        <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-6 py-4 border-b border-border">
+      <Card className="overflow-hidden p-0">
+        <CardHeader className="flex flex-col lg:flex-row lg:items-center gap-4 px-4 py-4 sm:px-6 border-b border-border">
           <div className="md:flex md:flex-1 md:space-y-0 space-y-3 gap-3">
             <div className="relative md:flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Buscar por nombre o cedula" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden />
+              <Input className="pl-9" aria-label="Buscar órdenes" placeholder="Buscar por nombre o cédula" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Filter status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pendiente">Pendiente</SelectItem>
-                <SelectItem value="por_aprobar">Por aprobar</SelectItem>
-                <SelectItem value="completada">Completada</SelectItem>
-                <SelectItem value="cancelada">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
             {affiliates.length > 0 && (
               <Select value={affiliateOriginFilter} onValueChange={(value) => setAffiliateOriginFilter(value as "all" | "affiliate" | "internal")}>
                 <SelectTrigger className="w-full sm:w-[190px]">
@@ -142,56 +153,66 @@ export default function OrdersPage() {
 
         <Table className="w-full text-left border-collapse hidden md:table">
           <TableHeader>
-            <TableRow className="bg-muted/5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+            <TableRow>
+              <TableHead className="w-24">Orden</TableHead>
               <TableHead>Paciente</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Origen</TableHead>
-              <TableHead>Monto</TableHead>
+              <TableHead className="text-right">Monto</TableHead>
               <TableHead>Fecha</TableHead>
-              <TableHead>Orden</TableHead>
+              <TableHead className="w-10"><span className="sr-only">Abrir</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.map((order) => {
               const affiliate = affiliateById.get(order.created_by);
               return <React.Fragment key={order.id}>
-                <TableRow className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)} data-tour="order-row">
+                <TableRow
+                  className={cn(
+                    "cursor-pointer",
+                    // Waiting work reads pressed: a sunken band with shade along its top edge (vertical-only, so no seams between cells).
+                    awaitingWork(order.status) && "bg-[hsl(var(--neu-lo)/0.16)] dark:bg-[hsl(var(--neu-lo)/0.55)] [&>td]:bg-[linear-gradient(to_bottom,hsl(var(--neu-lo)/0.5),transparent_9px)]",
+                  )}
+                  tabIndex={0}
+                  data-tour="order-row"
+                  aria-label={`Abrir orden ${orderNumber(order.order_seq)} de ${order.patients?.first_name ?? ""} ${order.patients?.last_name ?? ""}`}
+                  onClick={() => navigate(`/orders/${order.id}`)}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`/orders/${order.id}`); } }}
+                >
+                  <TableCell>
+                    {/* Depth is the state: waiting work is pressed in, finished work stands raised. */}
+                    <span className={cn(
+                      "neu-rise inline-flex rounded-lg border px-2 py-1 font-semibold tabular-nums text-primary",
+                      awaitingWork(order.status) ? "border-input bg-background shadow-[var(--neu-inset)]" : "border-border bg-card shadow-[var(--neu-raised)]",
+                    )}>
+                      {orderNumber(order.order_seq)}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <div>
-                      <p className="text-sm font-medium">{order.patients?.first_name} {order.patients?.last_name}</p>
-                      <p className="text-xs text-muted-foreground">{order.patients?.id_number}</p>
+                      <p className="text-sm font-semibold">{order.patients?.first_name} {order.patients?.last_name}</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">{order.patients?.id_number}</p>
                     </div>
                   </TableCell>
                   <TableCell><StatusBadge status={order.status} /></TableCell>
                   <TableCell>
                     {affiliate ? (
                       <div className="space-y-1">
-                        <Badge variant="secondary" className="bg-sky-100 text-sky-700 hover:bg-sky-100">Afiliado</Badge>
+                        <Badge variant="outline" className="border-info/40 text-info">Afiliado</Badge>
                         <p className="max-w-[190px] truncate text-xs font-medium" title={affiliate.full_name || affiliate.email || undefined}>
                           {affiliate.full_name || affiliate.email || "Laboratorio afiliado"}
                         </p>
                       </div>
                     ) : <span className="text-xs text-muted-foreground">Interna</span>}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-3.5 h-3.5 text-success" />
-                        <span className="text-sm font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
-                      </div>
-                      {order.total_bs != null && (
-                        <span className="text-xs text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
-                      )}
-                    </div>
+                  <TableCell className="text-right">
+                    <p className="text-sm font-semibold tabular-nums">{formatUsd(order.total_amount)}</p>
+                    {order.total_bs != null && <p className="text-xs text-muted-foreground tabular-nums">{formatBs(order.total_bs)}</p>}
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-muted-foreground">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</span>
                   </TableCell>
-                  <TableCell>
-                    <span className="font-mono font-bold text-primary">
-                      #{order.order_seq.toString().padStart(4, "0")}
-                    </span>
-                  </TableCell>
+                  <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></TableCell>
                 </TableRow>
               </React.Fragment>;
             })}
@@ -201,70 +222,65 @@ export default function OrdersPage() {
         {isLoading && (
           <div className="py-20 text-center space-y-3">
             <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-            <p className="text-sm text-muted-foreground italic">Cargando Ordenes...</p>
+            <p className="text-sm text-muted-foreground">Cargando órdenes…</p>
           </div>
         )}
 
         {!isLoading && orders.length === 0 && (
           <div className="py-20 text-center">
-            <ClipboardList className="w-12 h-12 text-muted mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No se encontraron ordenes con estos datos</p>
+            <ClipboardList className="w-10 h-10 text-muted-foreground mx-auto mb-3" aria-hidden />
+            <p className="text-sm font-medium">No hay órdenes con este filtro.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cambia el estado o la búsqueda, o crea una orden nueva.</p>
           </div>
         )}
 
-        <div className="md:hidden space-y-2 mb-4">
-          {isLoading && <div className="py-12 text-center text-sm text-muted-foreground">Cargando ordenes...</div>}
-          {!isLoading && orders.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No se encontraron ordenes.</div>}
+        <ul className="md:hidden space-y-3 p-3">
           {orders.map((order) => {
             const affiliate = affiliateById.get(order.created_by);
-            return <div
-              key={order.id}
-              className="bg-card rounded-xl border border-border overflow-hidden m-2"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
-              <div
-                className="p-2 cursor-pointer active:bg-muted/30 transition-colors"
-                data-tour="order-row"
-                onClick={() => navigate(`/orders/${order.id}`)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-md font-semibold">{order.patients?.first_name} {order.patients?.last_name}</p>
-                    <p className="text-sm text-muted-foreground font-mono">{order.patients?.id_number}</p>
-                  </div>
-                  <StatusBadge status={order.status} />
-                </div>
-                <div className="mt-1">
-                  {affiliate ? <Badge variant="secondary" className="bg-sky-100 text-sky-700 hover:bg-sky-100">Afiliado: {affiliate.full_name || affiliate.email || "Sin nombre"}</Badge> : <span className="text-xs text-muted-foreground">Operación interna</span>}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{format(new Date(order.created_at), "dd/MM/yyyy")}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="w-3 h-3 text-success" />
-                      <span className="text-md font-semibold mono">{Number(order.total_amount).toFixed(2)}</span>
+            return (
+              <li key={order.id}>
+                <button
+                  type="button"
+                  data-tour="order-row"
+                  onClick={() => navigate(`/orders/${order.id}`)}
+                  className={cn(
+                    "neu-rise w-full rounded-2xl border p-3.5 text-left",
+                    // Waiting work sits pressed into the surface; finished work rises.
+                    awaitingWork(order.status) ? "border-input bg-background shadow-[var(--neu-inset)]" : "bg-card shadow-[var(--neu-raised-sm)] active:shadow-[var(--neu-inset)]",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{order.patients?.first_name} {order.patients?.last_name}</p>
+                      <p className="text-sm text-muted-foreground tabular-nums">{orderNumber(order.order_seq)} · {order.patients?.id_number}</p>
                     </div>
-                    {order.total_bs != null && (
-                      <span className="text-sm text-muted-foreground mono">Bs. {Number(order.total_bs).toFixed(2)}</span>
-                    )}
+                    <StatusBadge status={order.status} />
                   </div>
-                </div>
-              </div>
-            </div>;
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order.created_at), "dd/MM/yyyy")} · {affiliate ? `Afiliado: ${affiliate.full_name || affiliate.email || "sin nombre"}` : "Interna"}
+                    </p>
+                    <div className="text-right">
+                      <p className="font-semibold tabular-nums">{formatUsd(order.total_amount)}</p>
+                      {order.total_bs != null && <p className="text-xs text-muted-foreground tabular-nums">{formatBs(order.total_bs)}</p>}
+                    </div>
+                  </div>
+                </button>
+              </li>
+            );
           })}
-        </div>
+        </ul>
 
-        <CardFooter className="flex items-center justify-between border-t border-border px-6 py-4">
-          <span className="text-sm text-muted-foreground">
-            Mostrando <span className="text-foreground">{Math.min(totalOrders, (page - 1) * pageSize + 1)} a {Math.min(totalOrders, page * pageSize)}</span> de <span className="text-foreground">{totalOrders.toLocaleString()}</span> ordenes
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-4 sm:px-6">
+          <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="text-foreground">{Math.min(totalOrders, (page - 1) * pageSize + 1)}–{Math.min(totalOrders, page * pageSize)}</span> de <span className="text-foreground">{totalOrders.toLocaleString("es-VE")}</span> órdenes
           </span>
-          <div className="flex items-center gap-1.5 pb-4 sm:pb-0">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-md"
+              aria-label="Página anterior"
+              className="h-9 w-9"
               onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.max(prev - 1, 1)); }}
               disabled={page <= 1}
             >
@@ -277,7 +293,9 @@ export default function OrdersPage() {
                 <Button
                   key={p}
                   variant={p === page ? "default" : "outline"}
-                  className={`h-8 w-8 rounded-md text-xs font-bold ${p === page ? "bg-primary text-primary-foreground" : ""}`}
+                  aria-label={`Página ${p}`}
+                  aria-current={p === page ? "page" : undefined}
+                  className="h-9 w-9 tabular-nums"
                   onClick={(e) => { e.stopPropagation(); setPage(p); }}
                 >
                   {p}
@@ -289,7 +307,8 @@ export default function OrdersPage() {
             {pageCount > 5 && (
               <Button
                 variant={page === pageCount ? "default" : "outline"}
-                className="h-8 w-12 rounded-md text-xs font-bold"
+                aria-label={`Página ${pageCount}`}
+                className="h-9 min-w-9 px-2 tabular-nums"
                 onClick={(e) => { e.stopPropagation(); setPage(pageCount); }}
               >
                 {pageCount}
@@ -299,7 +318,8 @@ export default function OrdersPage() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-md"
+              aria-label="Página siguiente"
+              className="h-9 w-9"
               onClick={(e) => { e.stopPropagation(); setPage((prev) => Math.min(prev + 1, pageCount)); }}
               disabled={page >= pageCount}
             >

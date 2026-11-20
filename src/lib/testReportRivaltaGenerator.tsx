@@ -184,7 +184,8 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
   });
 
   const sections = template.schema?.sections || [];
-  const templateMethodName = typeof (template as any).method_name === "string" ? (template as any).method_name.trim() : "";
+  const rawMethodName = (template as { method_name?: unknown }).method_name;
+  const templateMethodName = typeof rawMethodName === "string" ? rawMethodName.trim() : "";
   let methodRendered = false;
 
   return (
@@ -256,7 +257,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
 
         {/* Sections & Fields */}
         {template.result_type === "MICROBIOLOGY" ? (
-          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema)} />
+          <MicrobiologyReportSection data={createMicrobiologyPreviewData(template.schema as Parameters<typeof createMicrobiologyPreviewData>[0])} />
         ) : sections.map((section: TemplateSection) => (
           <View key={section.id}>
             {section.name === '' ? null : (
@@ -284,7 +285,7 @@ export const TestReportRivaltaPDF = ({ template, labData, patientData }: TestTem
 
               const parsedValue = parseNumericResult(rawValue);
               const resultColor = Number.isFinite(parsedValue)
-                ? getCategoryStyle(parsedValue, matchedRange)
+                ? getCategoryStyle(parsedValue!, matchedRange)
                 : "black";
 
               const fieldMethodName = field.method_name || (!methodRendered ? templateMethodName : undefined);

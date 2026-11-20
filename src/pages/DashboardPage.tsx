@@ -15,6 +15,7 @@ import { es } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErpDashboardWidgets } from "@/features/erp/components/ErpDashboardWidgets";
 import {
   useDashboardStats,
   usePendingOrders,
@@ -67,6 +68,8 @@ export default function DashboardPage() {
         )}
       </div>
 
+      <ErpDashboardWidgets orgId={orgId} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Orders */}
         <div className="lg:col-span-2 bg-card rounded-xl border border-border overflow-hidden" data-tour="dashboard-pending" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -109,8 +112,8 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <StatusBadge status={order.status} />
-                  <span className="text-sm font-semibold mono tabular-nums w-16 text-right">
-                    ${order.total.toFixed(2)}
+                  <span className="text-sm font-semibold tabular-nums tabular-nums w-16 text-right">
+                    ${order.total.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               ))
@@ -134,7 +137,7 @@ export default function DashboardPage() {
                   <div key={test.name}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium truncate">{test.name}</span>
-                      <span className="text-xs text-muted-foreground mono">{test.count}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{test.count}</span>
                     </div>
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
@@ -158,7 +161,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold tracking-tight text-foreground">
-                    {Number(exchangeRate.rate).toFixed(2)}
+                    {Number(exchangeRate.rate).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   <span className="text-sm font-medium text-muted-foreground">BS/USD</span>
                 </div>

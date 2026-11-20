@@ -101,13 +101,13 @@ export default function AuditLogPage() {
     switch (action) {
       case "ORDER_CREATED":
         return (
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-success/10 text-success border-success/40 flex items-center gap-1 font-medium">
             <CheckCircle2 className="w-3 h-3" /> Orden Creada
           </Badge>
         );
       case "ORDER_APPROVED":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-info/10 text-info border-info/40 flex items-center gap-1 font-medium">
             <CheckCircle2 className="w-3 h-3" /> Informe Aprobado
           </Badge>
         );
@@ -119,67 +119,73 @@ export default function AuditLogPage() {
         );
       case "ORDER_STATUS_CHANGED":
         return (
-          <Badge variant="secondary" className="bg-sky-50 text-sky-700 border-sky-200 flex items-center gap-1 font-medium">
+          <Badge variant="secondary" className="bg-info/10 text-info border-info/40 flex items-center gap-1 font-medium">
             <RefreshCw className="w-3 h-3" /> Cambio de Estado
+          </Badge>
+        );
+      case "ORDER_RESULTS_UPDATED":
+        return (
+          <Badge variant="secondary" className="bg-info/10 text-info border-info/40 flex items-center gap-1 font-medium">
+            <RefreshCw className="w-3 h-3" /> Resultados Editados
           </Badge>
         );
       case "ORDER_PAYMENT_CHANGED":
         return (
-          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 font-medium">
+          <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/40 flex items-center gap-1 font-medium">
             <TrendingUp className="w-3 h-3" /> Estado de Pago
           </Badge>
         );
       case "PATIENT_CREATED":
         return (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-info/10 text-info border-info/40 flex items-center gap-1 font-medium">
             <User className="w-3 h-3" /> Paciente Creado
           </Badge>
         );
       case "PATIENT_UPDATED":
         return (
-          <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-info/10 text-info border-info/40 flex items-center gap-1 font-medium">
             <User className="w-3 h-3" /> Paciente Editado
           </Badge>
         );
       case "SUPERADMIN_IMPERSONATION_START":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 flex items-center gap-1 font-medium">
-            <ShieldAlert className="w-3 h-3 text-amber-600" /> Suplantación (Inicio)
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/40 flex items-center gap-1 font-medium">
+            <ShieldAlert className="w-3 h-3 text-warning" /> Suplantación (Inicio)
           </Badge>
         );
       case "SUPERADMIN_IMPERSONATION_END":
         return (
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-300 flex items-center gap-1 font-medium">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Suplantación (Fin)
+          <Badge variant="outline" className="bg-success/10 text-success border-success/40 flex items-center gap-1 font-medium">
+            <CheckCircle2 className="w-3 h-3 text-success" /> Suplantación (Fin)
           </Badge>
         );
       case "ROLE_CHANGED":
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/40 flex items-center gap-1 font-medium">
             <ShieldAlert className="w-3 h-3" /> Cambio de Rol
           </Badge>
         );
       case "USER_ORG_TRANSFERRED":
         return (
-          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/40 flex items-center gap-1 font-medium">
             <ShieldAlert className="w-3 h-3" /> Traslado Usuario
           </Badge>
         );
       case "TEST_TEMPLATE_CREATED":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/40 flex items-center gap-1 font-medium">
             <FileSpreadsheet className="w-3 h-3" /> Examen Creado
           </Badge>
         );
       case "TEST_TEMPLATE_UPDATED":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/40 flex items-center gap-1 font-medium">
             <FileSpreadsheet className="w-3 h-3" /> Examen Editado
           </Badge>
         );
       case "EXCHANGE_RATE_UPDATED":
         return (
-          <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 flex items-center gap-1 font-medium">
+          <Badge variant="outline" className="bg-success/10 text-success border-success/40 flex items-center gap-1 font-medium">
             <TrendingUp className="w-3 h-3" /> Tasa Cambiaria
           </Badge>
         );
@@ -409,7 +415,7 @@ export default function AuditLogPage() {
 
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                           {log.user_name ? log.user_name.charAt(0).toUpperCase() : "S"}
                         </div>
                         <span className="text-xs font-medium text-foreground truncate max-w-[150px]">
@@ -422,7 +428,7 @@ export default function AuditLogPage() {
 
                     <TableCell>
                       <div className="text-xs text-foreground font-medium flex items-center gap-1.5">
-                        <span className="text-muted-foreground capitalize text-[11px] px-1.5 py-0.5 rounded bg-muted">
+                        <span className="text-muted-foreground capitalize text-xs px-1.5 py-0.5 rounded bg-muted">
                           {log.entity_type}
                         </span>
                         <span className="truncate">{getEntityLabel(log.entity_type, log)}</span>
@@ -502,25 +508,25 @@ export default function AuditLogPage() {
               {/* Resumen principal */}
               <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border border-border/70">
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Acción</span>
+                  <span className="text-muted-foreground block text-xs">Acción</span>
                   <span className="font-semibold text-foreground mt-0.5 block">
                     {selectedLog.action}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Fecha y Hora</span>
+                  <span className="text-muted-foreground block text-xs">Fecha y Hora</span>
                   <span className="font-medium text-foreground mt-0.5 block">
                     {format(new Date(selectedLog.created_at), "dd MMMM yyyy, HH:mm:ss", { locale: es })}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Responsable</span>
+                  <span className="text-muted-foreground block text-xs">Responsable</span>
                   <span className="font-medium text-foreground mt-0.5 block">
                     {selectedLog.user_name || "Sistema"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Entidad</span>
+                  <span className="text-muted-foreground block text-xs">Entidad</span>
                   <span className="font-medium text-foreground mt-0.5 block capitalize">
                     {selectedLog.entity_type} {selectedLog.entity_id ? `(${selectedLog.entity_id.slice(0, 8)}...)` : ""}
                   </span>
@@ -551,10 +557,10 @@ export default function AuditLogPage() {
                           ).map(([field, diff]) => (
                             <tr key={field} className="hover:bg-muted/20">
                               <td className="p-2 font-mono font-medium text-primary">{field}</td>
-                              <td className="p-2 text-rose-600 bg-rose-50/50 line-through">
+                              <td className="p-2 text-destructive bg-destructive/10 line-through">
                                 {String(diff?.old ?? "—")}
                               </td>
-                              <td className="p-2 text-emerald-700 bg-emerald-50/50 font-medium">
+                              <td className="p-2 text-success bg-success/10 font-medium">
                                 {String(diff?.new ?? "—")}
                               </td>
                             </tr>
@@ -570,7 +576,7 @@ export default function AuditLogPage() {
                 <span className="font-semibold text-foreground text-xs block">
                   Metadatos / Carga de Datos Completa (JSON):
                 </span>
-                <div className="bg-slate-950 text-slate-100 p-3 rounded-lg overflow-x-auto max-h-64 font-mono text-[11px] leading-relaxed border border-slate-800">
+                <div className="bg-slate-950 text-slate-100 p-3 rounded-lg overflow-x-auto max-h-64 font-mono text-xs leading-relaxed border border-slate-800">
                   <pre>{JSON.stringify(selectedLog.metadata, null, 2)}</pre>
                 </div>
               </div>

@@ -1,9 +1,10 @@
 import { Suspense, lazy } from "react";
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { BrandProvider } from "@/contexts/BrandContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
@@ -13,11 +14,15 @@ import { RoleRouter } from "@/components/RoleRouter";
 import { RoleGuard } from "@/components/RoleGuard";
 import { AllowedRolesGuard } from "@/components/AllowedRolesGuard";
 import { SuperAdminGuard } from "./components/SuperAdminGuard";
+import { ErpGuard } from "./components/ErpGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
-import { Analytics } from "@vercel/analytics/react";
-import ReportViewerPage from "./pages/ReportViewerPage";
-import { isDemo } from "@/lib/demo/isDemo";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isDemo } from "@/lib/demo/isDemo";
+import { Analytics } from "@vercel/analytics/react";
+import { isNonRetryableError } from "@/lib/errors";
+// Lazy like every other page: it pulls in react-pdf and all report layouts,
+// which must not be downloaded on the login screen.
+const ReportViewerPage = lazy(() => import("@/pages/ReportViewerPage"));
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PatientsPage = lazy(() => import("@/pages/PatientsPage"));
@@ -40,19 +45,24 @@ const TestsTemplatesPage = lazy(() => import("./pages/admin/TestsTemplates"));
 const TemplateBuilderPage = lazy(() => import("./pages/admin/TemplateBuilderPage"));
 const PatientPortalPage = lazy(() => import("./pages/PatientPortalPage"));
 const AuditLogPage = lazy(() => import("@/pages/AuditLogPage"));
+const ErpHomePage = lazy(() => import("@/pages/erp/ErpHomePage"));
+const AccountsPage = lazy(() => import("@/pages/erp/AccountsPage"));
+const MovementsPage = lazy(() => import("@/pages/erp/MovementsPage"));
+const PayablesPage = lazy(() => import("@/pages/erp/PayablesPage"));
+const InvoicesPage = lazy(() => import("@/pages/erp/InvoicesPage"));
+const InvoiceDetailPage = lazy(() => import("@/pages/erp/InvoiceDetailPage"));
+const ReceivablesPage = lazy(() => import("@/pages/erp/ReceivablesPage"));
+const InventoryPage = lazy(() => import("@/pages/erp/InventoryPage"));
+const FinancialDashboardPage = lazy(() => import("@/pages/erp/FinancialDashboardPage"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
 const PaymentValidationPage = lazy(() => import("@/pages/admin/PaymentValidationPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Don't retry on client errors (4xx): permission denied, not found, etc.
-      // These won't resolve by retrying. Only retry on transient server errors (5xx).
-      retry: (failureCount, error: unknown) => {
-        const status = (error as { status?: number })?.status ?? 0;
-        if (status >= 400 && status < 500) return false;
-        return failureCount < 2;
-      },
+      // Permission denied, not found, app errors from RPCs… fail the same way on retry.
+      // Only retry transient failures (network, timeouts, 5xx).
+      retry: (failureCount, error: unknown) => !isNonRetryableError(error) && failureCount < 2,
       staleTime: 1000 * 60, // 1 minute default cache
     },
     mutations: {
@@ -63,98 +73,113 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <ErrorBoundary fullPage>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Suspense
-              fallback={
-                <div className="min-h-screen flex items-center justify-center bg-background">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              }
-            >
-              <Routes>
-                {/* The login page always uses the real backend, so reaching it ends a demo session. */}
-                <Route path="/login" element={isDemo ? <DemoExitRedirect /> : <LoginPage />} />
-                <Route path="/registro" element={isDemo ? <DemoExitRedirect to="/registro" /> : <SignupPage />} />
-                <Route path="/demo" element={<DemoEntryPage />} />
-                <Route path="/portal-paciente" element={<PatientPortalPage />} />
-                <Route path="/informe-pdf" element={<ReportViewerPage />} />
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="medlabcore-theme" disableTransitionOnChange>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <Routes>
+              {/* The login page always uses the real backend, so reaching it ends a demo session. */}
+              <Route path="/login" element={isDemo ? <DemoExitRedirect /> : <LoginPage />} />
+              <Route path="/registro" element={isDemo ? <DemoExitRedirect to="/registro" /> : <SignupPage />} />
+              <Route path="/demo" element={<DemoEntryPage />} />
+              <Route path="/portal-paciente" element={<PatientPortalPage />} />
+              <Route path="/informe-pdf" element={<ReportViewerPage />} />
 
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <ImpersonationProvider>
-                        <BrandProvider>
-                          <AppLayout />
-                        </BrandProvider>
-                      </ImpersonationProvider>
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/" element={<RoleRouter />} />
+              <Route element={<ProtectedRoute><ImpersonationProvider><BrandProvider><AppLayout /></BrandProvider></ImpersonationProvider></ProtectedRoute>}>
+                <Route path="/" element={<RoleRouter />} />
 
-                  {/* Super Admin Routes */}
-                  <Route element={<SuperAdminGuard />}>
-                    <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-                    <Route path="/admin/subscriptions" element={<PaymentValidationPage />} />
-                    <Route path="/admin/organizations" element={<OrganizationsPage />} />
-                    <Route path="/admin/users" element={<UsersPage />} />
-                    <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
-                    <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
-                    <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
+                {/* Lab routes: blocked when the subscription has expired */}
+                <Route element={<SubscriptionGuard />}>
+                <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/patients/:id" element={<PatientDetailPage />} />
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/orders/:id" element={<OrderDetailPage />} />
+
+                <Route element={<AllowedRolesGuard roles={["super_admin", "lab_admin", "bioanalyst", "secretary"]} />}>
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                </Route>
+
+                <Route element={<RoleGuard permission="canViewTests" />}>
+                  <Route path="/tests" element={<TestsPage />} />
+                  <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
+                  <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
+                </Route>
+
+                <Route element={<RoleGuard permission="canViewVisits" />}>
+                  <Route path="/visits" element={<VisitsPage />} />
+                </Route>
+
+                <Route element={<RoleGuard permission="canViewBilling" />}>
+                  <Route path="/billing" element={<BillingPage />} />
+                </Route>
+
+                <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                  <Route path="/affiliate-accounts" element={<AffiliateAccountsPage />} />
+                </Route>
+
+                <Route element={<RoleGuard permission="canViewSettings" />}>
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+
+                <Route element={<ErpGuard />}>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                    <Route path="/erp" element={<ErpHomePage />} />
+                    <Route path="/erp/accounts" element={<AccountsPage />} />
+                    <Route path="/erp/bank-accounts" element={<Navigate to="/erp/accounts" replace />} />
                   </Route>
-
-                  {/* Lab Routes protected by SubscriptionGuard */}
-                  <Route element={<SubscriptionGuard />}>
-                    <Route path="/patients" element={<PatientsPage />} />
-                    <Route path="/patients/:id" element={<PatientDetailPage />} />
-                    <Route path="/orders" element={<OrdersPage />} />
-                    <Route path="/orders/:id" element={<OrderDetailPage />} />
-
-                    <Route element={<AllowedRolesGuard roles={["super_admin", "lab_admin", "bioanalyst", "secretary"]} />}>
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                    </Route>
-
-                    <Route element={<RoleGuard permission="canViewTests" />}>
-                      <Route path="/tests" element={<TestsPage />} />
-                      <Route path="/tests/templates/new" element={<TemplateBuilderPage />} />
-                      <Route path="/tests/templates/:id/edit" element={<TemplateBuilderPage />} />
-                    </Route>
-
-                    <Route element={<RoleGuard permission="canViewVisits" />}>
-                      <Route path="/visits" element={<VisitsPage />} />
-                    </Route>
-
-                    <Route element={<RoleGuard permission="canViewBilling" />}>
-                      <Route path="/billing" element={<BillingPage />} />
-                    </Route>
-
-                    <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
-                      <Route path="/affiliate-accounts" element={<AffiliateAccountsPage />} />
-                    </Route>
-
-                    <Route element={<RoleGuard permission="canViewSettings" />}>
-                      <Route path="/settings" element={<SettingsPage />} />
-                    </Route>
-
-                    {/*<Route element={<RoleGuard permission="canViewSettings" />}>
-                      <Route path="/audit-log" element={<AuditLogPage />} />
-                    </Route>*/}
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "secretary", "super_admin"]} />}>
+                    <Route path="/erp/invoices" element={<InvoicesPage />} />
+                    <Route path="/erp/invoices/:id" element={<InvoiceDetailPage />} />
+                    <Route path="/erp/receivables" element={<ReceivablesPage />} />
+                    <Route path="/erp/accounts-receivable" element={<Navigate to="/erp/receivables" replace />} />
+                    <Route path="/erp/movements" element={<MovementsPage />} />
+                    <Route path="/erp/payables" element={<PayablesPage />} />
+                  </Route>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "bioanalyst", "super_admin"]} />}>
+                    <Route path="/erp/inventory" element={<InventoryPage />} />
+                  </Route>
+                  <Route element={<AllowedRolesGuard roles={["lab_admin", "super_admin"]} />}>
+                    <Route path="/erp/reports" element={<FinancialDashboardPage />} />
                   </Route>
                 </Route>
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </BrowserRouter>
-        <Analytics />
-      </TooltipProvider>
-    </QueryClientProvider>
+
+                </Route>
+
+                {/*<Route element={<RoleGuard permission="canViewSettings" />}>
+                  <Route path="/audit-log" element={<AuditLogPage />} />
+                </Route>*/}
+
+                <Route element={<SuperAdminGuard />}>
+                  <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                  <Route path="/admin/subscriptions" element={<PaymentValidationPage />} />
+                  <Route path="/admin/organizations" element={<OrganizationsPage />} />
+                  <Route path="/admin/users" element={<UsersPage />} />
+                  <Route path="/admin/tests-templates" element={<TestsTemplatesPage />} />
+                  <Route path="/admin/tests-templates/new" element={<TemplateBuilderPage />} />
+                  <Route path="/admin/tests-templates/:id/edit" element={<TemplateBuilderPage />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </AuthProvider>
+      </BrowserRouter>
+      <Analytics />
+    </TooltipProvider>
+  </QueryClientProvider>
+  </ThemeProvider>
   </ErrorBoundary>
 );
 

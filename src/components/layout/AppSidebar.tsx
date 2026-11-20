@@ -1,46 +1,85 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  FlaskConical,
-  Receipt,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Building2,
-  UserCog,
-  HandCoins,
-  LogOut,
-  ShoppingCart,
-  User,
-  ClipboardList,
-  CreditCard,
-} from "lucide-react";
-import { useMemo } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/stores/layoutStore";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentOrgContext } from "@/hooks/useCurrentOrgContext";
-import { useHasAffiliateUsers } from "@/features/billing/useAffiliateAccounts";
+import { useBrand } from "@/contexts/BrandContext";
+import { isEntryActive, isGroup, isPathActive, useNavigation, type NavGroup, type NavLink } from "./useNavigation";
 
-const adminNavItems = [
-  { label: "Métricas Globales", icon: LayoutDashboard, path: "/admin/dashboard" },
-  { label: "Validar Pagos", icon: CreditCard, path: "/admin/subscriptions" },
-  { label: "Laboratorios", icon: Building2, path: "/admin/organizations" },
-  { label: "Usuarios", icon: UserCog, path: "/admin/users" },
-  { label: "Examenes Templates", icon: FlaskConical, path: "/admin/tests-templates" },
-  { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts" },
-  { label: "Bitácora", icon: ClipboardList, path: "/audit-log" },
-];
+function SidebarLink({ item, collapsed, nested = false }: { item: NavLink; collapsed: boolean; nested?: boolean }) {
+  const { pathname } = useLocation();
+  const isActive = isPathActive(item.path, pathname);
+  return (
+    <Link
+      to={item.path}
+      title={collapsed ? item.label : undefined}
+      className={cn(
+        "group flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+        nested ? "py-2" : "py-2.5",
+        isActive ? "neu-inset font-semibold text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent",
+      )}
+      aria-current={isActive ? "page" : undefined}
+    >
+      <item.icon className={cn("flex-shrink-0 transition-colors", nested ? "h-4 w-4" : "h-[18px] w-[18px]", isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground")} />
+      {!collapsed && <span className="truncate animate-fade-in">{item.label}</span>}
+    </Link>
+  );
+}
+
+/** A section such as "Administración": the name opens its home page, the arrow shows its pages. */
+function SidebarGroup({ group, collapsed }: { group: NavGroup; collapsed: boolean }) {
+  const { pathname } = useLocation();
+  const isActive = isEntryActive(group, pathname);
+  const [open, setOpen] = useState(isActive);
+  // Entering any page of the section opens it.
+  useEffect(() => {
+    if (isActive) setOpen(true);
+  }, [isActive]);
+
+  return (
+    <div>
+      <div
+        className={cn(
+          "group flex items-center rounded-lg text-sm font-medium transition-all duration-150",
+          isActive ? "text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent",
+        )}
+      >
+        <Link to={group.path} onClick={() => setOpen(true)} title={collapsed ? group.label : undefined} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+          <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground")} />
+          {!collapsed && <span className="truncate animate-fade-in">{group.label}</span>}
+        </Link>
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-label={open ? `Ocultar opciones de ${group.label}` : `Mostrar opciones de ${group.label}`}
+            className="mr-1 grid h-8 w-8 place-items-center rounded-lg text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+          </button>
+        )}
+      </div>
+      {/* Collapsed (icons only): the section's pages show while you are in it. */}
+      {(collapsed ? isActive : open) && (
+        <div className={cn("mt-1 space-y-0.5", collapsed ? "border-t border-sidebar-border pt-1" : "ml-4 border-l border-sidebar-border pl-2")}>
+          {group.children.map((child) => <SidebarLink key={child.path} item={child} collapsed={collapsed} nested />)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppSidebar() {
-  const location = useLocation();
   const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
   const { isSuperAdmin } = useUserRole();
   const { signOut, user } = useAuth();
-  const { profile, permissions } = useCurrentOrgContext();
-  const { data: hasAffiliateUsers = false } = useHasAffiliateUsers();
+  const { profile } = useCurrentOrgContext();
+  const navEntries = useNavigation();
+  const { brand } = useBrand();
 
   const displayName = user?.email || "Usuario";
   const roleLabel = isSuperAdmin
@@ -55,86 +94,48 @@ export function AppSidebar() {
             ? "Laboratorio Afiliado"
             : "Usuario";
 
-  const labNavItems = useMemo(() => {
-    const items = [
-      { label: "Panel de control", icon: LayoutDashboard, path: "/dashboard", show: profile?.role !== "lab_affiliate" },
-      { label: "Pacientes", icon: Users, path: "/patients", show: true },
-      { label: "Ordenes", icon: ShoppingCart, path: "/orders", show: true },
-      { label: "Examenes", icon: FlaskConical, path: "/tests", show: permissions.canViewTests },
-      { label: "Ventas", icon: Receipt, path: "/billing", show: permissions.canViewBilling },
-      { label: "Cuentas Afiliadas", icon: HandCoins, path: "/affiliate-accounts", show: profile?.role === "lab_admin" && hasAffiliateUsers },
-      /*{ label: "Bitácora", icon: ClipboardList, path: "/audit-log", show: profile?.role === "lab_admin" },*/
-      { label: "Configuracion", icon: Settings, path: "/settings", show: permissions.canViewSettings },
-    ];
-
-    return items.filter((item) => item.show);
-  }, [hasAffiliateUsers, permissions, profile?.role]);
-
-  const navItems = isSuperAdmin ? adminNavItems.filter((item) => item.path !== "/affiliate-accounts" || hasAffiliateUsers) : labNavItems;
-
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border sidebar-gradient transition-all duration-300",
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border shadow-[4px_0_12px_-4px_rgb(0_0_0/0.25)] transition-[width] duration-300",
         sidebarCollapsed ? "w-[68px]" : "w-[240px]"
       )}
+      // Tinted with the lab's color so the rail stands apart from the page, open or collapsed.
+      style={{ background: `color-mix(in srgb, ${brand.primaryColor} 12%, hsl(var(--sidebar-background)))` }}
     >
-      <div className="flex h-32 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white">
-          <img src="/logo.png" alt="Medlabcore Logo" className="h-16 w-16 object-contain" />
+      {/* The app's brand heads the rail, on the lab's color: it continues into the header band. */}
+      <div className="flex h-28 items-center gap-3 px-3" style={{ background: brand.primaryColor }}>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-md">
+          <img src="/logo.png" alt="MedLabCore" className="h-10 w-10 object-contain" />
         </div>
         {!sidebarCollapsed && (
-          <div className="animate-fade-in">
-            <span className="tracking-tight text-sm font-bold text-sidebar-accent-foreground">
-              {isSuperAdmin ? "Medlabcore Admin" : "Medlabcore"}
-            </span>
-            <p className="mt-0.5 text-[10px] leading-none text-sidebar-muted">
-              {isSuperAdmin ? "Administracion" : "Gestion de Laboratorio"}
-            </p>
+          <div className="min-w-0 animate-fade-in text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.35)]">
+            <p className="truncate text-sm font-bold">{isSuperAdmin ? "MedLabCore Admin" : "MedLabCore"}</p>
+            <p className="mt-0.5 truncate text-xs leading-none text-white/85">{isSuperAdmin ? "Administración" : "Gestión de laboratorio"}</p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {navItems.map((item) => {
-          const isActive =
-            item.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.path);
-
+      <nav aria-label="Menú principal" className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {navEntries.map((entry, index) => {
+          const startsSection = entry.section && entry.section !== navEntries[index - 1]?.section;
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "h-[18px] w-[18px] flex-shrink-0 transition-colors",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground"
-                )}
-              />
-              {!sidebarCollapsed && <span className="truncate animate-fade-in">{item.label}</span>}
-              {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary" />}
-            </Link>
+            <div key={entry.path + entry.label}>
+              {startsSection && (sidebarCollapsed
+                ? index > 0 && <div className="mx-2 my-2 border-t border-sidebar-border" aria-hidden />
+                : <p className={cn("px-3 pb-1 text-xs font-semibold text-sidebar-muted", index > 0 && "pt-4")}>{entry.section}</p>)}
+              {isGroup(entry)
+                ? <SidebarGroup group={entry} collapsed={sidebarCollapsed} />
+                : <SidebarLink item={entry} collapsed={sidebarCollapsed} />}
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-2.5 transition-all",
-            sidebarCollapsed && "justify-center p-2"
-          )}
-        >
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary">
-            <User className="h-4 w-4" />
+      <div className="mb-4 space-y-1 px-3">
+        <div className="flex items-center gap-3 rounded-xl px-2 py-2 neu-inset">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar neu-raised">
+            <User className="h-5 w-5 text-sidebar-foreground" />
           </div>
           {!sidebarCollapsed && (
             <div className="min-w-0 flex-1 animate-fade-in">
@@ -146,22 +147,22 @@ export function AppSidebar() {
           )}
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-1">
-          <button
-            onClick={toggleSidebar}
-            className="flex h-8 flex-1 items-center justify-center rounded-lg text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            title={sidebarCollapsed ? "Expandir" : "Colapsar"}
-          >
-            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={signOut}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
-            title="Cerrar sesion"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+        <button
+          onClick={signOut}
+          title={sidebarCollapsed ? "Cerrar sesión" : undefined}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+          {!sidebarCollapsed && <span>Cerrar sesión</span>}
+        </button>
+
+        <button
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? "Expandir menú" : "Contraer menú"}
+          className="flex h-9 w-full items-center justify-center rounded-lg border border-input text-sidebar-muted shadow-[var(--neu-raised-sm)] transition-colors hover:text-sidebar-primary active:shadow-[var(--neu-inset)]"
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
       </div>
     </aside>
   );

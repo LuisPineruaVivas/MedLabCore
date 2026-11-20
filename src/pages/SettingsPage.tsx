@@ -9,6 +9,7 @@ import { OrganizationSettings } from "@/features/settings/OrganizationSettings";
 import { ExchangeRateSettings } from "@/features/settings/ExchangeRateSettings";
 import { TeamSettings } from "@/features/settings/TeamSettings";
 import { ProfileSettings } from "@/features/settings/ProfileSettings";
+import { ErpModuleToggle } from "@/features/settings/ErpModuleToggle";
 import { SubscriptionSettingsCard } from "@/features/subscription/SubscriptionSettingsCard";
 
 type SettingsDialog = "org" | "dept" | "users" | "exchange" | "profile" | "subscription" | null;
@@ -37,7 +38,7 @@ export default function SettingsPage() {
           {
             id: "profile" as const,
             icon: BadgeCheck,
-            title: "Configuracion de Perfil",
+            title: "Configuración de perfil",
             desc: "Sube tu firma y sello para aprobar y firmar resultados.",
           },
         ]
@@ -65,29 +66,29 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Configuracion"
+        title="Configuración"
         description={role === "bioanalyst" ? "Administra tu firma y sello profesional" : "Configura tu laboratorio y suscripción"}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div
-          className="group cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
-          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 transition-colors group-hover:bg-primary/15">
-            <BadgeCheck className="h-5 w-5 text-primary" />
-          </div>
-          <h3 className="mb-1 text-sm font-semibold truncate">Usuario: {user?.email || "email no disponible"}</h3>
-          <p className="text-xs text-muted-foreground">Rol: {mapRoles(role)}</p>
-          <div className="mt-2 md:mt-8">
-            <button
-              onClick={signOut}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-destructive px-4 py-2 text-destructive transition-colors hover:bg-destructive/10 md:w-auto"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="text-sm font-medium">Cerrar sesion</span>
-            </button>
-          </div>
+            className="group cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 transition-colors group-hover:bg-primary/15">
+              <BadgeCheck className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="mb-1 text-sm font-semibold">Usuario: {user?.email || "email no disponible"}</h3>
+            <p className="text-xs text-muted-foreground">Rol: {mapRoles(role ?? "") || "desconocido"}</p>
+            <div className="mt-2 md:mt-8">
+              <button
+                onClick={signOut}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-destructive px-4 py-2 text-destructive transition-colors hover:bg-destructive/10 md:w-auto"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm font-medium">Cerrar sesión</span>
+              </button>
+            </div>
         </div>
 
         {settingsCards.map((item) => (
@@ -112,6 +113,7 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{item.desc}</p>
           </div>
         ))}
+        {role === "lab_admin" && <ErpModuleToggle />}
       </div>
 
       {/* Dialog Suscripción */}
@@ -151,7 +153,7 @@ export default function SettingsPage() {
       <Dialog open={activeDialog === "profile"} onOpenChange={(open) => !open && setActiveDialog(null)}>
         <DialogContent className="max-h-[85vh] w-[95vw] overflow-y-auto sm:max-w-[720px]">
           <DialogHeader>
-            <DialogTitle>Configuracion de Perfil</DialogTitle>
+            <DialogTitle>Configuración de perfil</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Configura la firma y el sello que se insertaran al completar una orden.
             </DialogDescription>

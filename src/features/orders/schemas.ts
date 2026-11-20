@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 export type OrderStatus = "pendiente" | "por_aprobar" | "procesando" | "completada" | "cancelada";
 export type PaymentStatus = "unpaid" | "partial" | "paid" | "pending";
 
@@ -30,7 +31,7 @@ export interface OrderItemRow {
   template_id: string | null;
   test_name: string;
   price_at_order: number;
-  results_data: any;
+  results_data: Json;
   created_at: string;
   parent_profile_id: string | null;
   is_profile_header: boolean;

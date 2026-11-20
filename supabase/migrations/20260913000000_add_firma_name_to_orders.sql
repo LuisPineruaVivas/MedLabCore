@@ -1,1 +1,0 @@
-ALTER TABLE public.orders ADD COLUMN firma_name text;
