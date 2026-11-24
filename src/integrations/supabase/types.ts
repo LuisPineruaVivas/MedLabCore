@@ -1200,6 +1200,7 @@ export type Database = {
           has_erp_module: boolean
           id: string
           is_active: boolean | null
+          is_trial: boolean
           logo_url: string | null
           name: string
           phone: string | null
@@ -1208,12 +1209,14 @@ export type Database = {
           report_template: string | null
           rif: string | null
           secondary_color: string | null
+          slug: string
           state: string | null
           subscription_active: boolean
           subscription_expires_at: string | null
           subscription_grace_until: string | null
           subscription_plan_price: number | null
           watermark_url: string | null
+          whatsapp_results_message: string | null
         }
         Insert: {
           address?: string | null
@@ -1224,6 +1227,7 @@ export type Database = {
           has_erp_module?: boolean
           id?: string
           is_active?: boolean | null
+          is_trial?: boolean
           logo_url?: string | null
           name: string
           phone?: string | null
@@ -1232,12 +1236,14 @@ export type Database = {
           report_template?: string | null
           rif?: string | null
           secondary_color?: string | null
+          slug: string
           state?: string | null
           subscription_active?: boolean
           subscription_expires_at?: string | null
           subscription_grace_until?: string | null
           subscription_plan_price?: number | null
           watermark_url?: string | null
+          whatsapp_results_message?: string | null
         }
         Update: {
           address?: string | null
@@ -1248,6 +1254,7 @@ export type Database = {
           has_erp_module?: boolean
           id?: string
           is_active?: boolean | null
+          is_trial?: boolean
           logo_url?: string | null
           name?: string
           phone?: string | null
@@ -1256,12 +1263,14 @@ export type Database = {
           report_template?: string | null
           rif?: string | null
           secondary_color?: string | null
+          slug?: string
           state?: string | null
           subscription_active?: boolean
           subscription_expires_at?: string | null
           subscription_grace_until?: string | null
           subscription_plan_price?: number | null
           watermark_url?: string | null
+          whatsapp_results_message?: string | null
         }
         Relationships: []
       }
@@ -2276,6 +2285,19 @@ export type Database = {
           secondary_color: string
         }[]
       }
+      get_public_org_brand_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          address: string
+          email: string
+          logo_url: string
+          name: string
+          phone: string
+          primary_color: string
+          report_template: string
+          secondary_color: string
+        }[]
+      }
       get_receivables_overview: { Args: { p_org_id: string }; Returns: Json }
       get_superadmin_metrics: { Args: never; Returns: Json }
       has_role: {
@@ -2302,6 +2324,11 @@ export type Database = {
           base_price: number
           schema: Json
         }[]
+      }
+      org_slug_base: { Args: { p_name: string }; Returns: string }
+      org_unique_slug: {
+        Args: { p_base: string; p_org_id: string }
+        Returns: string
       }
       pay_payable: {
         Args: {
