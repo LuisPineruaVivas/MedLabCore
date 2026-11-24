@@ -34,16 +34,18 @@ export function withoutCredentials(search: string): URLSearchParams {
 }
 
 /**
- * Link sent to the patient (e.g. by WhatsApp). The lab id stays in the query
- * (branding); the document ID and PIN go in the fragment, which browsers never
- * send to servers or in Referer headers.
+ * Link sent to the patient (e.g. by WhatsApp). The lab stays in the query for
+ * branding (`?lab=<slug>`, or `?org=<id>` when the slug is not loaded); the
+ * document ID and PIN go in the fragment, which browsers never send to servers
+ * or in Referer headers.
  */
 export function buildPortalLink(
   origin: string,
   path: "/portal-paciente" | "/informe-pdf",
-  { orgId, dni, pin }: { orgId: string; dni: string; pin: string },
+  { orgId, slug, dni, pin }: { orgId: string; slug?: string | null; dni: string; pin: string },
 ): string {
-  return `${origin}${path}?org=${encodeURIComponent(orgId)}#${new URLSearchParams({ dni, pin }).toString()}`;
+  const lab = slug ? `lab=${encodeURIComponent(slug)}` : `org=${encodeURIComponent(orgId)}`;
+  return `${origin}${path}?${lab}#${new URLSearchParams({ dni, pin }).toString()}`;
 }
 
 const STORAGE_KEY = "portal-link-credentials";

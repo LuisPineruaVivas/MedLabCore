@@ -25,6 +25,11 @@ describe("portal links", () => {
     expect(readPortalCredentials(url.search, url.hash)).toEqual({ dni: "V-12 345", pin: "7KQ2M9XH4P" });
   });
 
+  it("names the lab by its slug when it has one", () => {
+    const link = buildPortalLink("https://x.app", "/portal-paciente", { orgId: "org-1", slug: "laboratorio-rivalta", dni: "1", pin: "P" });
+    expect(link).toBe("https://x.app/portal-paciente?lab=laboratorio-rivalta#dni=1&pin=P");
+  });
+
   it("still reads links sent with the old query format", () => {
     expect(readPortalCredentials("?org=org-1&pin=A1B2C3D4&dni=14789455", "")).toEqual({ dni: "14789455", pin: "A1B2C3D4" });
     expect(readPortalCredentials("?org=org-1", "")).toEqual({ dni: "", pin: "" });

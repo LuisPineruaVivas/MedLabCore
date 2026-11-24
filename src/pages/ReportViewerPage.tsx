@@ -12,6 +12,7 @@ import { differenceInYears, differenceInMonths } from "date-fns";
 export default function ReportViewerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
+  const labSlug = searchParams.get("lab");
   // Read once from the link (#dni=…&pin=…, or ?dni=…&pin=… in older links; remembered
   // for this tab so a refresh works), then
   // removed from the address bar so they don't stay in the browser history.
@@ -25,7 +26,7 @@ export default function ReportViewerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: brand } = usePublicOrgBrand(orgId);
+  const { data: brand } = usePublicOrgBrand(orgId, labSlug);
   const { session, authenticate } = usePatientSession();
   const { data: orders = [], isLoading: ordersLoading } = usePatientOrders(session?.patient_id || null, pin);
 

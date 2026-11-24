@@ -430,20 +430,5 @@ BEGIN
 END;
 $$;
 
-
--- ==============================================================================
--- 10. Registrar la migración en el historial interno de Supabase
--- Esto garantiza que futuras ejecuciones de `supabase db push` en dev o main
--- reconozcan que esta migración ya fue aplicada y no intenten duplicarla.
--- ==============================================================================
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'supabase_migrations' AND table_name = 'schema_migrations'
-  ) THEN
-    INSERT INTO supabase_migrations.schema_migrations (version)
-    VALUES ('20261029000000')
-    ON CONFLICT (version) DO NOTHING;
-  END IF;
-END $$;
+-- (A self-registering insert into supabase_migrations.schema_migrations was removed:
+-- the CLI records each migration itself and that insert made db reset fail.)

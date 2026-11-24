@@ -24,6 +24,7 @@ import { DynamicTestReportPDF } from "@/lib/orderReportDispatcher";
 import { pdf } from "@react-pdf/renderer";
 import { toast } from "sonner";
 import { isMobileDevice } from "../orders/orderDetailUtils";
+import { DEFAULT_RESULTS_MESSAGE } from "@/lib/whatsapp";
 
 const orgSchema = z.object({
   name: z.string().min(2, "Nombre del laboratorio es requerido"),
@@ -35,6 +36,14 @@ const orgSchema = z.object({
   primary_color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Color invalido"),
   secondary_color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Color invalido"),
   report_footer_text: z.string().nullable().optional(),
+  whatsapp_results_message: z.string().max(500, "Máximo 500 caracteres").nullable().optional(),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(60, "Máximo 60 caracteres")
+    .regex(/^([a-z0-9]+(-[a-z0-9]+)*)?$/, "Solo letras minúsculas, números y guiones (ej: laboratorio-rivalta)")
+    .optional(),
 });
 
 type OrgFormValues = z.infer<typeof orgSchema>;
@@ -61,6 +70,8 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       primary_color: "#000000",
       secondary_color: "#000000",
       report_footer_text: "",
+      whatsapp_results_message: "",
+      slug: "",
     },
   });
 
@@ -79,6 +90,8 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       primary_color: data.primary_color || "#000000",
       secondary_color: data.secondary_color || "#000000",
       report_footer_text: data.report_footer_text || "",
+      whatsapp_results_message: data.whatsapp_results_message || "",
+      slug: data.slug || "",
     });
 
     setPreviewUrl(data.logo_url || null);
@@ -117,6 +130,9 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
       primary_color: values.primary_color,
       secondary_color: values.secondary_color,
       report_footer_text: values.report_footer_text ?? null,
+      whatsapp_results_message: values.whatsapp_results_message?.trim() || null,
+      // Empty: the database generates one from the name.
+      slug: values.slug ?? "",
     };
 
     const result = await saveMutation.mutateAsync({ values: payload, selectedFile, selectedWatermarkFile });
@@ -343,6 +359,53 @@ export function OrganizationSettings({ orgId }: { orgId: string }) {
                     </FormControl>
                     <FormDescription className="text-xs">
                       Este texto aparecerá en la parte inferior de cada página del informe PDF. Si lo dejas vacío, no se mostrará ningún pie de página.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <FormField
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre del laboratorio en el enlace del paciente</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="laboratorio-rivalta" maxLength={60} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      El enlace que recibe el paciente se verá así: {window.location.origin}/portal-paciente?lab=
+                      {field.value || data?.slug || "laboratorio-rivalta"}. Si lo cambias, los enlaces enviados antes con el
+                      nombre anterior seguirán dando acceso, pero ya no mostrarán tu logo ni tus colores.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <FormField
+                control={form.control}
+                name="whatsapp_results_message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mensaje de WhatsApp al enviar resultados (opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder={DEFAULT_RESULTS_MESSAGE}
+                        rows={3}
+                        maxLength={500}
+                        className="resize-none text-sm"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Este texto se envía al paciente junto con el enlace a sus resultados (el enlace se agrega al final automáticamente). Si lo dejas vacío, se usa el mensaje predeterminado.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

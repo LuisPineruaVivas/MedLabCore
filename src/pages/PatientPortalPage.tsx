@@ -18,6 +18,7 @@ import { forgetPortalCredentials, hasCredentialsInUrl, resolvePortalCredentials,
 export default function PatientPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const orgId = searchParams.get("org");
+  const labSlug = searchParams.get("lab");
   // Read once from the link (#dni=…&pin=…, or ?dni=…&pin=… in older links; remembered
   // for this tab so a refresh works), then
   // removed from the address bar so they don't stay in the browser history.
@@ -35,7 +36,7 @@ export default function PatientPortalPage() {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
-  const { data: brand, isLoading: isBrandLoading } = usePublicOrgBrand(orgId);
+  const { data: brand, isLoading: isBrandLoading } = usePublicOrgBrand(orgId, labSlug);
   const headerStyle = brand ? {
     background: `linear-gradient(90deg, ${brand.primary_color}, ${brand.secondary_color})`,
     borderRadius: "0 0 50px 50px",

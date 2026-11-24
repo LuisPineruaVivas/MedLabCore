@@ -15,6 +15,8 @@ export interface OrganizationSettingsFormValues {
   primary_color: string;
   secondary_color: string;
   report_footer_text?: string | null;
+  whatsapp_results_message?: string | null;
+  slug?: string;
 }
 
 export interface ManualExchangeRatePayload {
@@ -48,7 +50,7 @@ export function useOrganizationSettings(orgId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organizations")
-        .select("name, address, phone, logo_url, watermark_url, email, primary_color, secondary_color, report_footer_text, report_template")
+        .select("name, address, phone, logo_url, watermark_url, email, primary_color, secondary_color, report_footer_text, report_template, whatsapp_results_message, slug")
         .eq("id", orgId)
         .single();
 
@@ -126,6 +128,10 @@ export function useSaveOrganizationSettings(orgId: string) {
     },
 
     onError: (error) => {
+      if ((error as { code?: string }).code === "23505" && error.message.includes("organizations_slug_key")) {
+        toast.error("Ese nombre para el enlace ya lo usa otro laboratorio. Elige otro.");
+        return;
+      }
       toast.error(getUserFacingErrorMessage(error, "No se pudo actualizar la organizacion"));
     },
   });

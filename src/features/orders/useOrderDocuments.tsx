@@ -12,7 +12,7 @@ import { LetterHeadPDF } from "@/lib/letterhead";
 import { AttendanceCertificatePDF } from "@/lib/constanciaPDF";
 import { CompanionAttendanceCertificatePDF } from "@/lib/constanciaAcomPDF";
 import { buildPortalLink } from "@/features/patientPortal/portalLink";
-import { whatsappNumber } from "@/lib/whatsapp";
+import { resultsMessage, whatsappNumber } from "@/lib/whatsapp";
 import { DEMO_SHARE_EVENT, isDemo, type DemoShareDetail } from "@/lib/demo/isDemo";
 import type { OrderItemResultsState } from "./useOrderResultsEditor";
 import { buildOrderPatientInfo, buildThermalReceiptData, isMobileDevice } from "./orderDetailUtils";
@@ -54,7 +54,10 @@ export function useOrderDocuments({
   order: Order | null | undefined;
   orderItems: OrderDetailItem[];
   resultsState: Record<string, OrderItemResultsState>;
-  organization: { primary_color?: string | null; report_template?: string | null } | null | undefined;
+  organization:
+    | { primary_color?: string | null; report_template?: string | null; whatsapp_results_message?: string | null; slug?: string | null }
+    | null
+    | undefined;
   labData: LabData;
   departmentOrder: string[];
 }) {
@@ -288,6 +291,7 @@ export function useOrderDocuments({
 
     const portalUrl = buildPortalLink(window.location.origin, "/portal-paciente", {
       orgId: order.org_id,
+      slug: organization?.slug,
       dni: patientDni,
       pin: String(order.access_pin ?? ""),
     });
@@ -298,7 +302,7 @@ export function useOrderDocuments({
       return;
     }
 
-    const message = `Tus resultados están listos, los puedes ver de inmediato en el siguiente enlace: ${portalUrl}`;
+    const message = resultsMessage(organization?.whatsapp_results_message, portalUrl);
     if (isDemo) return shareInDemo(message, portalUrl);
     const text = encodeURIComponent(message);
     window.open(`https://wa.me/${phoneDigits}?text=${text}`, "_blank");
@@ -309,13 +313,18 @@ export function useOrderDocuments({
     const patientDni = patients?.id_number || "";
     const pdfUrl = buildPortalLink(window.location.origin, "/informe-pdf", {
       orgId: order.org_id,
+      slug: organization?.slug,
       dni: patientDni,
       pin: String(order.access_pin ?? ""),
     });
 
     // Without a phone, wa.me opens WhatsApp to pick the contact.
     const phoneDigits = whatsappNumber(patients?.phone);
-    const message = `Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace: ${pdfUrl}`;
+    const message = resultsMessage(
+      organization?.whatsapp_results_message,
+      pdfUrl,
+      "Hola, puedes ver e imprimir tu informe de resultados directamente en este enlace:",
+    );
     if (isDemo) return shareInDemo(message, pdfUrl);
     const text = encodeURIComponent(message);
 

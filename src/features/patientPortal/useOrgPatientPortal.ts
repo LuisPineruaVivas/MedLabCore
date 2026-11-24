@@ -14,25 +14,32 @@ export interface PublicOrgBrand {
   report_template: string | null;
 }
 
-// get_public_org_brand is not in the generated types until `npm run update-types`.
+type BrandRpc = { maybeSingle: () => Promise<{ data: PublicOrgBrand | null; error: Error | null }> };
+// The branding RPCs are not in the generated types until `npm run update-types`.
 const publicRpc = supabase as unknown as {
-  rpc: (name: "get_public_org_brand", args: { p_org_id: string }) => {
-    maybeSingle: () => Promise<{ data: PublicOrgBrand | null; error: Error | null }>;
+  rpc: {
+    (name: "get_public_org_brand", args: { p_org_id: string }): BrandRpc;
+    (name: "get_public_org_brand_by_slug", args: { p_slug: string }): BrandRpc;
   };
 };
 
-export function usePublicOrgBrand(orgId: string | null) {
+/** Lab branding for the public pages, from `?lab=<slug>` (new links) or `?org=<id>` (older links). */
+export function usePublicOrgBrand(orgId: string | null, slug: string | null = null) {
+  const ref = slug || orgId;
   return useQuery({
-    queryKey: queryKeys.patientPortal.publicOrg(orgId),
+    queryKey: queryKeys.patientPortal.publicOrg(ref),
     queryFn: async () => {
-      if (!orgId) return null;
+      if (!ref) return null;
       // Anonymous visitors cannot read organizations; the RPC returns only branding columns.
-      const { data, error } = await publicRpc.rpc("get_public_org_brand", { p_org_id: orgId }).maybeSingle();
+      const { data, error } = await (slug
+        ? publicRpc.rpc("get_public_org_brand_by_slug", { p_slug: slug })
+        : publicRpc.rpc("get_public_org_brand", { p_org_id: ref })
+      ).maybeSingle();
 
       if (error) throw error;
       if (!data) throw new Error("Organización no encontrada");
       return data;
     },
-    enabled: !!orgId,
+    enabled: !!ref,
   });
 }
