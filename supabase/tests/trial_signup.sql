@@ -51,7 +51,9 @@ reset role;
 select pg_temp.assert(
   (select onboarding_completed_at is not null from public.profiles where id = '11111111-1111-4111-8111-111111111111'),
   'complete_onboarding marks the caller');
-select pg_temp.assert(not exists (select 1 from public.profiles where onboarding_completed_at is null and id <> '11111111-1111-4111-8111-111111111111'),
+-- Only profiles older than the migration's cutoff were backfilled; newer real ones may still be onboarding.
+select pg_temp.assert(not exists (select 1 from public.profiles where onboarding_completed_at is null
+    and created_at < '2026-11-12 00:00:00+00' and id <> '11111111-1111-4111-8111-111111111111'),
   'existing users were backfilled');
 
 -- An account born confirmed (email confirmations off) also gets its lab.
